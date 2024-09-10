@@ -154,7 +154,6 @@ export class ParticleSystem {
                 const sepPoint = Vector2D.zeros();
                 const alignV = Vector2D.zeros();
                 let nCoh = 0;
-                let nSep = 0;
                 for (let j = 0; j < this.particles.length; j++) {
                     if (this.particles[i] === this.particles[j]) continue;
                     if (this.particles[j].isBoiding && (this.particles[i].teamID === this.particles[j].teamID)) {
@@ -212,12 +211,8 @@ export class ParticleSystem {
         id: number,
         scene: Phaser.Scene,
     ): void {
-        // Find the closest point on the polygon to the ball
         const closestPoint = closestPointOnPolygon(polygon.verts, particle.pos);
 
-        const graphics = (scene as any).graphics;
-
-        // Calculate the distance between the ball and the closest point
         const dx = closestPoint.x - particle.pos.x;
         const dy = closestPoint.y - particle.pos.y;
 

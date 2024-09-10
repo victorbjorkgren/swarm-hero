@@ -10,8 +10,7 @@ let players: Player[] = [];
 export const preload = function(this: Phaser.Scene) {};
 
 export const create = function(this: Phaser.Scene) {
-    const graphics = this.add.graphics();
-    (this as any).graphics = graphics;
+    (this as any).graphics = this.add.graphics();
     cursors = (this as any).input.keyboard.createCursorKeys();
 
     const boundPoly: Polygon = {

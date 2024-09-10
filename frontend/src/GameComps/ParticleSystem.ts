@@ -86,7 +86,7 @@ export class ParticleSystem {
     checkCollisions(): void {
         for (let i=0; i < this.particles.length; ++i) {
             for (const polygon of this.polygonColliders)
-                ParticleSystem.handleBallPolygonCollision(this.particles[i], polygon, i, this.scene)
+                ParticleSystem.handleBallPolygonCollision(this.particles[i], polygon)
             for (let j = i + 1; j < this.particles.length; j++) {
                 ParticleSystem.handleParticleCollision(this.particles[i], this.particles[j]);
             }
@@ -208,8 +208,6 @@ export class ParticleSystem {
     static handleBallPolygonCollision(
         particle: Particle,
         polygon: Polygon,
-        id: number,
-        scene: Phaser.Scene,
     ): void {
         const closestPoint = closestPointOnPolygon(polygon.verts, particle.pos);
 

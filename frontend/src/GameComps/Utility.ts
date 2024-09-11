@@ -1,3 +1,5 @@
+import {Player} from "./Player";
+
 export class Vector2D {
     constructor(public x: number, public y: number) {
     }
@@ -70,7 +72,7 @@ export class Vector2D {
 
 export interface Polygon {
     verts: Vector2D[];
-    isInside: boolean;
+    attackable: boolean;
 }
 
 export function randomUnitVector(rMin:number=0, rMax: number=1): Vector2D {
@@ -111,4 +113,26 @@ export function closestPointOnPolygon(polygon: Vector2D[], circleCenter: Vector2
     }
 
     return closestPoint;
+}
+
+export interface Entity {
+    pos: Vector2D;
+    health: number;
+    isAlive(): boolean;
+    getFiringPos(from: Vector2D): Vector2D;
+}
+
+export interface Team {
+    color: number,
+    id: number,
+    centroid: Vector2D,
+    controllerMapping: ControllerMapping,
+    players: Player[]
+}
+
+export interface ControllerMapping {
+    'up': Phaser.Input.Keyboard.Key;
+    'down': Phaser.Input.Keyboard.Key;
+    'left': Phaser.Input.Keyboard.Key;
+    'right': Phaser.Input.Keyboard.Key;
 }

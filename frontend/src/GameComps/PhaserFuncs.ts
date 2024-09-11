@@ -1,5 +1,5 @@
-import {ParticleSystem, Team} from "./ParticleSystem";
-import {Vector2D, Polygon} from "./Utility";
+import {ParticleSystem} from "./ParticleSystem";
+import {Vector2D, Polygon, Team} from "./Utility";
 import {Player} from "./Player";
 
 let particleSystem: ParticleSystem;
@@ -34,23 +34,23 @@ export const create = function(this: Phaser.Scene) {
             new Vector2D(this.scale.width, this.scale.height),
             new Vector2D(0, this.scale.height)
         ],
-        isInside: true
+        attackable: false
     }
-
-
 
     teams = [
         {
             id: 0,
             color: 0xff0000,
             centroid: new Vector2D(.25 * this.scale.width, .5 * this.scale.height),
-            controllerMapping: player1Keys
+            controllerMapping: player1Keys,
+            players: []
         },
         {
             id: 1,
             color: 0xffffff,
             centroid: new Vector2D(.75 * this.scale.width, .5 * this.scale.height),
-            controllerMapping: player2Keys
+            controllerMapping: player2Keys,
+            players: []
         }
     ]
 

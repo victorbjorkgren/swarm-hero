@@ -290,7 +290,6 @@ class Particle {
                 else {
                     this.desiredPos = undefined;
                 }
-                console.log(this.desiredPos);
             } else {
                 this.desiredPos = undefined;
             }
@@ -335,5 +334,13 @@ interface FiringLaserAt {
 export interface Team {
     color: number,
     id: number,
-    centroid: Vector2D
+    centroid: Vector2D,
+    controllerMapping: ControllerMapping,
+}
+
+export interface ControllerMapping {
+    'up': Phaser.Input.Keyboard.Key;
+    'down': Phaser.Input.Keyboard.Key;
+    'left': Phaser.Input.Keyboard.Key;
+    'right': Phaser.Input.Keyboard.Key;
 }

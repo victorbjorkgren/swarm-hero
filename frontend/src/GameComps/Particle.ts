@@ -1,4 +1,4 @@
-import {Entity, randomUnitVector, Vector2D} from "./Utility";
+import {Entity, massToRadius, randomUnitVector, Vector2D} from "./Utility";
 
 export class Particle implements Entity {
     vel: Vector2D;
@@ -26,7 +26,7 @@ export class Particle implements Entity {
         public color: number
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
-        this.radius = mass ** (1 / 3);
+        this.radius = massToRadius(mass);
     }
 
     setLeaderPosition(position: Vector2D) {

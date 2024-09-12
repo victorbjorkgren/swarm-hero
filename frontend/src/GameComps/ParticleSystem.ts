@@ -1,4 +1,12 @@
-import {closestPointOnPolygon, Polygon, randomUnitVector, Team, Vector2D} from "./Utility";
+import {
+    closestPointOnPolygon,
+    Entity,
+    isInsidePolygon,
+    PolygonalCollider,
+    randomUnitVector,
+    Team,
+    Vector2D
+} from "./Utility";
 import {Particle} from "./Particle";
 
 export class ParticleSystem {
@@ -14,7 +22,7 @@ export class ParticleSystem {
         private particleN: number,
         private teams: Team[],
         private scene: Phaser.Scene,
-        private polygonColliders: Polygon[] = [])
+        private polygonColliderEntities: PolygonalCollider[] = [])
     {
         this.teamParticles = Array.from({ length: this.teams.length }, () => []);
     }
@@ -23,6 +31,15 @@ export class ParticleSystem {
         const graphics = (this.scene as any).graphics;
 
         if (graphics) {
+            // graphics.fillStyle(0x00ff00, 1);
+            // for (const team of this.teams) {
+            //     for (const player of team.players) {
+            //         for (const v of player.collider.verts) {
+            //             graphics.fillCircle(v.x, v.y, 2);
+            //         }
+            //     }
+            // }
+
             for (const particle of this.particles) {
                 graphics.fillStyle(particle.color, 1);
                 graphics.fillCircle(
@@ -50,7 +67,7 @@ export class ParticleSystem {
 
     createParticle(origin: Vector2D, mass: number, maxVel: number, teamID: number, color: number): void {
         const p = new Particle( origin , mass, teamID, maxVel, color);
-        p.setLeaderPosition(this.teams[teamID].centroid)
+        p.setLeaderPosition(this.teams[teamID].playerCentroid)
         this.particles.push(p);
         this.teamParticles[p.teamID].push(p)
     }
@@ -60,7 +77,7 @@ export class ParticleSystem {
         this.engageFights();
         this.fightFights();
         this.bringOutYourDead();
-        this.checkCollisions();
+        // this.checkCollisions();
         this.particleBehavior();
         this.updateBoid();
         this.updatePos()
@@ -86,10 +103,15 @@ export class ParticleSystem {
 
     checkCollisions(): void {
         for (let i=0; i < this.particles.length; ++i) {
-            for (const polygon of this.polygonColliders)
-                ParticleSystem.handleBallPolygonCollision(this.particles[i], polygon)
+            for (const polygonHolder of this.polygonColliderEntities)
+                ParticleSystem.handleBallPolygonCollision(this.particles[i], polygonHolder);
+            for (const team of this.teams) {
+                for (const player of team.players) {
+                    ParticleSystem.handleBallPolygonCollision(this.particles[i], player);
+                }
+            }
             for (let j = i + 1; j < this.particles.length; j++) {
-                ParticleSystem.handleParticleCollision(this.particles[i], this.particles[j]);
+                ParticleSystem.handleCircleCollision(this.particles[i], this.particles[j]);
             }
         }
     }
@@ -105,7 +127,7 @@ export class ParticleSystem {
         for (let i=0; i < this.teamParticles.length; ++i) {
             if (this.teamParticles[i].length < this.particleN) {
                 this.createParticle(
-                    randomUnitVector(35, 50).add(this.teams[i].centroid),
+                    randomUnitVector(35, 50).add(this.teams[i].playerCentroid),
                     10,
                     1,
                     i,
@@ -115,27 +137,34 @@ export class ParticleSystem {
         }
     }
 
+    engageIfClose(me: Particle, other: Entity) {
+        if (Vector2D.sqDist(me.pos, other.getFiringPos(me.pos)) < me.sqEngageRadius) {
+            me.engaging.push(other)
+        }
+    }
+
     engageFights(): void {
         for (const me of this.particles) {
             me.engaging = me.engaging.filter(foe => foe && foe.isAlive());
-            me.engaging = me.engaging.filter(foe => Vector2D.sqDist(me.pos, foe.pos) < me.sqEngageRadius);
-            if (me.engaging.length < me.maxTargets) {
-                for (const team of this.teams) {
-                    if (team.id === me.teamID) continue
-                    for (const player of team.players) {
-                        const closestPoint = closestPointOnPolygon(player.collider.verts, me.pos);
-                        if (Vector2D.sqDist(me.pos, closestPoint) < me.sqEngageRadius) {
-                            me.engaging.push(player)
-                        }
-                    }
-                }
+            me.engaging = me.engaging.filter(foe => Vector2D.sqDist(me.pos, foe.getFiringPos(me.pos)) < me.sqEngageRadius);
+            if (me.engaging.length >= me.maxTargets) return
+            for (const team of this.teams) {
+                if (team.id === me.teamID) continue
+                team.players.forEach(player => {
+                    this.engageIfClose(me, player)
+                    if (me.engaging.length >= me.maxTargets) return
+                })
+                team.castles.forEach(castle => {
+                    this.engageIfClose(me, castle)
+                    if (me.engaging.length >= me.maxTargets) return
+                })
             }
-            if (me.engaging.length < me.maxTargets) {
-                for (const other of this.particles) {
-                    if (me.teamID !== other.teamID) {
-                        if (Vector2D.sqDist(me.pos, other.pos) < me.sqEngageRadius)
-                            me.engaging.push(other);
-                    }
+
+            if (me.engaging.length >= me.maxTargets) return
+            for (const other of this.particles) {
+                if (me.teamID !== other.teamID) {
+                    this.engageIfClose(me, other);
+                    if (me.engaging.length >= me.maxTargets) return
                 }
             }
         }
@@ -198,9 +227,9 @@ export class ParticleSystem {
         }
     }
 
-    static handleParticleCollision(
-        p1: Particle,
-        p2: Particle,
+    static handleCircleCollision(
+        p1: Entity,
+        p2: Entity,
     ): void {
         // Difference in positions and velocities
         const dx = p2.pos.x - p1.pos.x;
@@ -208,26 +237,44 @@ export class ParticleSystem {
         const dvx = p2.vel.x - p1.vel.x;
         const dvy = p2.vel.y - p1.vel.y;
 
+        // Calculate the squared distance between the particles
         const distSq = dx * dx + dy * dy;
-        if (distSq === 0 || distSq > ((p1.radius + p2.radius) ** 2)) return;
+        const combinedRadius = p1.radius + p2.radius;
 
+        // If the particles are either at the same position or not touching, return
+        if (distSq === 0 || distSq > combinedRadius * combinedRadius) return;
+
+        // Dot product of relative velocity and relative position
         const dotProduct = dvx * dx + dvy * dy;
         if (dotProduct >= 0) return; // Already moving apart, no need to adjust velocities
+
+        // Calculate the collision response factor based on the masses of the particles
         const factor = (2 * dotProduct) / ((p1.mass + p2.mass) * distSq);
 
-        // Update velocities in place
+        // Update velocities based on the collision
         p1.vel.x += factor * p2.mass * dx;
         p1.vel.y += factor * p2.mass * dy;
         p2.vel.x -= factor * p1.mass * dx;
         p2.vel.y -= factor * p1.mass * dy;
+
+        // Adjust positions to prevent overlapping
+        const distance = Math.sqrt(distSq);
+        const overlap = (combinedRadius - distance) / 2;
+        const correctionFactorX = (dx / distance) * overlap;
+        const correctionFactorY = (dy / distance) * overlap;
+
+        p1.pos.x -= correctionFactorX;
+        p1.pos.y -= correctionFactorY;
+        p2.pos.x += correctionFactorX;
+        p2.pos.y += correctionFactorY;
     }
 
 
-    static handleBallPolygonCollision(
+    static handleBallPolygonCollision_(
         particle: Particle,
-        polygon: Polygon,
+        polygonHolder: PolygonalCollider,
     ): void {
-        const closestPoint = closestPointOnPolygon(polygon.verts, particle.pos);
+        const closestPoint = closestPointOnPolygon(polygonHolder.collider.verts, particle.pos);
 
         const dx = closestPoint.x - particle.pos.x;
         const dy = closestPoint.y - particle.pos.y;
@@ -237,7 +284,17 @@ export class ParticleSystem {
         const dist = Math.sqrt(distSq);
 
         if (dist >= particle.radius) return; // No collision if the ball is not intersecting
+        if (isInsidePolygon(polygonHolder.collider.verts, particle.pos)) {
+            // Calculate the vector from the particle to the closest point
+            const moveDirection = new Vector2D(
+                particle.pos.x - closestPoint.x,
+                particle.pos.y - closestPoint.y
+            );
 
+            particle.vel.x = polygonHolder.vel.x;
+            particle.vel.y = polygonHolder.vel.y;
+            return;
+        }
         // Normal vector at the point of collision
         const normal = new Vector2D(dx / dist, dy / dist);
 
@@ -249,6 +306,77 @@ export class ParticleSystem {
         // Reflect the ball's velocity along the normal (elastic collision)
         particle.vel.x -= 2 * velocityAlongNormal * normal.x;
         particle.vel.y -= 2 * velocityAlongNormal * normal.y;
+        particle.vel.x += polygonHolder.vel.x
+        particle.vel.y += polygonHolder.vel.y
+    }
+
+    static handleBallPolygonCollision(
+        particle: Particle,
+        polygonHolder: PolygonalCollider,
+    ): void {
+        // Calculate relative velocity between the particle and the polygon
+        const relativeVel = new Vector2D(
+            particle.vel.x - polygonHolder.vel.x,
+            particle.vel.y - polygonHolder.vel.y
+        );
+
+        // Predict where the particle will be after this time step
+        const predictedPosition = new Vector2D(
+            particle.pos.x + relativeVel.x,
+            particle.pos.y + relativeVel.y
+        );
+
+        const dt = predictedPosition.x / relativeVel.x
+
+        // Find the closest point on the polygon to the predicted position
+        const closestPoint = closestPointOnPolygon(polygonHolder.collider.verts, predictedPosition);
+
+        const dx = closestPoint.x - predictedPosition.x;
+        const dy = closestPoint.y - predictedPosition.y;
+
+        const distSq = dx * dx + dy * dy;
+
+        const dist = Math.sqrt(distSq);
+
+        // Check if there's a collision based on the future position
+        if (dist >= particle.radius) return; // No collision if the ball is not intersecting
+
+        // Normal vector at the point of collision
+        const normal = new Vector2D(dx / dist, dy / dist);
+
+        // return if particle has already collided and is moving away
+        if (Vector2D.dotProduct(relativeVel, normal) <= 0) return;
+
+        const velocityAlongNormal = Vector2D.dotProduct(relativeVel, normal);
+
+        // Reflect the particle's velocity along the normal (elastic collision)
+        particle.vel.x -= 2 * velocityAlongNormal * normal.x;
+        particle.vel.y -= 2 * velocityAlongNormal * normal.y;
+
+        // Add the velocity of the polygon to the particle
+        particle.vel.x += polygonHolder.vel.x;
+        particle.vel.y += polygonHolder.vel.y;
+        // Failsafe: Check if the particle is inside the polygon and move it out if necessary
+        if (isInsidePolygon(polygonHolder.collider.verts, particle.pos)) {
+            // Calculate the vector from the particle to the closest point
+            const moveDirection = new Vector2D(
+                particle.pos.x - closestPoint.x,
+                particle.pos.y - closestPoint.y
+            );
+
+            const moveDist = Math.sqrt(moveDirection.x * moveDirection.x + moveDirection.y * moveDirection.y);
+
+            // Normalize the direction
+            const normalizedMoveDirection = new Vector2D(
+                moveDirection.x / moveDist,
+                moveDirection.y / moveDist
+            );
+
+            // Move the particle outside the polygon along this direction, by its radius
+            particle.pos.x = closestPoint.x + normalizedMoveDirection.x * particle.radius;
+            particle.pos.y = closestPoint.y + normalizedMoveDirection.y * particle.radius;
+        }
+
     }
 }
 

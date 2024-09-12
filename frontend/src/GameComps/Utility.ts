@@ -1,4 +1,5 @@
 import {Player} from "./Player";
+import {Castle} from "./Castle";
 
 export class Vector2D {
     constructor(public x: number, public y: number) {
@@ -73,6 +74,7 @@ export class Vector2D {
 export interface Polygon {
     verts: Vector2D[];
     attackable: boolean;
+    isInside: boolean;
 }
 
 export function randomUnitVector(rMin:number=0, rMax: number=1): Vector2D {
@@ -115,19 +117,46 @@ export function closestPointOnPolygon(polygon: Vector2D[], circleCenter: Vector2
     return closestPoint;
 }
 
+export function isInsidePolygon(polygon: Vector2D[], circleCenter: Vector2D): boolean {
+    let isInside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > circleCenter.y) !== (yj > circleCenter.y)) &&
+            (circleCenter.x < (xj - xi) * (circleCenter.y - yi) / (yj - yi) + xi);
+        if (intersect) isInside = !isInside;
+    }
+    return isInside;
+}
+
+export const massToRadius = (mass: number): number => {
+    return mass ** (1 / 3);
+}
+
 export interface Entity {
     pos: Vector2D;
+    vel: Vector2D;
+    radius: number;
+    mass: number;
     health: number;
     isAlive(): boolean;
     getFiringPos(from: Vector2D): Vector2D;
 }
 
+export interface PolygonalCollider {
+    collider: Polygon;
+    vel: Vector2D;
+}
+
 export interface Team {
     color: number,
     id: number,
-    centroid: Vector2D,
+    playerCentroid: Vector2D,
+    castleCentroid: Vector2D,
     controllerMapping: ControllerMapping,
-    players: Player[]
+    players: Player[],
+    castles: Castle[]
 }
 
 export interface ControllerMapping {

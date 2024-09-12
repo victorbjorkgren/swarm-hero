@@ -1,17 +1,32 @@
 import {ParticleSystem} from "./ParticleSystem";
-import {Vector2D, Polygon, Team} from "./Utility";
+import {Vector2D, Polygon, Team, PolygonalCollider, Entity} from "./Utility";
 import {Player} from "./Player";
+import {Castle} from "./Castle";
 
 let particleSystem: ParticleSystem;
 // let cursors: Phaser.Types.Input.Keyboard.CursorKeys;
 let teams: Team[];
 let players: Player[] = [];
+let castles: Castle[] = []
 
-export const preload = function(this: Phaser.Scene) {};
+const endGame = () => {
+    gameOn = false;
+}
+
+export const resumeGame = () => {
+    gameOn = true;
+}
+
+let gameOn = true;
+
+export const preload = function(this: Phaser.Scene) {
+    this.load.image('castle', 'castle-sprite.png')
+};
 
 export const create = function(this: Phaser.Scene) {
     (this as any).graphics = this.add.graphics();
-    // cursors = (this as any).input.keyboard.createCursorKeys();
+    players = [];
+    castles = [];
 
     const player1Keys = (this as any).input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -19,7 +34,6 @@ export const create = function(this: Phaser.Scene) {
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
-
     const player2Keys = (this as any).input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.UP,
         left: Phaser.Input.Keyboard.KeyCodes.LEFT,
@@ -34,49 +48,69 @@ export const create = function(this: Phaser.Scene) {
             new Vector2D(this.scale.width, this.scale.height),
             new Vector2D(0, this.scale.height)
         ],
-        attackable: false
+        attackable: false,
+        isInside: true,
     }
 
     teams = [
         {
             id: 0,
             color: 0xff0000,
-            centroid: new Vector2D(.25 * this.scale.width, .5 * this.scale.height),
+            playerCentroid: new Vector2D(.25 * this.scale.width, .5 * this.scale.height),
+            castleCentroid: new Vector2D(this.scale.width/8, (this as any).scale.height/2),
             controllerMapping: player1Keys,
-            players: []
+            players: [],
+            castles: []
         },
         {
             id: 1,
             color: 0xffffff,
-            centroid: new Vector2D(.75 * this.scale.width, .5 * this.scale.height),
+            playerCentroid: new Vector2D(.75 * this.scale.width, .5 * this.scale.height),
+            castleCentroid: new Vector2D(this.scale.width*7/8, this.scale.height/2),
             controllerMapping: player2Keys,
-            players: []
+            players: [],
+            castles: []
         }
     ]
 
-    players.push(new Player(teams[0], this));
-    players.push(new Player(teams[1], this));
+    const onDeath = (id: string, scene: Phaser.Scene) => {
+        (scene as any).setWinner(id);
+        endGame();
+    }
 
-    const colliders: Polygon[] = [players[0].collider, players[1].collider, boundPoly];
+    players.push(new Player(teams[0], this, onDeath));
+    players.push(new Player(teams[1], this, onDeath));
+    castles.push(new Castle(teams[0], this, 'castle'));
+    castles.push(new Castle(teams[1], this, 'castle'))
+    // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
+    const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
 
     particleSystem = new ParticleSystem(10, teams, this, colliders);
 
 };
 
 export const update = function(this: Phaser.Scene) {
+    if (!gameOn) return
+
     // Access the graphics object stored on the scene
     const graphics = (this as any).graphics;
 
     if (graphics) {
         // Clear the previous drawings
         graphics.clear();
+
         graphics.fillStyle(0x000000, 1);
         graphics.fillRect(0, 0, this.scale.width, this.scale.height);
+        teams.forEach(team => {
+            team.players.forEach(player => {
+                player.movement();
+                player.render();
+            });
+            team.castles.forEach(castle => {
+                castle.render();
+            })
+        });
 
-        players.forEach(player => {
-            player.render();
-            player.movement();
-        })
         particleSystem.update();
         particleSystem.render();
     }

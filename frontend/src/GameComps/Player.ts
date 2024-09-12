@@ -1,27 +1,25 @@
-import {closestPointOnPolygon, ControllerMapping, Entity, Polygon, Team, Vector2D} from "./Utility";
+import {closestPointOnPolygon, ControllerMapping, Entity, Polygon, PolygonalCollider, Team, Vector2D} from "./Utility";
+import Phaser from "phaser";
 
-export class Player implements Entity {
-    public collider: Polygon;
-    public pos: Vector2D;
-    public vel: Vector2D = Vector2D.zeros();
-    public acc: Vector2D = Vector2D.zeros();
-    private maxAcc: number = 0.1;
-    private maxVel: number = 1.0;
-    // private keyBindings: { [key: string]: Phaser.Input.Keyboard.Key };
-    private keyBindings: ControllerMapping | undefined;
-    public health: number = 1000;
-
-    constructor(
-        private team: Team,
-        private scene: Phaser.Scene,
-    ) {
-        this.pos = team.centroid;
-        this.collider = this.calcCollider();
-        this.keyBindings = team.controllerMapping;
-        this.team.players.push(this);
+export class Player implements Entity, PolygonalCollider {
+    set health(value: number) {
+        console.log(this._health, value);
+        this._health = value;
+        if (!this.isAlive()) {
+            let w: number;
+            if (this.team.id === 0)
+                w = 1;
+            else
+                w = 0;
+            this.onDeath(w.toString(), this.scene);
+        }
     }
 
-    calcCollider(): Polygon {
+    get health(): number {
+        return this._health;
+    }
+
+    get collider(): Polygon {
         return {
             verts: [
                 new Vector2D(this.pos.x-20, this.pos.y-20),
@@ -30,11 +28,32 @@ export class Player implements Entity {
                 new Vector2D(this.pos.x+20, this.pos.y-20),
             ],
             attackable: true,
-        }
+            isInside: false,
+        };
+    }
+
+    public pos: Vector2D;
+    public vel: Vector2D = Vector2D.zeros();
+    public acc: Vector2D = Vector2D.zeros();
+    private maxAcc: number = 0.1;
+    private maxVel: number = 1.0;
+    public radius: number = 20;
+    public mass: number = 50**3;
+    private keyBindings: ControllerMapping | undefined;
+    private _health: number = 1000;
+
+    constructor(
+        private team: Team,
+        private scene: Phaser.Scene,
+        private onDeath: (id: string, scene: Phaser.Scene) => void,
+    ) {
+        this.pos = team.playerCentroid;
+        this.keyBindings = team.controllerMapping;
+        this.team.players.push(this);
     }
 
     isAlive(): boolean {
-        return this.health > 0;
+        return this._health > 0;
     }
 
     getFiringPos(from: Vector2D): Vector2D {
@@ -51,6 +70,12 @@ export class Player implements Entity {
                 this.pos.y-20,
                 40, 40
             );
+            // graphics.fillStyle(0x0000ff, 1);
+            // for (const v of this.collider.verts) {
+            //     graphics.fillCircle(v.x, v.y, 2);
+            // }
+
+
         }
         else {
             console.log('Player has no scene graphics!')
@@ -85,7 +110,6 @@ export class Player implements Entity {
             this.vel.limit(this.maxVel);
         }
         this.pos.add(this.vel);
-        this.collider = this.calcCollider();
     }
 
 }

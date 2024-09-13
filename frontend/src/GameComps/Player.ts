@@ -1,9 +1,9 @@
 import {closestPointOnPolygon, ControllerMapping, Entity, Polygon, PolygonalCollider, Team, Vector2D} from "./Utility";
 import Phaser from "phaser";
+import {ParticleSystem} from "./ParticleSystem";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
-        console.log(this._health, value);
         this._health = value;
         if (!this.isAlive()) {
             let w: number;
@@ -41,15 +41,33 @@ export class Player implements Entity, PolygonalCollider {
     public mass: number = 50**3;
     private keyBindings: ControllerMapping | undefined;
     private _health: number = 1000;
+    private particleSystem: ParticleSystem | undefined;
 
     constructor(
-        private team: Team,
+        public team: Team,
         private scene: Phaser.Scene,
         private onDeath: (id: string, scene: Phaser.Scene) => void,
     ) {
         this.pos = team.playerCentroid;
         this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
+
+        this.keyBindings.buy.on('down', () => this.buyDrone())
+    }
+
+    setParticleSystem(particleSystem: ParticleSystem): void {
+        this.particleSystem = particleSystem;
+    }
+
+    buyDrone() {
+        console.log('buying drone');
+        if (this.particleSystem) {
+            for (const castle of this.team.castles) {
+                if (castle.nearbyPlayers.find(player => player === this)) {
+                    this.particleSystem.getNewParticle(this, castle);
+                }
+            }
+        }
     }
 
     isAlive(): boolean {
@@ -74,8 +92,6 @@ export class Player implements Entity, PolygonalCollider {
             // for (const v of this.collider.verts) {
             //     graphics.fillCircle(v.x, v.y, 2);
             // }
-
-
         }
         else {
             console.log('Player has no scene graphics!')

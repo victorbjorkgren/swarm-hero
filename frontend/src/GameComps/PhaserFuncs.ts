@@ -21,6 +21,7 @@ let gameOn = true;
 
 export const preload = function(this: Phaser.Scene) {
     this.load.image('castle', 'castle-sprite.png')
+    this.load.image('castle-highlight', 'castle-sprite-highlight.png')
 };
 
 export const create = function(this: Phaser.Scene) {
@@ -28,17 +29,24 @@ export const create = function(this: Phaser.Scene) {
     players = [];
     castles = [];
 
+    const castleTextures = {
+        normal: 'castle',
+        highlight: 'castle-highlight',
+    }
+
     const player1Keys = (this as any).input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.W,
         left: Phaser.Input.Keyboard.KeyCodes.A,
         down: Phaser.Input.Keyboard.KeyCodes.S,
-        right: Phaser.Input.Keyboard.KeyCodes.D
+        right: Phaser.Input.Keyboard.KeyCodes.D,
+        buy: Phaser.Input.Keyboard.KeyCodes.E,
     });
     const player2Keys = (this as any).input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.UP,
         left: Phaser.Input.Keyboard.KeyCodes.LEFT,
         down: Phaser.Input.Keyboard.KeyCodes.DOWN,
-        right: Phaser.Input.Keyboard.KeyCodes.RIGHT
+        right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+        buy: Phaser.Input.Keyboard.KeyCodes.PERIOD,
     });
 
     const boundPoly: Polygon = {
@@ -80,12 +88,15 @@ export const create = function(this: Phaser.Scene) {
 
     players.push(new Player(teams[0], this, onDeath));
     players.push(new Player(teams[1], this, onDeath));
-    castles.push(new Castle(teams[0], this, 'castle'));
-    castles.push(new Castle(teams[1], this, 'castle'))
+    castles.push(new Castle(teams[0], this, castleTextures));
+    castles.push(new Castle(teams[1], this, castleTextures))
     // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
     const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
 
     particleSystem = new ParticleSystem(10, teams, this, colliders);
+    for (const player of players) {
+        player.setParticleSystem(particleSystem);
+    }
 
 };
 

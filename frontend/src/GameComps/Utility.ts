@@ -159,9 +159,15 @@ export interface Team {
     castles: Castle[]
 }
 
+export interface TexturePack {
+    normal: string;
+    highlight: string;
+}
+
 export interface ControllerMapping {
     'up': Phaser.Input.Keyboard.Key;
     'down': Phaser.Input.Keyboard.Key;
     'left': Phaser.Input.Keyboard.Key;
     'right': Phaser.Input.Keyboard.Key;
+    'buy': Phaser.Input.Keyboard.Key;
 }

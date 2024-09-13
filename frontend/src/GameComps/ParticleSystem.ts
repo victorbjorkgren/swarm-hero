@@ -8,14 +8,16 @@ import {
     Vector2D
 } from "./Utility";
 import {Particle} from "./Particle";
+import {Player} from "./Player";
+import {Castle} from "./Castle";
 
 export class ParticleSystem {
     private particles: Particle[] = [];
     private teamParticles: Particle[][];
     private sqCohedeDist: number = 250 ** 2;
     private sqSeparateDistance: number = 75 ** 2;
-    private cohesionFactor: number = 1;
-    private separationFactor: number = 1;
+    private cohesionFactor: number = .1;
+    private separationFactor: number = 2;
     private alignFactor: number = 1;
 
     constructor(
@@ -73,7 +75,7 @@ export class ParticleSystem {
     }
 
     update(): void {
-        this.refillTeams();
+        // this.refillTeams();
         this.engageFights();
         this.fightFights();
         this.bringOutYourDead();
@@ -137,6 +139,16 @@ export class ParticleSystem {
         }
     }
 
+    getNewParticle(player: Player, castle: Castle): void {
+        this.createParticle(
+            new Vector2D(castle.pos.x, castle.pos.y),
+            10,
+            1,
+            player.team.id,
+            player.team.color
+        )
+    }
+
     sqFiringDistance(me: Particle, other: Entity): number {
         return Vector2D.sqDist(me.pos, other.getFiringPos(me.pos));
     }
@@ -145,8 +157,6 @@ export class ParticleSystem {
         if (!other.isAlive()) return;
         if (this.sqFiringDistance(me, other) > me.sqEngageRadius) return;
         me.engaging.push(other)
-        console.log(me, 'acquired', other);
-
     }
 
     engageFights(): void {

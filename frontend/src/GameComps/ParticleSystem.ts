@@ -212,34 +212,34 @@ export class ParticleSystem {
 
     updateBoid(): void {
         for (let i=0; i < this.particles.length; ++i) {
-            if (this.particles[i].isBoiding) {
-                const cohedePoint = Vector2D.zeros();
-                const sepPoint = Vector2D.zeros();
-                const alignV = Vector2D.zeros();
-                let nCoh = 0;
-                for (let j = 0; j < this.particles.length; j++) {
-                    if (this.particles[i] === this.particles[j]) continue;
-                    if (this.particles[j].isBoiding && (this.particles[i].teamID === this.particles[j].teamID)) {
-                        const sqDist = Vector2D.sqDist(this.particles[i].pos, this.particles[j].pos);
-                        // Cohede & Align
-                        if (sqDist < this.sqCohedeDist && sqDist > this.sqSeparateDistance) {
-                            cohedePoint.add(this.particles[j].pos);
-                            alignV.add(this.particles[j].vel);
-                            nCoh += 1
-                        }
-                        // Separate
-                        if (sqDist < this.sqSeparateDistance) {
-                            sepPoint.sub(this.particles[j].pos).add(this.particles[i].pos);
-                        }
+            const cohedePoint = Vector2D.zeros();
+            const sepPoint = Vector2D.zeros();
+            const alignV = Vector2D.zeros();
+            let nCoh = 0;
+            for (let j = 0; j < this.particles.length; j++) {
+                if (this.particles[i] === this.particles[j]) continue;
+                if (this.particles[i].teamID === this.particles[j].teamID) {
+                    const sqDist = Vector2D.sqDist(this.particles[i].pos, this.particles[j].pos);
+                    // Separate
+                    if (sqDist < this.sqSeparateDistance) {
+                        sepPoint.sub(this.particles[j].pos).add(this.particles[i].pos);
+                    }
+                    // Cohede & Align if boiding
+                    if (!this.particles[i].isBoiding) continue
+                    if (sqDist < this.sqCohedeDist && sqDist > this.sqSeparateDistance) {
+                        cohedePoint.add(this.particles[j].pos);
+                        alignV.add(this.particles[j].vel);
+                        nCoh += 1
                     }
                 }
-                if (nCoh > 0)
-                    cohedePoint.scale(1 / nCoh).sub(this.particles[i].pos).scale(this.cohesionFactor);
-                    alignV.scale(1 / nCoh).sub(this.particles[i].vel).scale(this.alignFactor);
-                sepPoint.scale(this.separationFactor);
-                const desiredV = Vector2D.add(cohedePoint, sepPoint);
-                this.particles[i].acc.add(Vector2D.subtract(desiredV, this.particles[i].vel));
             }
+            if (nCoh > 0)
+                cohedePoint.scale(1 / nCoh).sub(this.particles[i].pos).scale(this.cohesionFactor);
+                alignV.scale(1 / nCoh).sub(this.particles[i].vel).scale(this.alignFactor);
+            sepPoint.scale(this.separationFactor);
+            const desiredV = Vector2D.add(cohedePoint, sepPoint);
+            this.particles[i].acc.add(Vector2D.subtract(desiredV, this.particles[i].vel));
+
         }
     }
 

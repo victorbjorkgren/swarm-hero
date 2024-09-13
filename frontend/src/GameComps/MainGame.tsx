@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Phaser from 'phaser';
 import {preload, create, update, resumeGame} from "./PhaserFuncs";
-import styles from "comps.module.css";
+import styles from "./comps.module.css";
 
 declare global {
     namespace Phaser {

@@ -35,13 +35,13 @@ export class Particle implements Entity {
 
     calcDesiredPos() {
         if (this.engaging.length > 0) {
-            if (this.engaging[0].health <= this.health) {
+            // if (this.engaging[0].health <= this.health) {
                 // BRAVADO
-                this.desiredPos = this.engaging[0].pos
-            } else {
+            this.desiredPos = this.engaging[0].getFiringPos(this.pos);
+            // } else {
                 // FEAR
-                Vector2D.subtract(this.engaging[0].pos, this.pos).scale(-1);
-            }
+            //    this.desiredPos = Vector2D.subtract(this.engaging[0].pos, this.pos).scale(-1);
+            // }
         } else {
             if (this.leaderPosition) {
                 const leaderDelta = Vector2D.subtract(this.leaderPosition, this.pos);

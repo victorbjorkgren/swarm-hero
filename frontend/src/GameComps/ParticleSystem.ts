@@ -137,35 +137,41 @@ export class ParticleSystem {
         }
     }
 
+    sqFiringDistance(me: Particle, other: Entity): number {
+        return Vector2D.sqDist(me.pos, other.getFiringPos(me.pos));
+    }
+
     engageIfClose(me: Particle, other: Entity) {
-        if (Vector2D.sqDist(me.pos, other.getFiringPos(me.pos)) < me.sqEngageRadius) {
-            me.engaging.push(other)
-        }
+        if (!other.isAlive()) return;
+        if (this.sqFiringDistance(me, other) > me.sqEngageRadius) return;
+        me.engaging.push(other)
+        console.log(me, 'acquired', other);
+
     }
 
     engageFights(): void {
+        particleLoop:
         for (const me of this.particles) {
             me.engaging = me.engaging.filter(foe => foe && foe.isAlive());
-            me.engaging = me.engaging.filter(foe => Vector2D.sqDist(me.pos, foe.getFiringPos(me.pos)) < me.sqEngageRadius);
-            if (me.engaging.length >= me.maxTargets) return
+            me.engaging = me.engaging.filter(foe => this.sqFiringDistance(me, foe) < me.sqEngageRadius);
+            if (me.engaging.length >= me.maxTargets) continue;
             for (const team of this.teams) {
                 if (team.id === me.teamID) continue
-                team.players.forEach(player => {
+                for (const player of team.players) {
                     this.engageIfClose(me, player)
-                    if (me.engaging.length >= me.maxTargets) return
-                })
-                team.castles.forEach(castle => {
-                    this.engageIfClose(me, castle)
-                    if (me.engaging.length >= me.maxTargets) return
-                })
-            }
-
-            if (me.engaging.length >= me.maxTargets) return
-            for (const other of this.particles) {
-                if (me.teamID !== other.teamID) {
-                    this.engageIfClose(me, other);
-                    if (me.engaging.length >= me.maxTargets) return
+                    if (me.engaging.length >= me.maxTargets) continue particleLoop;
                 }
+                for (const castle of team.castles) {
+                    this.engageIfClose(me, castle)
+                    if (me.engaging.length >= me.maxTargets) continue particleLoop;
+                }
+            }
+            for (const other of this.particles) {
+                if (me.engaging.length >= me.maxTargets) continue particleLoop;
+                if (me === other) continue
+                if (me.teamID === other.teamID) continue
+                this.engageIfClose(me, other);
+
             }
         }
     }
@@ -268,7 +274,6 @@ export class ParticleSystem {
         p2.pos.x += correctionFactorX;
         p2.pos.y += correctionFactorY;
     }
-
 
     static handleBallPolygonCollision_(
         particle: Particle,

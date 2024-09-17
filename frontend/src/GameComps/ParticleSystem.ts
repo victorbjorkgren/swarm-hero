@@ -11,7 +11,6 @@ import {Entity, PolygonalCollider, Team} from "../types/types";
 
 export class ParticleSystem {
     private particles: Particle[] = [];
-    private teamParticles: Particle[][];
     private sqCohedeDist: number = 250 ** 2;
     private sqSeparateDistance: number = 75 ** 2;
     private cohesionFactor: number = .1;
@@ -23,9 +22,7 @@ export class ParticleSystem {
         private teams: Team[],
         private scene: Phaser.Scene,
         private polygonColliderEntities: PolygonalCollider[] = [])
-    {
-        this.teamParticles = Array.from({ length: this.teams.length }, () => []);
-    }
+    { }
 
     render() {
         const graphics = (this.scene as any).graphics;
@@ -65,11 +62,11 @@ export class ParticleSystem {
         }
     }
 
-    createParticle(origin: Vector2D, mass: number, maxVel: number, teamID: number, color: number): void {
+    createParticle(origin: Vector2D, mass: number, maxVel: number, teamID: number, color: number): Particle {
         const p = new Particle( origin , mass, teamID, maxVel, color);
         p.setLeaderPosition(this.teams[teamID].playerCentroid)
         this.particles.push(p);
-        this.teamParticles[p.teamID].push(p)
+        return p;
     }
 
     update(): void {
@@ -118,33 +115,16 @@ export class ParticleSystem {
 
     bringOutYourDead() {
         this.particles = this.particles.filter(particle => particle.isAlive());
-        for (let i=0; i < this.teamParticles.length; ++i) {
-            this.teamParticles[i] = this.teamParticles[i].filter(particle => particle.isAlive());
-        }
     }
 
-    refillTeams(){
-        for (let i=0; i < this.teamParticles.length; ++i) {
-            if (this.teamParticles[i].length < this.particleN) {
-                this.createParticle(
-                    randomUnitVector(35, 50).add(this.teams[i].playerCentroid),
-                    10,
-                    1,
-                    i,
-                    this.teams[i].color
-                )
-            }
-        }
-    }
-
-    getNewParticle(player: Player, castle: Castle): void {
-        this.createParticle(
+    getNewParticle(player: Player, castle: Castle): Particle {
+        return this.createParticle(
             new Vector2D(castle.pos.x, castle.pos.y),
             10,
             1,
             player.team.id,
             player.team.color
-        )
+        );
     }
 
     sqFiringDistance(me: Particle, other: Entity): number {

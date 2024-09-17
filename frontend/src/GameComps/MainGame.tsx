@@ -70,7 +70,20 @@ const MainGame: React.FC = () => {
         playersRef.current[playerID].buyDrone()
     }
 
-    // justify-center items-center
+    const handleGarrisonDrone = (playerID?: number): void => {
+        if (playerID === undefined) return
+        if (playersRef.current === null) return
+
+        playersRef.current[playerID].garrisonDrone()
+    }
+
+    const handleBringDrone = (playerID?: number): void => {
+        if (playerID === undefined) return
+        if (playersRef.current === null) return
+
+        playersRef.current[playerID].bringGarrisonDrone()
+    }
+
     return (
         <>
             <div className="relative w-full h-full overflow-visible" ref={gameContainerRef}>
@@ -80,8 +93,8 @@ const MainGame: React.FC = () => {
                                 key={player.team.id}
                                 anchorPoint={playerPopUpEvent.point}
                                 recruitFunc={() => handleRecruit(player.team.id)}
-                                garrisonFunc={() => {}}
-                                bringFunc={() => {}}
+                                garrisonFunc={() => handleGarrisonDrone(player.team.id)}
+                                bringFunc={() => handleBringDrone(player.team.id)}
                             />
                         )
                     ))}

@@ -1,6 +1,7 @@
 import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Entity, Team, TexturePack} from "../types/types";
+import {Particle} from "./Particle";
 
 export class Castle implements Entity {
     public pos: Vector2D;
@@ -12,6 +13,7 @@ export class Castle implements Entity {
     private isActive: boolean = false;
     private sqActivationDist: number = 70 ** 2;
     public nearbyPlayers: Player[] = [];
+    public garrison: Particle[] = []
 
     constructor(
         private team: Team,

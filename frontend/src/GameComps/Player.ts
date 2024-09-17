@@ -2,6 +2,8 @@ import {closestPointOnPolygon, Vector2D} from "./Utility";
 import Phaser from "phaser";
 import {ParticleSystem} from "./ParticleSystem";
 import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
+import {Particle} from "./Particle";
+import {Castle} from "./Castle";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
@@ -45,6 +47,7 @@ export class Player implements Entity, PolygonalCollider {
     private particleSystem: ParticleSystem | undefined;
     public myPopUpIsOpen: boolean = false;
     public popUpPoint: Vector2D = Vector2D.zeros();
+    private myDrones: Particle[] = [];
 
     constructor(
         public team: Team,
@@ -81,14 +84,39 @@ export class Player implements Entity, PolygonalCollider {
         this.particleSystem = particleSystem;
     }
 
-    buyDrone() {
-        if (this.particleSystem) {
-            for (const castle of this.team.castles) {
-                if (castle.nearbyPlayers.find(player => player === this)) {
-                    this.particleSystem.getNewParticle(this, castle);
-                }
-            }
+    findNearbyCastle(): Castle | undefined {
+        for (const castle of this.team.castles) {
+            if (castle.nearbyPlayers.find(player => player === this))
+                return castle;
         }
+        return undefined
+    }
+
+    buyDrone(): void {
+        if (!this.particleSystem) return
+        const castle = this.findNearbyCastle();
+        if (castle === undefined) return
+        this.myDrones.push(
+            this.particleSystem.getNewParticle(this, castle)
+        );
+    }
+
+    garrisonDrone(): void {
+        const castle = this.findNearbyCastle();
+        if (castle === undefined) return
+        const p = this.myDrones.pop()
+        if (p === undefined) return
+        p.setLeaderPosition(castle.pos);
+        castle.garrison.push(p);
+    }
+
+    bringGarrisonDrone(): void {
+        const castle = this.findNearbyCastle();
+        if (castle === undefined) return
+        const p = castle.garrison.pop()
+        if (p === undefined) return
+        p.setLeaderPosition(this.pos);
+        this.myDrones.push(p);
     }
 
     isAlive(): boolean {

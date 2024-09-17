@@ -1,4 +1,5 @@
-import {Entity, massToRadius, randomUnitVector, Vector2D} from "./Utility";
+import {massToRadius, randomUnitVector, Vector2D} from "./Utility";
+import {Entity} from "../types/types";
 
 export class Particle implements Entity {
     vel: Vector2D;

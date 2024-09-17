@@ -1,6 +1,7 @@
-import {closestPointOnPolygon, ControllerMapping, Entity, Polygon, PolygonalCollider, Team, Vector2D} from "./Utility";
+import {closestPointOnPolygon, Vector2D} from "./Utility";
 import Phaser from "phaser";
 import {ParticleSystem} from "./ParticleSystem";
+import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
@@ -42,6 +43,8 @@ export class Player implements Entity, PolygonalCollider {
     private keyBindings: ControllerMapping | undefined;
     private _health: number = 1000;
     private particleSystem: ParticleSystem | undefined;
+    public myPopUpIsOpen: boolean = false;
+    public popUpPoint: Vector2D = Vector2D.zeros();
 
     constructor(
         public team: Team,
@@ -52,7 +55,26 @@ export class Player implements Entity, PolygonalCollider {
         this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
 
-        this.keyBindings.buy.on('down', () => this.buyDrone())
+        this.keyBindings.buy.on('down', () => this.toggleCityPopup())
+    }
+
+    toggleCityPopup() {
+        if (!this.scene.setPlayerPopOpen) return;
+        if (this.myPopUpIsOpen) {
+            this.scene.setPlayerPopOpen(undefined);
+            this.myPopUpIsOpen = false;
+        } else {
+            for (const castle of this.team.castles) {
+                if (castle.nearbyPlayers.find(player => player === this)) {
+                    this.scene.setPlayerPopOpen(
+                        {
+                            playerID: this.team.id,
+                            point: castle.pos
+                        });
+                    this.myPopUpIsOpen = true;
+                }
+            }
+        }
     }
 
     setParticleSystem(particleSystem: ParticleSystem): void {
@@ -60,7 +82,6 @@ export class Player implements Entity, PolygonalCollider {
     }
 
     buyDrone() {
-        console.log('buying drone');
         if (this.particleSystem) {
             for (const castle of this.team.castles) {
                 if (castle.nearbyPlayers.find(player => player === this)) {

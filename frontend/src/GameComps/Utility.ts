@@ -1,6 +1,3 @@
-import {Player} from "./Player";
-import {Castle} from "./Castle";
-
 export class Vector2D {
     constructor(public x: number, public y: number) {
     }
@@ -71,12 +68,6 @@ export class Vector2D {
     }
 }
 
-export interface Polygon {
-    verts: Vector2D[];
-    attackable: boolean;
-    isInside: boolean;
-}
-
 export function randomUnitVector(rMin:number=0, rMax: number=1): Vector2D {
     const angle = Math.random() * 2 * Math.PI;
     const r = Math.random() * (rMax - rMin) + rMin;
@@ -134,40 +125,3 @@ export const massToRadius = (mass: number): number => {
     return mass ** (1 / 3);
 }
 
-export interface Entity {
-    pos: Vector2D;
-    vel: Vector2D;
-    radius: number;
-    mass: number;
-    health: number;
-    isAlive(): boolean;
-    getFiringPos(from: Vector2D): Vector2D;
-}
-
-export interface PolygonalCollider {
-    collider: Polygon;
-    vel: Vector2D;
-}
-
-export interface Team {
-    color: number,
-    id: number,
-    playerCentroid: Vector2D,
-    castleCentroid: Vector2D,
-    controllerMapping: ControllerMapping,
-    players: Player[],
-    castles: Castle[]
-}
-
-export interface TexturePack {
-    normal: string;
-    highlight: string;
-}
-
-export interface ControllerMapping {
-    'up': Phaser.Input.Keyboard.Key;
-    'down': Phaser.Input.Keyboard.Key;
-    'left': Phaser.Input.Keyboard.Key;
-    'right': Phaser.Input.Keyboard.Key;
-    'buy': Phaser.Input.Keyboard.Key;
-}

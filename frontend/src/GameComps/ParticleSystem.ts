@@ -1,15 +1,13 @@
 import {
     closestPointOnPolygon,
-    Entity,
     isInsidePolygon,
-    PolygonalCollider,
     randomUnitVector,
-    Team,
     Vector2D
 } from "./Utility";
 import {Particle} from "./Particle";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
+import {Entity, PolygonalCollider, Team} from "../types/types";
 
 export class ParticleSystem {
     private particles: Particle[] = [];

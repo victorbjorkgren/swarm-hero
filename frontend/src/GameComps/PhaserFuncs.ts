@@ -1,13 +1,13 @@
 import {ParticleSystem} from "./ParticleSystem";
-import {Vector2D, Polygon, Team, PolygonalCollider, Entity} from "./Utility";
+import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
+import {Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 
 let particleSystem: ParticleSystem;
-// let cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-let teams: Team[];
-let players: Player[] = [];
-let castles: Castle[] = []
+// let teams: Team[];
+// let players: Player[] = [];
+// let castles: Castle[] = []
 
 const endGame = () => {
     gameOn = false;
@@ -22,12 +22,15 @@ let gameOn = true;
 export const preload = function(this: Phaser.Scene) {
     this.load.image('castle', 'castle-sprite.png')
     this.load.image('castle-highlight', 'castle-sprite-highlight.png')
+    this.players = [];
+    this.teams = [];
+    this.castles = [];
 };
 
 export const create = function(this: Phaser.Scene) {
     (this as any).graphics = this.add.graphics();
-    players = [];
-    castles = [];
+    this.players = [];
+    this.castles = [];
 
     const castleTextures = {
         normal: 'castle',
@@ -60,7 +63,7 @@ export const create = function(this: Phaser.Scene) {
         isInside: true,
     }
 
-    teams = [
+    this.teams = [
         {
             id: 0,
             color: 0xff0000,
@@ -86,15 +89,15 @@ export const create = function(this: Phaser.Scene) {
         endGame();
     }
 
-    players.push(new Player(teams[0], this, onDeath));
-    players.push(new Player(teams[1], this, onDeath));
-    castles.push(new Castle(teams[0], this, castleTextures));
-    castles.push(new Castle(teams[1], this, castleTextures))
+    this.players.push(new Player(this.teams[0], this, onDeath));
+    this.players.push(new Player(this.teams[1], this, onDeath));
+    this.castles.push(new Castle(this.teams[0], this, castleTextures));
+    this.castles.push(new Castle(this.teams[1], this, castleTextures))
     // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
     const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
 
-    particleSystem = new ParticleSystem(10, teams, this, colliders);
-    for (const player of players) {
+    particleSystem = new ParticleSystem(10, this.teams, this, colliders);
+    for (const player of this.players) {
         player.setParticleSystem(particleSystem);
     }
 
@@ -106,23 +109,23 @@ export const update = function(this: Phaser.Scene) {
     // Access the graphics object stored on the scene
     const graphics = (this as any).graphics;
 
-    if (graphics) {
-        // Clear the previous drawings
-        graphics.clear();
+    if (!graphics) return
+    // Clear the previous drawings
+    graphics.clear();
 
-        graphics.fillStyle(0x000000, 1);
-        graphics.fillRect(0, 0, this.scale.width, this.scale.height);
-        teams.forEach(team => {
-            team.players.forEach(player => {
-                player.movement();
-                player.render();
-            });
-            team.castles.forEach(castle => {
-                castle.render();
-            })
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRect(0, 0, this.scale.width, this.scale.height);
+
+    this.teams.forEach(team => {
+        team.players.forEach(player => {
+            player.movement();
+            player.render();
         });
+        team.castles.forEach(castle => {
+            castle.render();
+        })
+    });
 
-        particleSystem.update();
-        particleSystem.render();
-    }
+    particleSystem.update();
+    particleSystem.render();
 };

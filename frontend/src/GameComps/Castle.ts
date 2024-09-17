@@ -1,5 +1,6 @@
-import {Entity, Team, TexturePack, Vector2D} from "./Utility";
+import {Vector2D} from "./Utility";
 import {Player} from "./Player";
+import {Entity, Team, TexturePack} from "../types/types";
 
 export class Castle implements Entity {
     public pos: Vector2D;

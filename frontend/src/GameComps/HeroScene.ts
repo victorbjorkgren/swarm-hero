@@ -12,28 +12,29 @@ export interface ReactVars {
     playersRef: React.MutableRefObject<Player[]>;
 }
 
-export class HeroScene extends Phaser.Scene {
+export default class HeroScene extends Phaser.Scene {
     players: Player[] = [];
     teams: Team[] = [];
     castles: Castle[] = [];
     graphics:  Phaser.GameObjects.Graphics | undefined
     particleSystem: ParticleSystem | undefined = undefined;
     gameOn: boolean = true;
-    setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>> | undefined = undefined;
-    winner: string | undefined
-    setWinner: React.Dispatch<React.SetStateAction<string | undefined>> | undefined = undefined;
+    static setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>> | undefined = undefined;
+    static winner: string | undefined
+    static setWinner: React.Dispatch<React.SetStateAction<string | undefined>> | undefined = undefined;
+    static playersRef: React.MutableRefObject<Player[]>;
     startTime: number | undefined
 
     constructor() {
         super({ key: 'HeroScene' });
     }
 
-    registerReactVars(vars: ReactVars) {
-        this.setPlayerPopOpen = vars.setPlayerPopOpen;
-        this.setWinner = vars.setWinner;
-        this.winner = vars.winner;
-        vars.playersRef.current = this.players;
-    }
+    // registerReactVars(vars: ReactVars) {
+    //     this.setPlayerPopOpen = vars.setPlayerPopOpen;
+    //      this.setWinner = vars.setWinner;
+    //     this.winner = vars.winner;
+    //     vars.playersRef.current = this.players;
+    // }
 
     endGame() {
         this.gameOn = false;
@@ -44,8 +45,8 @@ export class HeroScene extends Phaser.Scene {
     }
 
     onDeath(id: string) {
-        if (this.setWinner === undefined) return
-        this.setWinner(id);
+        if (HeroScene.setWinner === undefined) return
+        HeroScene.setWinner(id);
         this.endGame();
     }
 
@@ -116,6 +117,7 @@ export class HeroScene extends Phaser.Scene {
 
         this.players.push(new Player(this.teams[0], this));
         this.players.push(new Player(this.teams[1], this));
+        HeroScene.playersRef.current = this.players;
         this.castles.push(new Castle(this.teams[0], this, castleTextures));
         this.castles.push(new Castle(this.teams[1], this, castleTextures))
         // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];

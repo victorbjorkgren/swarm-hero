@@ -3,7 +3,7 @@ import {ParticleSystem} from "./ParticleSystem";
 import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
-import {HeroScene} from "./HeroScene";
+import HeroScene from "./HeroScene";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
@@ -60,14 +60,14 @@ export class Player implements Entity, PolygonalCollider {
     }
 
     toggleCityPopup() {
-        if (!this.scene.setPlayerPopOpen) return;
+        if (!HeroScene.setPlayerPopOpen) return;
         if (this.myPopUpIsOpen) {
-            this.scene.setPlayerPopOpen(undefined);
+            HeroScene.setPlayerPopOpen(undefined);
             this.myPopUpIsOpen = false;
         } else {
             for (const castle of this.team.castles) {
                 if (castle.nearbyPlayers.find(player => player === this)) {
-                    this.scene.setPlayerPopOpen(
+                    HeroScene.setPlayerPopOpen(
                         {
                             playerID: this.team.id,
                             point: castle.pos

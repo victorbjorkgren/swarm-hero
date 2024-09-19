@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Phaser from 'phaser';
-import {HeroScene} from "./HeroScene";
+import HeroScene from "./HeroScene";
 import {CityPopup} from "../UI-Comps/CityPopup";
 import {Player} from "./Player";
 import {popUpEvent} from "../types/types";
@@ -15,6 +15,11 @@ const MainGame: React.FC = () => {
     const [playerPopUpEvent, setPlayerPopUpEvent] = useState<popUpEvent | undefined>(undefined);
     const [winner, setWinner] = useState<string | undefined>(undefined);
 
+    HeroScene.setWinner = setWinner;
+    HeroScene.winner = winner;
+    HeroScene.setPlayerPopOpen = setPlayerPopUpEvent;
+    HeroScene.playersRef = playersRef;
+
 
     useEffect(() => {
         const config: Phaser.Types.Core.GameConfig = {
@@ -26,29 +31,23 @@ const MainGame: React.FC = () => {
         };
 
         gameRef.current = new Phaser.Game(config);
-        gameRef.current.scene.start('HeroScene');
+        // gameRef.current.scene.add('HeroScene', HeroScene, true);
+        console.log(gameRef.current.scene.scenes);
 
-        sceneRef.current = gameRef.current.scene.getScene('HeroScene') as HeroScene;;
-        sceneRef.current?.registerReactVars({
-            setWinner: setWinner,
-            winner: winner,
-            setPlayerPopOpen: setPlayerPopUpEvent,
-            playersRef: playersRef,
-        });
+        sceneRef.current = gameRef.current.scene.getScene('HeroScene') as HeroScene;
+
 
         return () => {
             gameRef.current?.destroy(true);
         };
-    });
+    }, []);
 
-    useEffect(() => {
-        sceneRef.current?.registerReactVars({
-            setWinner: setWinner,
-            winner: winner,
-            setPlayerPopOpen: setPlayerPopUpEvent,
-            playersRef: playersRef,
-        });
-    }, [setWinner, winner, setPlayerPopUpEvent, playersRef]);
+    // useEffect(() => {
+    //     HeroScene.setWinner = setWinner;
+    //     HeroScene.winner = winner;
+    //     HeroScene.setPlayerPopOpen = setPlayerPopUpEvent;
+    //     HeroScene.playersRef = playersRef;
+    // }, [setWinner, winner, setPlayerPopUpEvent, playersRef]);
 
     const handleRematch = () => {
         if (gameRef.current && sceneRef.current) {

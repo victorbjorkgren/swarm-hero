@@ -7,7 +7,7 @@ import {Particle} from "./Particle";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {Entity, PolygonalCollider, Team} from "../types/types";
-import {HeroScene} from "./HeroScene";
+import HeroScene from "./HeroScene";
 
 export class ParticleSystem {
     private particles: Particle[] = [];

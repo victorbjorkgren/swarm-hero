@@ -2,6 +2,7 @@ import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Entity, Team, TexturePack} from "../types/types";
 import {Particle} from "./Particle";
+import {HeroScene} from "./HeroScene";
 
 export class Castle implements Entity {
     public pos: Vector2D;
@@ -17,7 +18,7 @@ export class Castle implements Entity {
 
     constructor(
         private team: Team,
-        private scene: Phaser.Scene,
+        private scene: HeroScene,
         private texture: TexturePack
     ) {
         this.pos = team.castleCentroid;

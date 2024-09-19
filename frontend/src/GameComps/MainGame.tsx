@@ -1,32 +1,20 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Phaser from 'phaser';
-import {preload, create, update, resumeGame} from "./PhaserFuncs";
+import {HeroScene} from "./HeroScene";
 import {CityPopup} from "../UI-Comps/CityPopup";
 import {Player} from "./Player";
-import {popUpEvent, Team} from "../types/types";
-import {Castle} from "./Castle";
-import {ParticleSystem} from "./ParticleSystem";
+import {popUpEvent} from "../types/types";
 
-declare global {
-    namespace Phaser {
-        interface Scene {
-            winner?: string | undefined;
-            setWinner?: React.Dispatch<React.SetStateAction<string | undefined>>;
-            players?: Player[];
-            teams: Team[];
-            castles?: Castle[];
-            particleSystem?: ParticleSystem;
-            setPlayerPopOpen?: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
-        }
-    }
-}
 
 const MainGame: React.FC = () => {
     const gameContainerRef = useRef(null);
     const gameRef = useRef<Phaser.Game | null>(null);
-    const playersRef = useRef<Player[] | null>(null);
+    const playersRef = useRef<Player[]>([]);
+    const sceneRef = useRef<HeroScene | null>(null);
+
     const [playerPopUpEvent, setPlayerPopUpEvent] = useState<popUpEvent | undefined>(undefined);
     const [winner, setWinner] = useState<string | undefined>(undefined);
+
 
     useEffect(() => {
         const config: Phaser.Types.Core.GameConfig = {
@@ -34,32 +22,39 @@ const MainGame: React.FC = () => {
             width: '100%',
             height: '100%',
             parent: gameContainerRef.current,
-            scene: {
-                preload: preload,
-                create: function () {
-                    create.call(this);
-                    // Register React-Phaser connection vars
-                    this.setWinner = setWinner;
-                    this.winner = winner;
-                    this.setPlayerPopOpen = setPlayerPopUpEvent;
-                    playersRef.current = this.players || [];
-                },
-                update: update,
-            }
+            scene: HeroScene,
         };
 
         gameRef.current = new Phaser.Game(config);
+        gameRef.current.scene.start('HeroScene');
+
+        sceneRef.current = gameRef.current.scene.getScene('HeroScene') as HeroScene;;
+        sceneRef.current?.registerReactVars({
+            setWinner: setWinner,
+            winner: winner,
+            setPlayerPopOpen: setPlayerPopUpEvent,
+            playersRef: playersRef,
+        });
 
         return () => {
             gameRef.current?.destroy(true);
         };
-    }, []);
+    });
+
+    useEffect(() => {
+        sceneRef.current?.registerReactVars({
+            setWinner: setWinner,
+            winner: winner,
+            setPlayerPopOpen: setPlayerPopUpEvent,
+            playersRef: playersRef,
+        });
+    }, [setWinner, winner, setPlayerPopUpEvent, playersRef]);
 
     const handleRematch = () => {
-        if (gameRef.current) {
+        if (gameRef.current && sceneRef.current) {
             gameRef.current.scene.scenes[0].scene.restart();
             setWinner(undefined); // Reset the winner state
-            resumeGame();
+            sceneRef.current.resumeGame();
         }
     };
 
@@ -87,7 +82,7 @@ const MainGame: React.FC = () => {
     return (
         <>
             <div className="relative w-full h-full overflow-visible" ref={gameContainerRef}>
-                    {playersRef.current && playersRef.current.map(player => (
+                    {playersRef.current.map(player => (
                         playerPopUpEvent !== undefined && playerPopUpEvent.playerID === player.team.id && (
                             <CityPopup
                                 key={player.team.id}

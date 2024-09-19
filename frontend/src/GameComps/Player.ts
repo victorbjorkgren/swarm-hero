@@ -1,9 +1,9 @@
 import {closestPointOnPolygon, Vector2D} from "./Utility";
-import Phaser from "phaser";
 import {ParticleSystem} from "./ParticleSystem";
 import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
+import {HeroScene} from "./HeroScene";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
@@ -14,7 +14,7 @@ export class Player implements Entity, PolygonalCollider {
                 w = 1;
             else
                 w = 0;
-            this.onDeath(w.toString(), this.scene);
+            this.scene.onDeath(w.toString());
         }
     }
 
@@ -42,17 +42,15 @@ export class Player implements Entity, PolygonalCollider {
     private maxVel: number = 1.0;
     public radius: number = 20;
     public mass: number = 50**3;
-    private keyBindings: ControllerMapping | undefined;
+    private readonly keyBindings: ControllerMapping | undefined;
     private _health: number = 1000;
     private particleSystem: ParticleSystem | undefined;
     public myPopUpIsOpen: boolean = false;
-    public popUpPoint: Vector2D = Vector2D.zeros();
     private myDrones: Particle[] = [];
 
     constructor(
         public team: Team,
-        private scene: Phaser.Scene,
-        private onDeath: (id: string, scene: Phaser.Scene) => void,
+        private scene: HeroScene,
     ) {
         this.pos = team.playerCentroid;
         this.keyBindings = team.controllerMapping;

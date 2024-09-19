@@ -1,13 +1,13 @@
 import {
     closestPointOnPolygon,
     isInsidePolygon,
-    randomUnitVector,
     Vector2D
 } from "./Utility";
 import {Particle} from "./Particle";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {Entity, PolygonalCollider, Team} from "../types/types";
+import {HeroScene} from "./HeroScene";
 
 export class ParticleSystem {
     private particles: Particle[] = [];
@@ -20,7 +20,7 @@ export class ParticleSystem {
     constructor(
         private particleN: number,
         private teams: Team[],
-        private scene: Phaser.Scene,
+        private scene: HeroScene,
         private polygonColliderEntities: PolygonalCollider[] = [])
     { }
 

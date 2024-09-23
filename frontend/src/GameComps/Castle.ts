@@ -2,27 +2,32 @@ import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Entity, Team, TexturePack} from "../types/types";
 import {Particle} from "./Particle";
-import HeroScene from "./HeroScene";
+import HeroGameLoop from "./HeroGameLoop";
+import {Application, Sprite} from "pixi.js";
 
 export class Castle implements Entity {
     public pos: Vector2D;
-    health: number = 10;
-    mass: number = 100000;
-    radius: number = 20;
-    vel: Vector2D = Vector2D.zeros();
-    private castleSprite: Phaser.GameObjects.Image | null = null;
+    public health: number = 10;
+    public mass: number = 100000;
+    public radius: number = 20;
+    public vel: Vector2D = Vector2D.zeros();
+    public givesIncome: number = 1000;
+    private castleSprite: Sprite | null = null;
     private isActive: boolean = false;
     private sqActivationDist: number = 70 ** 2;
     public nearbyPlayers: Player[] = [];
-    public garrison: Particle[] = []
+    public garrison: Particle[] = [];
+    private pixiRef: Application;
+    private texture: TexturePack
 
     constructor(
         private team: Team,
-        private scene: HeroScene,
-        private texture: TexturePack
+        private gameScene: HeroGameLoop,
     ) {
         this.pos = team.castleCentroid;
         this.team.castles.push(this);
+        this.pixiRef = gameScene.pixiRef;
+        this.texture = gameScene.castleTexturePack!;
     }
 
     getFiringPos(from: Vector2D): Vector2D {
@@ -43,22 +48,28 @@ export class Castle implements Entity {
         return this.nearbyPlayers.length > 0;
     }
 
-    render(): void {
+    renderSelf(): void {
         if (this.isAlive()) {
             if (!this.castleSprite) {
-                this.castleSprite = this.scene.add.image(this.pos.x, this.pos.y, this.texture.normal);
+                this.castleSprite = new Sprite(this.texture.normal);
                 this.castleSprite.scale = .1;
             }
-            this.castleSprite.setPosition(this.pos.x, this.pos.y);  // Update the position if necessary
+            this.castleSprite.x = this.pos.x;
+            this.castleSprite.y = this.pos.y;
+            this.pixiRef.stage.addChild(this.castleSprite);
             if (this.checkPlayers()) {
-                this.castleSprite.setTexture(this.texture.highlight);
+                this.castleSprite.texture = this.texture.highlight;
             } else {
-                this.castleSprite.setTexture(this.texture.normal);
+                this.castleSprite.texture = this.texture.normal;
             }
         } else if (this.castleSprite) {
             this.castleSprite.destroy();
             this.castleSprite = null;
         }
+    }
+
+    renderAttack() {
+
     }
 
 }

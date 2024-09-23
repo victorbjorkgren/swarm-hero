@@ -1,7 +1,20 @@
 import {massToRadius, randomUnitVector, Vector2D} from "./Utility";
 import {Entity} from "../types/types";
+import {Graphics} from "pixi.js";
+import HeroGameLoop from "./HeroGameLoop";
 
 export class Particle implements Entity {
+    get health(): number {
+        return this._health;
+    }
+
+    set health(value: number) {
+        this._health = value;
+        if (this._health < 0) {
+            this.onDeath();
+        }
+    }
+
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
     leaderPosition: Vector2D | undefined;
@@ -17,17 +30,60 @@ export class Particle implements Entity {
     desiredSpeed: number = .75;
     desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
     maxAcc: number = .05;
-    health: number = 100;
+    private _health: number = 100;
+    givesIncome: number = 0;
+    particleSprite: Graphics | null = null;
+    attackSprite: Graphics | null = null;
+
+    static price: number = 100;
 
     constructor(
         public pos: Vector2D,
         public mass: number,
         public teamID: number,
         public maxVel: number = 1,
-        public color: number
+        public color: number,
+        private scene: HeroGameLoop
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
+    }
+
+    renderSelf() {
+        if (this.particleSprite === null) {
+            this.particleSprite = new Graphics()
+                .circle(0, 0, this.radius)
+                .fill({color: this.color, alpha: 1});
+            this.scene.pixiRef.stage.addChild(this.particleSprite);
+        }
+        this.particleSprite.x = this.pos.x;
+        this.particleSprite.y = this.pos.y;
+    }
+
+    renderAttack() {
+        if (this.attackSprite === null) {
+            this.attackSprite = new Graphics();
+            this.scene.pixiRef.stage.addChild(this.attackSprite);
+        }
+        this.attackSprite.clear();
+        for (const foePack of this.firingLaserAt) {
+            if (foePack.target.isAlive()) {
+                this.attackSprite
+                    .moveTo(this.pos.x, this.pos.y)
+                    .lineTo(foePack.firingPos.x, foePack.firingPos.y)
+                    .stroke({
+                        color: 0xFFFFFF,
+                        alpha: foePack.intensity,
+                        width: 1});
+            }
+        }
+    }
+
+    onDeath() {
+        this.particleSprite?.destroy();
+        this.attackSprite?.destroy();
+        this.particleSprite = null;
+        this.attackSprite = null;
     }
 
     setLeaderPosition(position: Vector2D) {
@@ -88,7 +144,7 @@ export class Particle implements Entity {
     }
 
     isAlive(): boolean {
-        return this.health > 0;
+        return this._health > 0;
     }
 }
 

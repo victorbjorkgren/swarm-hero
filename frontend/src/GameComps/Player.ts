@@ -3,7 +3,9 @@ import {ParticleSystem} from "./ParticleSystem";
 import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
-import HeroScene from "./HeroScene";
+import HeroGameLoop from "./HeroGameLoop";
+import {Keyboard} from "./Keyboard";
+import { Graphics } from "pixi.js";
 
 export class Player implements Entity, PolygonalCollider {
     set health(value: number) {
@@ -25,10 +27,10 @@ export class Player implements Entity, PolygonalCollider {
     get collider(): Polygon {
         return {
             verts: [
-                new Vector2D(this.pos.x-20, this.pos.y-20),
-                new Vector2D(this.pos.x-20, this.pos.y+20),
-                new Vector2D(this.pos.x+20, this.pos.y+20),
-                new Vector2D(this.pos.x+20, this.pos.y-20),
+                new Vector2D(this.pos.x, this.pos.y),
+                new Vector2D(this.pos.x, this.pos.y+40),
+                new Vector2D(this.pos.x+40, this.pos.y+40),
+                new Vector2D(this.pos.x+40, this.pos.y),
             ],
             attackable: true,
             isInside: false,
@@ -38,36 +40,62 @@ export class Player implements Entity, PolygonalCollider {
     public pos: Vector2D;
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
-    private maxAcc: number = 0.1;
-    private maxVel: number = 1.0;
     public radius: number = 20;
     public mass: number = 50**3;
-    private readonly keyBindings: ControllerMapping | undefined;
+    public myPopUpIsOpen: boolean = false;
+    public gold: number = 0;
+    public givesIncome: number = 0;
+
+    private playerSprite: Graphics | null = null;
+
+    private maxAcc: number = 0.1;
+    private maxVel: number = 1.0;
     private _health: number = 1000;
     private particleSystem: ParticleSystem | undefined;
-    public myPopUpIsOpen: boolean = false;
     private myDrones: Particle[] = [];
+    private myCastles: Castle[] = [];
+
+    private readonly keyBindings: ControllerMapping;
 
     constructor(
         public team: Team,
-        private scene: HeroScene,
+        private scene: HeroGameLoop,
     ) {
         this.pos = team.playerCentroid;
         this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
 
-        this.keyBindings.buy.on('down', () => this.toggleCityPopup())
+        Keyboard.onPushSubscribe(
+            this.keyBindings.buy,
+            () => this.toggleCityPopup()
+        );
+    }
+
+    gainCastleControl(castle: Castle) {
+        this.myCastles.push(castle);
+    }
+
+    newDay() {
+        this.gold += this.givesIncome;
+        this.myCastles.forEach(castle => {
+            this.gold += castle.givesIncome;
+        })
+        this.myDrones.forEach(drone => {
+            this.gold += drone.givesIncome;
+        })
     }
 
     toggleCityPopup() {
-        if (!HeroScene.setPlayerPopOpen) return;
+        if (!this.scene.setPlayerPopOpen) return;
         if (this.myPopUpIsOpen) {
-            HeroScene.setPlayerPopOpen(undefined);
+            console.log('Closing');
+            this.scene.setPlayerPopOpen(undefined);
             this.myPopUpIsOpen = false;
         } else {
+            console.log('Opening');
             for (const castle of this.team.castles) {
                 if (castle.nearbyPlayers.find(player => player === this)) {
-                    HeroScene.setPlayerPopOpen(
+                    this.scene.setPlayerPopOpen(
                         {
                             playerID: this.team.id,
                             point: castle.pos
@@ -90,31 +118,39 @@ export class Player implements Entity, PolygonalCollider {
         return undefined
     }
 
-    buyDrone(): void {
-        if (!this.particleSystem) return
+    buyDrone(): boolean {
+        if (!this.particleSystem) return false;
         const castle = this.findNearbyCastle();
-        if (castle === undefined) return
-        this.myDrones.push(
-            this.particleSystem.getNewParticle(this, castle)
-        );
+        if (castle === undefined) return false;
+        if (this.gold >= Particle.price) {
+            console.log('Boom!')
+            this.gold -= Particle.price;
+            this.myDrones.push(
+                this.particleSystem.getNewParticle(this, castle)
+            );
+            return true;
+        }
+        return false;
     }
 
-    garrisonDrone(): void {
+    garrisonDrone(): boolean {
         const castle = this.findNearbyCastle();
-        if (castle === undefined) return
+        if (castle === undefined) return false;
         const p = this.myDrones.pop()
-        if (p === undefined) return
+        if (p === undefined) return false;
         p.setLeaderPosition(castle.pos);
         castle.garrison.push(p);
+        return true;
     }
 
-    bringGarrisonDrone(): void {
+    bringGarrisonDrone(): boolean {
         const castle = this.findNearbyCastle();
-        if (castle === undefined) return
+        if (castle === undefined) return false;
         const p = castle.garrison.pop()
-        if (p === undefined) return
+        if (p === undefined) return false;
         p.setLeaderPosition(this.pos);
         this.myDrones.push(p);
+        return true;
     }
 
     isAlive(): boolean {
@@ -125,52 +161,51 @@ export class Player implements Entity, PolygonalCollider {
         return closestPointOnPolygon(this.collider.verts, from);
     }
 
-    render() {
-        const graphics = (this.scene as any).graphics;
+    renderSelf() {
+        if (this.playerSprite === null) {
+            this.playerSprite = new Graphics()
+                .rect(0, 0, 40, 40)
+                .fill({color: this.team.color, alpha: 1});
+            this.scene.pixiRef.stage.addChild(this.playerSprite);
+        }
 
-        if (graphics) {
-            graphics.fillStyle(this.team.color, 1);
-            graphics.fillRect(
-                this.pos.x-20,
-                this.pos.y-20,
-                40, 40
-            );
-            // graphics.fillStyle(0x0000ff, 1);
-            // for (const v of this.collider.verts) {
-            //     graphics.fillCircle(v.x, v.y, 2);
-            // }
-        }
-        else {
-            console.log('Player has no scene graphics!')
-        }
+        this.playerSprite.x = this.pos.x;
+        this.playerSprite.y = this.pos.y;
+    }
+
+    renderAttack(): void {
+
     }
 
     movement() {
         if (!this.keyBindings) return;
-        let controlling = false;
+
         this.acc = Vector2D.zeros();
-        if (this.keyBindings.left.isDown) {
+        let controlling = false;
+
+        if (Keyboard.state.get(this.keyBindings.left)) {
             this.acc.x -= this.maxAcc;
             controlling = true;
         }
-        if (this.keyBindings.right.isDown) {
+        if (Keyboard.state.get(this.keyBindings.right)) {
             this.acc.x += this.maxAcc;
             controlling = true;
         }
-        if (this.keyBindings.up.isDown) {
+        if (Keyboard.state.get(this.keyBindings.up)) {
             this.acc.y -= this.maxAcc;
             controlling = true;
         }
-        if (this.keyBindings.down.isDown) {
+        if (Keyboard.state.get(this.keyBindings.down)) {
             this.acc.y += this.maxAcc;
             controlling = true;
         }
-        if (!controlling) {
-            this.vel.scale(.9);
-        } else {
+
+        if (controlling) {
             this.acc.limit(this.maxAcc);
             this.vel.add(this.acc);
             this.vel.limit(this.maxVel);
+        } else {
+            this.vel.scale(.9);
         }
         this.pos.add(this.vel);
     }

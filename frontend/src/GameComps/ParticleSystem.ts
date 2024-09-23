@@ -7,7 +7,8 @@ import {Particle} from "./Particle";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {Entity, PolygonalCollider, Team} from "../types/types";
-import HeroScene from "./HeroScene";
+import HeroGameLoop from "./HeroGameLoop";
+import {Graphics} from "pixi.js";
 
 export class ParticleSystem {
     private particles: Particle[] = [];
@@ -20,50 +21,19 @@ export class ParticleSystem {
     constructor(
         private particleN: number,
         private teams: Team[],
-        private scene: HeroScene,
+        private scene: HeroGameLoop,
         private polygonColliderEntities: PolygonalCollider[] = [])
     { }
 
     render() {
-        const graphics = (this.scene as any).graphics;
-
-        if (graphics) {
-            // graphics.fillStyle(0x00ff00, 1);
-            // for (const team of this.teams) {
-            //     for (const player of team.players) {
-            //         for (const v of player.collider.verts) {
-            //             graphics.fillCircle(v.x, v.y, 2);
-            //         }
-            //     }
-            // }
-
-            for (const particle of this.particles) {
-                graphics.fillStyle(particle.color, 1);
-                graphics.fillCircle(
-                    particle.pos.x,
-                    particle.pos.y,
-                    particle.radius
-                );
-                for (const foePack of particle.firingLaserAt) {
-                    if (foePack.target.isAlive()) {
-                        graphics.lineStyle(1, 0xffffff, foePack.intensity);
-
-                        // Draw the line (startX, startY, endX, endY)
-                        graphics.beginPath();
-                        graphics.moveTo(particle.pos.x, particle.pos.y); // Starting point of the line
-                        graphics.lineTo(foePack.firingPos.x, foePack.firingPos.y); // Ending point of the line
-                        graphics.strokePath(); // Apply the stroke to draw the line
-                    }
-                }
-            }
-        }
-        else {
-            console.log('Particle system as no scene!')
-        }
+        this.particles.forEach((particle: Particle) => {
+            particle.renderSelf();
+            particle.renderAttack();
+        });
     }
 
     createParticle(origin: Vector2D, mass: number, maxVel: number, teamID: number, color: number): Particle {
-        const p = new Particle( origin , mass, teamID, maxVel, color);
+        const p = new Particle( origin , mass, teamID, maxVel, color, this.scene);
         p.setLeaderPosition(this.teams[teamID].playerCentroid)
         this.particles.push(p);
         return p;

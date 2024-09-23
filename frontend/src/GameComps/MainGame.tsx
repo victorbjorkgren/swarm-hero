@@ -1,97 +1,143 @@
 import React, {useEffect, useRef, useState} from 'react';
-import Phaser from 'phaser';
-import HeroScene from "./HeroScene";
+import HeroGameLoop from "./HeroGameLoop";
 import {CityPopup} from "../UI-Comps/CityPopup";
 import {Player} from "./Player";
 import {popUpEvent} from "../types/types";
+import {Application, Assets, Sprite} from "pixi.js";
+import {Keyboard} from "./Keyboard";
 
 
 const MainGame: React.FC = () => {
-    const gameContainerRef = useRef(null);
-    const gameRef = useRef<Phaser.Game | null>(null);
+    const gameContainerRef = useRef<HTMLDivElement | null>(null);
     const playersRef = useRef<Player[]>([]);
-    const sceneRef = useRef<HeroScene | null>(null);
+    const gameSceneRef = useRef<HeroGameLoop | null>(null);
+    const pixiRef = useRef<Application | null>(null);
 
+    const [gameContainerStyle, setGameContainerStyle] = useState<React.CSSProperties>({});
     const [playerPopUpEvent, setPlayerPopUpEvent] = useState<popUpEvent | undefined>(undefined);
     const [winner, setWinner] = useState<string | undefined>(undefined);
+    const [dayTime, setDayTime] = useState<number>(0);
 
-    HeroScene.setWinner = setWinner;
-    HeroScene.winner = winner;
-    HeroScene.setPlayerPopOpen = setPlayerPopUpEvent;
-    HeroScene.playersRef = playersRef;
+    const resizeApp = () => {
+        const ASPECT_RATIO = 16 / 9;
 
+        if (gameContainerRef.current === null) return
+        if (pixiRef.current === null) return
+        const containerWidth = gameContainerRef.current.clientWidth;
+        const containerHeight = gameContainerRef.current.clientHeight;
+
+        // Calculate the aspect ratio of the container
+        const containerAspectRatio = containerWidth / containerHeight;
+
+        let newWidth, newHeight;
+
+        if (containerAspectRatio > ASPECT_RATIO) {
+            newHeight = containerHeight;
+            newWidth = newHeight * ASPECT_RATIO;
+        } else {
+            newWidth = containerWidth;
+            newHeight = newWidth / ASPECT_RATIO;
+        }
+
+        setGameContainerStyle({
+            width: `${newWidth}px`,
+            height: `${newHeight}px`,
+        })
+
+    }
+
+    window.addEventListener('resize', resizeApp);
+
+    const initGame = async () => {
+        Keyboard.initialize();
+
+        pixiRef.current = new Application();
+        await pixiRef.current.init({
+            background: '#333333',
+            resizeTo: gameContainerRef.current!
+        });
+
+        if (gameContainerRef.current) {
+            gameContainerRef.current.appendChild(pixiRef.current.canvas);
+        }
+
+        resizeApp();
+
+        gameSceneRef.current = new HeroGameLoop(
+            pixiRef.current,
+            setWinner,
+            winner,
+            setPlayerPopUpEvent,
+            playersRef,
+            setDayTime
+        );
+
+        gameSceneRef.current.start();
+    };
 
     useEffect(() => {
-        const config: Phaser.Types.Core.GameConfig = {
-            type: Phaser.AUTO,
-            width: '100%',
-            height: '100%',
-            parent: gameContainerRef.current,
-            scene: HeroScene,
-        };
-
-        gameRef.current = new Phaser.Game(config);
-        // gameRef.current.scene.add('HeroScene', HeroScene, true);
-        console.log(gameRef.current.scene.scenes);
-
-        sceneRef.current = gameRef.current.scene.getScene('HeroScene') as HeroScene;
-
+        initGame();
 
         return () => {
-            gameRef.current?.destroy(true);
+            if (gameContainerRef.current) {
+                gameContainerRef.current.innerHTML = '';
+            }
         };
     }, []);
 
-    // useEffect(() => {
-    //     HeroScene.setWinner = setWinner;
-    //     HeroScene.winner = winner;
-    //     HeroScene.setPlayerPopOpen = setPlayerPopUpEvent;
-    //     HeroScene.playersRef = playersRef;
-    // }, [setWinner, winner, setPlayerPopUpEvent, playersRef]);
-
     const handleRematch = () => {
-        if (gameRef.current && sceneRef.current) {
-            gameRef.current.scene.scenes[0].scene.restart();
+        if (gameSceneRef.current) {
             setWinner(undefined); // Reset the winner state
-            sceneRef.current.resumeGame();
+            gameSceneRef.current.start();
         }
     };
 
-    const handleRecruit = (playerID?: number): void => {
-        if (playerID === undefined) return
-        if (playersRef.current === null) return
+    const handleRecruit = (playerID?: number): boolean => {
+        if (playerID === undefined) return false
+        if (playersRef.current === null) return false
 
-        playersRef.current[playerID].buyDrone()
+        const success = playersRef.current[playerID].buyDrone();
+        return success;
     }
 
-    const handleGarrisonDrone = (playerID?: number): void => {
-        if (playerID === undefined) return
-        if (playersRef.current === null) return
+    const handleGarrisonDrone = (playerID?: number): boolean => {
+        if (playerID === undefined) return false
+        if (playersRef.current === null) return false
 
-        playersRef.current[playerID].garrisonDrone()
+        const success = playersRef.current[playerID].garrisonDrone();
+        return success;
     }
 
-    const handleBringDrone = (playerID?: number): void => {
-        if (playerID === undefined) return
-        if (playersRef.current === null) return
+    const handleBringDrone = (playerID?: number): boolean => {
+        if (playerID === undefined) return false
+        if (playersRef.current === null) return false
 
-        playersRef.current[playerID].bringGarrisonDrone()
+        const success = playersRef.current[playerID].bringGarrisonDrone();
+        return success;
     }
 
     return (
         <>
-            <div className="relative w-full h-full overflow-visible" ref={gameContainerRef}>
+            <div className="relative w-full h-full overflow-visible">
+                <div style={gameContainerStyle} ref={gameContainerRef}></div>
                     {playersRef.current.map(player => (
                         playerPopUpEvent !== undefined && playerPopUpEvent.playerID === player.team.id && (
                             <CityPopup
                                 key={player.team.id}
                                 anchorPoint={playerPopUpEvent.point}
-                                recruitFunc={() => handleRecruit(player.team.id)}
-                                garrisonFunc={() => handleGarrisonDrone(player.team.id)}
-                                bringFunc={() => handleBringDrone(player.team.id)}
+                                recruitFunc={() => {
+                                    return handleRecruit(player.team.id);
+                                }}
+                                garrisonFunc={() => {
+                                    return handleGarrisonDrone(player.team.id)
+                                }}
+                                bringFunc={() => {
+                                    return handleBringDrone(player.team.id);
+                                }}
                             />
                         )
                     ))}
+                <div style={{width: `${100*dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
                     {winner && (
                         <div className="absolute top-10 right-10 flex flex-col items-center">
                             <span className="text-white">Winner: {winner}</span>

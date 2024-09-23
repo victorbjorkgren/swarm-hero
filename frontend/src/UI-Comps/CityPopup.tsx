@@ -7,14 +7,17 @@ import {Units} from "../types/types";
 
 interface CityPopupProps {
     anchorPoint: Vector2D;
-    recruitFunc: (n: number)=>void;
-    garrisonFunc: (n: number)=>void;
-    bringFunc: (n: number)=>void;
+    recruitFunc: (n: number)=>boolean;
+    garrisonFunc: (n: number)=>boolean;
+    bringFunc: (n: number)=>boolean;
 }
 
 export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, recruitFunc, garrisonFunc, bringFunc}) => {
     const [isVisible, setIsVisible] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
+    const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
+    const [garrisonFlashError, setGarrisonFlashError] = useState<boolean>(false);
+    const [bringFlashError, setBringFlashError] = useState<boolean>(false);
 
     useEffect(() => {
         const margin = 20;
@@ -34,6 +37,29 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, recruitFunc, g
         setIsVisible(true); // Trigger the scale-up effect
     }, [anchorPoint]);
 
+    const handleFlashRecruit = (n: number) => {
+        const success = recruitFunc(n);
+        if (!success) {
+            setRecruitFlashError(true);
+            setTimeout(() => setRecruitFlashError(false), 750);
+        }
+    }
+
+    const handleFlashGarrison = (n: number) => {
+        const success = garrisonFunc(n);
+        if (!success) {
+            setGarrisonFlashError(true);
+            setTimeout(() => setGarrisonFlashError(false), 750);
+        }
+    }
+
+    const handleFlashBring = (n: number) => {
+        const success = bringFunc(n);
+        if (!success) {
+            setBringFlashError(true);
+            setTimeout(() => setBringFlashError(false), 750);
+        }
+    }
 
     return (
         <div
@@ -41,11 +67,11 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, recruitFunc, g
             className={`absolute transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white flex flex-col justify-around items-center border border-white backdrop-blur w-1/5 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
         >
             <span className="select-none">Recruit:</span>
-            <UnitButton n={1} unit={Units.laser} clickHandler={recruitFunc}/>
+            <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
             <span className="select-none">To Garrison:</span>
-            <UnitButton n={1} unit={Units.laser} clickHandler={garrisonFunc}/>
+            <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashGarrison} flashError={garrisonFlashError} />
             <span className="select-none">From Garrison:</span>
-            <UnitButton n={1} unit={Units.laser} clickHandler={bringFunc}/>
+            <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashBring} flashError={bringFlashError} />
 
         </div>
     );

@@ -1,6 +1,7 @@
 import {Player} from "../GameComps/Player";
 import {Castle} from "../GameComps/Castle";
 import {Vector2D} from "../GameComps/Utility";
+import {Sprite, Texture} from "pixi.js";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -14,10 +15,13 @@ export interface Entity {
     radius: number;
     mass: number;
     health: number;
+    givesIncome: number;
 
     isAlive(): boolean;
 
     getFiringPos(from: Vector2D): Vector2D;
+    renderSelf(): void;
+    renderAttack(): void;
 }
 
 export interface PolygonalCollider {
@@ -36,16 +40,16 @@ export interface Team {
 }
 
 export interface TexturePack {
-    normal: string;
-    highlight: string;
+    normal: Texture;
+    highlight: Texture;
 }
 
 export interface ControllerMapping {
-    'up': Phaser.Input.Keyboard.Key;
-    'down': Phaser.Input.Keyboard.Key;
-    'left': Phaser.Input.Keyboard.Key;
-    'right': Phaser.Input.Keyboard.Key;
-    'buy': Phaser.Input.Keyboard.Key;
+    'up': string;
+    'down': string;
+    'left': string;
+    'right': string;
+    'buy': string;
 }
 
 export interface popUpEvent{

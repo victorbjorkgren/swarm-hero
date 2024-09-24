@@ -50,6 +50,7 @@ export interface ControllerMapping {
     'left': string;
     'right': string;
     'buy': string;
+    'special': string
 }
 
 export interface popUpEvent{

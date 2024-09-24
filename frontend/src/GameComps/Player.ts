@@ -69,6 +69,10 @@ export class Player implements Entity, PolygonalCollider {
             this.keyBindings.buy,
             () => this.toggleCityPopup()
         );
+        Keyboard.onPushSubscribe(
+            this.keyBindings.special,
+            () => this.health = 0
+        )
     }
 
     gainCastleControl(castle: Castle) {

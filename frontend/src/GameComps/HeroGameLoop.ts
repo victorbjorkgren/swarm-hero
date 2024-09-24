@@ -19,20 +19,14 @@ export default class HeroGameLoop {
     public castles: Castle[] = [];
     public graphics:  Graphics | undefined
     public particleSystem: ParticleSystem | undefined = undefined;
-    public gameOn: boolean = true;
     public startTime: number | undefined
+    public castleTexturePack: TexturePack | null = null;
 
     private dayLength: number = 10; // seconds
 
-    castleTexturePack: TexturePack | null = null;
-    private sceneWidth: number;
-    private sceneHeight: number;
-
-    // static setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>> | undefined = undefined;
-    // static winner: string | undefined
-    // static setWinner: React.Dispatch<React.SetStateAction<string | undefined>> | undefined = undefined;
-    // static playersRef: React.MutableRefObject<Player[]>;
-    // static setDayTime: React.Dispatch<React.SetStateAction<number>> | undefined = undefined;
+    private gameOn: boolean = true;
+    private readonly sceneWidth: number;
+    private readonly sceneHeight: number;
 
     constructor(
         public pixiRef: Application,
@@ -48,10 +42,12 @@ export default class HeroGameLoop {
 
     stopGame() {
         this.gameOn = false;
+        this.pixiRef.ticker.stop();
     }
 
     resumeGame() {
         this.gameOn = true;
+        this.pixiRef.ticker.start();
     }
 
     onDeath(id: string) {
@@ -65,7 +61,6 @@ export default class HeroGameLoop {
         this.preload().then(() => {
             this.create();
             this.pixiRef.ticker.add(this.update, this);
-            this.pixiRef.ticker.start();
             this.resumeGame();
         });
     }
@@ -87,17 +82,13 @@ export default class HeroGameLoop {
         this.players = [];
         this.castles = [];
 
-        // const castleTextures = {
-        //     normal: 'castle',
-        //     highlight: 'castle-highlight',
-        // }
-
         const player1Keys: ControllerMapping = {
             up: "KeyW",
             left: "KeyA",
             down: "KeyS",
             right: "KeyD",
             buy: "KeyE",
+            special: "KeyO"
         };
         const player2Keys: ControllerMapping = {
             up: "ArrowUp",
@@ -105,6 +96,7 @@ export default class HeroGameLoop {
             down: "ArrowDown",
             right: "ArrowRight",
             buy: "Period",
+            special: "KeyP",
         };
 
         const boundPoly: Polygon = {
@@ -152,9 +144,7 @@ export default class HeroGameLoop {
         for (const player of this.players) {
             player.setParticleSystem(this.particleSystem);
         }
-
         this.playersRef.current = this.players;
-        console.log(this.playersRef.current);
     };
 
     updateDayTime() {
@@ -172,7 +162,6 @@ export default class HeroGameLoop {
     triggerNewDay() {
         this.players.forEach(player => {
             player.newDay();
-            console.log(player.team.id, 'has', player.gold);
         })
     }
 
@@ -180,10 +169,6 @@ export default class HeroGameLoop {
         if (!this.gameOn) return
 
         this.updateDayTime();
-
-        const graphics = this.graphics;
-
-        if (!graphics) return
 
         this.teams.forEach(team => {
             team.players.forEach(player => {

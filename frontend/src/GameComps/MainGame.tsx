@@ -5,6 +5,7 @@ import {Player} from "./Player";
 import {popUpEvent} from "../types/types";
 import {Application, Assets, Sprite} from "pixi.js";
 import {Keyboard} from "./Keyboard";
+import {Vector2D} from "./Utility";
 
 
 const MainGame: React.FC = () => {
@@ -18,13 +19,14 @@ const MainGame: React.FC = () => {
     const [winner, setWinner] = useState<string | undefined>(undefined);
     const [dayTime, setDayTime] = useState<number>(0);
 
-    const resizeApp = () => {
+    const resizeApp = (): Vector2D => {
         const ASPECT_RATIO = 16 / 9;
 
-        if (gameContainerRef.current === null) return
-        if (pixiRef.current === null) return
-        const containerWidth = gameContainerRef.current.clientWidth;
-        const containerHeight = gameContainerRef.current.clientHeight;
+        // if (gameContainerRef.current === null) return Vector2D.zeros()
+        // const containerWidth = gameContainerRef.current.clientWidth;
+        // const containerHeight = gameContainerRef.current.clientHeight;
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
 
         // Calculate the aspect ratio of the container
         const containerAspectRatio = containerWidth / containerHeight;
@@ -43,25 +45,26 @@ const MainGame: React.FC = () => {
             width: `${newWidth}px`,
             height: `${newHeight}px`,
         })
+        return new Vector2D(newWidth, newHeight);
 
     }
 
-    window.addEventListener('resize', resizeApp);
+    // window.addEventListener('resize', resizeApp);
 
     const initGame = async () => {
         Keyboard.initialize();
+        const screenVector = resizeApp();
 
         pixiRef.current = new Application();
         await pixiRef.current.init({
             background: '#333333',
-            resizeTo: gameContainerRef.current!
+            width: screenVector.x,
+            height: screenVector.y,
         });
 
         if (gameContainerRef.current) {
             gameContainerRef.current.appendChild(pixiRef.current.canvas);
         }
-
-        resizeApp();
 
         gameSceneRef.current = new HeroGameLoop(
             pixiRef.current,
@@ -118,26 +121,28 @@ const MainGame: React.FC = () => {
 
     return (
         <>
-            <div className="relative w-full h-full overflow-visible">
-                <div style={gameContainerStyle} ref={gameContainerRef}></div>
+            <div className="relative w-full h-full bg-green-950 flex items-center justify-center overflow-visible">
+                <div style={gameContainerStyle} className="relative">
+                    <div style={{width: `${100 * dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
+                    <div ref={gameContainerRef}></div>
                     {playersRef.current.map(player => (
                         playerPopUpEvent !== undefined && playerPopUpEvent.playerID === player.team.id && (
-                            <CityPopup
-                                key={player.team.id}
-                                anchorPoint={playerPopUpEvent.point}
-                                recruitFunc={() => {
-                                    return handleRecruit(player.team.id);
-                                }}
-                                garrisonFunc={() => {
-                                    return handleGarrisonDrone(player.team.id)
-                                }}
-                                bringFunc={() => {
-                                    return handleBringDrone(player.team.id);
-                                }}
-                            />
-                        )
-                    ))}
-                <div style={{width: `${100*dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
+                                <CityPopup
+                                    key={player.team.id}
+                                    anchorPoint={playerPopUpEvent.point}
+                                    recruitFunc={() => {
+                                        return handleRecruit(player.team.id);
+                                    }}
+                                    garrisonFunc={() => {
+                                        return handleGarrisonDrone(player.team.id)
+                                    }}
+                                    bringFunc={() => {
+                                        return handleBringDrone(player.team.id);
+                                    }}
+                                />
+                            )
+                        ))
+                    }
                     {winner && (
                         <div className="absolute top-10 right-10 flex flex-col items-center">
                             <span className="text-white">Winner: {winner}</span>
@@ -146,8 +151,8 @@ const MainGame: React.FC = () => {
                                 onClick={handleRematch}
                                 content={"Rematch!"}/>
                         </div>
-                    )
-                    }
+                    )}
+                </div>
             </div>
         </>
     );

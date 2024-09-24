@@ -43,7 +43,7 @@ export class Player implements Entity, PolygonalCollider {
     public radius: number = 20;
     public mass: number = 50**3;
     public myPopUpIsOpen: boolean = false;
-    public gold: number = 100;
+    public gold: number = 10000;
     public givesIncome: number = 0;
 
     private playerSprite: Graphics | null = null;

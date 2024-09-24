@@ -35,6 +35,7 @@ export class Particle implements Entity {
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
     healthSprite: Graphics | null = null;
+    debugSprite: Graphics | null = null;
 
     private maxHealth: number = 100;
     private _health: number = this.maxHealth;
@@ -68,6 +69,18 @@ export class Particle implements Entity {
         }
         this.particleSprite.x = this.pos.x;
         this.particleSprite.y = this.pos.y;
+    }
+    debugLine(origin: Vector2D, destination: Vector2D, color: number): void {
+        if (this.debugSprite === null) {
+            this.debugSprite = new Graphics();
+            this.scene.pixiRef.stage.addChild(this.debugSprite);
+        }
+        this.debugSprite
+            .moveTo(origin.x, origin.y)
+            .lineTo(destination.x, destination.y)
+            .stroke({
+                color: color,
+                width: 1});
     }
 
     renderAttack() {

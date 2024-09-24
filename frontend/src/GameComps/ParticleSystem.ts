@@ -8,7 +8,6 @@ import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {Entity, PolygonalCollider, Team} from "../types/types";
 import HeroGameLoop from "./HeroGameLoop";
-import {Graphics} from "pixi.js";
 
 export class ParticleSystem {
     private particles: Particle[] = [];
@@ -16,7 +15,7 @@ export class ParticleSystem {
     private sqSeparateDistance: number = 75 ** 2;
     private cohesionFactor: number = .1;
     private separationFactor: number = 2;
-    private alignFactor: number = 1;
+    private alignFactor: number = 40;
 
     constructor(
         private particleN: number,
@@ -169,7 +168,8 @@ export class ParticleSystem {
                     const sqDist = Vector2D.sqDist(this.particles[i].pos, this.particles[j].pos);
                     // Separate
                     if (sqDist < this.sqSeparateDistance) {
-                        sepPoint.sub(this.particles[j].pos).add(this.particles[i].pos);
+                        sepPoint.x += 0.03 * this.sqSeparateDistance * (this.particles[i].pos.x - this.particles[j].pos.x) / sqDist;
+                        sepPoint.y += 0.03 * this.sqSeparateDistance * (this.particles[i].pos.y - this.particles[j].pos.y) / sqDist;
                     }
                     // Cohede & Align if boiding
                     if (!this.particles[i].isBoiding) continue
@@ -180,11 +180,21 @@ export class ParticleSystem {
                     }
                 }
             }
-            if (nCoh > 0)
+            if (nCoh > 0) {
                 cohedePoint.scale(1 / nCoh).sub(this.particles[i].pos).scale(this.cohesionFactor);
                 alignV.scale(1 / nCoh).sub(this.particles[i].vel).scale(this.alignFactor);
+            }
             sepPoint.scale(this.separationFactor);
-            const desiredV = Vector2D.add(cohedePoint, sepPoint);
+
+            // this.particles[i].debugSprite?.clear();
+            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos, cohedePoint), 0xFF0000);
+            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos, sepPoint), 0x00FF00);
+            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos,  alignV), 0xFFFF00);
+
+            const desiredV = new Vector2D(
+                cohedePoint.x + sepPoint.x + alignV.x,
+                cohedePoint.y + sepPoint.y + alignV.y
+            );
             this.particles[i].acc.add(Vector2D.subtract(desiredV, this.particles[i].vel));
 
         }

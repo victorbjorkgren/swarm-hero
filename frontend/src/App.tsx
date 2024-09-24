@@ -19,13 +19,7 @@ const App: React.FC = () => {
     // };
   }, []);
 
-  return (
-      <div className="App">
-        <div className={"game-container"}>
-          <MainGame />
-        </div>
-      </div>
-  );
+  return <MainGame />;
 };
 
 export default App;

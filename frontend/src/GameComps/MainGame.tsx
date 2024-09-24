@@ -125,7 +125,7 @@ const MainGame: React.FC = () => {
 
     return (
         <>
-            <div className="relative w-full h-full bg-green-950 flex items-center justify-center overflow-visible">
+            <div className="relative w-screen h-screen bg-green-950 flex items-center justify-center overflow-visible">
                 <div style={gameContainerStyle} className="relative">
                     <div style={{width: `${100 * dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
                     <div ref={gameContainerRef}></div>

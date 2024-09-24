@@ -134,6 +134,11 @@ export class Particle implements Entity {
         this.leaderPosition = position;
     }
 
+    getLeaderPosition() {
+        if (this.leaderPosition === undefined) return undefined
+        return Vector2D.add(this.leaderPosition, Vector2D.ones().scale(20));
+    }
+
     calcDesiredPos() {
         if (this.engaging.length > 0) {
             // if (this.engaging[0].health <= this.health) {
@@ -144,8 +149,9 @@ export class Particle implements Entity {
             //    this.desiredPos = Vector2D.subtract(this.engaging[0].pos, this.pos).scale(-1);
             // }
         } else {
-            if (this.leaderPosition) {
-                const leaderDelta = Vector2D.subtract(this.leaderPosition, this.pos);
+            const leaderPosition = this.getLeaderPosition();
+            if (leaderPosition !== undefined) {
+                const leaderDelta = Vector2D.subtract(leaderPosition, this.pos);
                 const leaderDist = leaderDelta.magnitude();
                 if (leaderDist < this.desiredLeaderDist.min) {
                     this.desiredPos = Vector2D.add(this.pos, leaderDelta.scale(-1));

@@ -134,6 +134,7 @@ const MainGame: React.FC = () => {
                                 <CityPopup
                                     key={player.team.id}
                                     anchorPoint={playerPopUpEvent.point}
+                                    player={player}
                                     recruitFunc={() => {
                                         return handleRecruit(player.team.id);
                                     }}

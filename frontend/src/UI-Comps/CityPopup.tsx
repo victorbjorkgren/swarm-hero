@@ -4,15 +4,17 @@ import { GiLaserBurst } from "react-icons/gi";
 import { LiaTimesSolid } from "react-icons/lia";
 import {UnitButton} from "./UnitButton";
 import {Units} from "../types/types";
+import {Player} from "../GameComps/Player";
 
 interface CityPopupProps {
     anchorPoint: Vector2D;
+    player: Player;
     recruitFunc: (n: number)=>boolean;
     garrisonFunc: (n: number)=>boolean;
     bringFunc: (n: number)=>boolean;
 }
 
-export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, recruitFunc, garrisonFunc, bringFunc}) => {
+export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc, garrisonFunc, bringFunc}) => {
     const [isVisible, setIsVisible] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
     const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
@@ -64,13 +66,14 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, recruitFunc, g
     return (
         <div
             style={style}
-            className={`absolute transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white flex flex-col justify-around items-center border border-white backdrop-blur w-1/5 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+            className={`absolute transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white select-none flex flex-col justify-around items-center border border-white backdrop-blur w-1/5 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
         >
-            <span className="select-none">Recruit:</span>
+            <span className="font-bold">{`Gold: ${player.gold}`}</span>
+            <span>Recruit:</span>
             <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
-            <span className="select-none">To Garrison:</span>
+            <span>To Garrison:</span>
             <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashGarrison} flashError={garrisonFlashError} />
-            <span className="select-none">From Garrison:</span>
+            <span>From Garrison:</span>
             <UnitButton n={1} unit={Units.laser} clickHandler={handleFlashBring} flashError={bringFlashError} />
 
         </div>

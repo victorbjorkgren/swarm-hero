@@ -92,11 +92,9 @@ export class Player implements Entity, PolygonalCollider {
     toggleCityPopup() {
         if (!this.scene.setPlayerPopOpen) return;
         if (this.myPopUpIsOpen) {
-            console.log('Closing');
             this.scene.setPlayerPopOpen(undefined);
             this.myPopUpIsOpen = false;
         } else {
-            console.log('Opening');
             for (const castle of this.team.castles) {
                 if (castle.nearbyPlayers.find(player => player === this)) {
                     this.scene.setPlayerPopOpen(
@@ -127,7 +125,6 @@ export class Player implements Entity, PolygonalCollider {
         const castle = this.findNearbyCastle();
         if (castle === undefined) return false;
         if (this.gold >= Particle.price) {
-            console.log('Boom!')
             this.gold -= Particle.price;
             this.myDrones.push(
                 this.particleSystem.getNewParticle(this, castle)

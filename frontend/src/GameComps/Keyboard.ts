@@ -5,6 +5,7 @@ export class Keyboard {
     public static initialize() {
         document.addEventListener("keydown", Keyboard.keyDown);
         document.addEventListener("keyup", Keyboard.keyUp);
+        this.onPushListeners = new Map();
     }
 
     private static keyDown(e: KeyboardEvent): void {

@@ -91,7 +91,11 @@ const MainGame: React.FC = () => {
     const handleRematch = () => {
         if (gameSceneRef.current) {
             setWinner(undefined); // Reset the winner state
-            gameSceneRef.current.start();
+            // gameSceneRef.current.start();
+            if (gameContainerRef.current) {
+                gameContainerRef.current.innerHTML = '';
+            }
+            initGame();
         }
     };
 

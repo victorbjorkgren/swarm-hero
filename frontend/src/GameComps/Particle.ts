@@ -30,10 +30,14 @@ export class Particle implements Entity {
     desiredSpeed: number = .75;
     desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
     maxAcc: number = .05;
-    private _health: number = 100;
     givesIncome: number = 0;
+
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
+    healthSprite: Graphics | null = null;
+
+    private maxHealth: number = 100;
+    private _health: number = this.maxHealth;
 
     static price: number = 100;
 
@@ -47,6 +51,12 @@ export class Particle implements Entity {
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
+    }
+
+    render() {
+        this.renderSelf();
+        this.renderAttack();
+        this.renderHealthBar();
     }
 
     renderSelf() {
@@ -77,6 +87,27 @@ export class Particle implements Entity {
                         width: 1});
             }
         }
+    }
+
+    renderHealthBar(): void {
+        if (this.healthSprite === null) {
+            this.healthSprite = new Graphics();
+            this.scene.pixiRef.stage.addChild(this.healthSprite);
+        }
+        this.healthSprite.clear();
+        if (!this.isAlive()) return;
+
+        const pxZero = this.pos.x - this.radius - 3;
+        const lenX = 2 * this.radius + 6
+        const healthRatio = this._health / this.maxHealth;
+        this.healthSprite
+            .moveTo(pxZero, this.pos.y - this.radius - 2)
+            .lineTo(pxZero + lenX * healthRatio, this.pos.y - this.radius - 2)
+            .stroke({
+                color: this.color,
+                alpha: .8,
+                width: 1
+            })
     }
 
     onDeath() {

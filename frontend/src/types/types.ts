@@ -20,8 +20,10 @@ export interface Entity {
     isAlive(): boolean;
 
     getFiringPos(from: Vector2D): Vector2D;
+
     renderSelf(): void;
     renderAttack(): void;
+    renderHealthBar(): void;
 }
 
 export interface PolygonalCollider {

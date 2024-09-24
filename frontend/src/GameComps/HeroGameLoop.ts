@@ -173,12 +173,10 @@ export default class HeroGameLoop {
         this.teams.forEach(team => {
             team.players.forEach(player => {
                 player.movement();
-                player.renderSelf();
-                player.renderAttack();
+                player.render();
             });
             team.castles.forEach(castle => {
-                castle.renderSelf();
-                castle.renderAttack();
+                castle.render();
             })
         });
 

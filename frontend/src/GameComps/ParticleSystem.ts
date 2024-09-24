@@ -27,8 +27,7 @@ export class ParticleSystem {
 
     render() {
         this.particles.forEach((particle: Particle) => {
-            particle.renderSelf();
-            particle.renderAttack();
+            particle.render();
         });
     }
 

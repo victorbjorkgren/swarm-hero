@@ -43,14 +43,17 @@ export class Player implements Entity, PolygonalCollider {
     public radius: number = 20;
     public mass: number = 50**3;
     public myPopUpIsOpen: boolean = false;
-    public gold: number = 0;
+    public gold: number = 100;
     public givesIncome: number = 0;
 
     private playerSprite: Graphics | null = null;
+    private attackSprite: Graphics | null = null;
+    private healthSprite: Graphics | null = null;
 
     private maxAcc: number = 0.1;
     private maxVel: number = 1.0;
-    private _health: number = 1000;
+    private maxHealth: number = 1000;
+    private _health: number = this.maxHealth;
     private particleSystem: ParticleSystem | undefined;
     private myDrones: Particle[] = [];
     private myCastles: Castle[] = [];
@@ -162,6 +165,12 @@ export class Player implements Entity, PolygonalCollider {
         return closestPointOnPolygon(this.collider.verts, from);
     }
 
+    render() {
+        this.renderSelf();
+        this.renderAttack();
+        this.renderHealthBar();
+    }
+
     renderSelf() {
         if (this.playerSprite === null) {
             this.playerSprite = new Graphics()
@@ -176,6 +185,25 @@ export class Player implements Entity, PolygonalCollider {
 
     renderAttack(): void {
 
+    }
+
+    renderHealthBar(): void {
+        if (this.healthSprite === null) {
+            this.healthSprite = new Graphics();
+            this.scene.pixiRef.stage.addChild(this.healthSprite);
+        }
+        this.healthSprite.clear();
+        if (!this.isAlive()) return;
+
+        const healthRatio = this._health / this.maxHealth;
+        this.healthSprite
+            .moveTo(this.pos.x, this.pos.y - 5)
+            .lineTo(this.pos.x + (40 * healthRatio), this.pos.y - 5)
+            .stroke({
+                color: this.team.color,
+                alpha: .8,
+                width: 2
+            })
     }
 
     movement() {

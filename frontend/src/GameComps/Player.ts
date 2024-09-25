@@ -1,13 +1,13 @@
 import {closestPointOnPolygon, Vector2D} from "./Utility";
 import {ParticleSystem} from "./ParticleSystem";
-import {ControllerMapping, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
+import {ControllerMapping, DirectionalSpriteSheet, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
 import {Keyboard} from "./Keyboard";
-import { Graphics } from "pixi.js";
+import {AnimatedSprite, Assets, Graphics} from "pixi.js";
 
-export class Player implements Entity, PolygonalCollider {
+export class Player implements Entity {
     set health(value: number) {
         this._health = value;
         if (!this.isAlive()) {
@@ -46,7 +46,8 @@ export class Player implements Entity, PolygonalCollider {
     public gold: number = 10000;
     public givesIncome: number = 0;
 
-    private playerSprite: Graphics | null = null;
+    private playerSpritePack: DirectionalSpriteSheet | null = null;
+    private currentAnimation: AnimatedSprite | null = null;
     private attackSprite: Graphics | null = null;
     private healthSprite: Graphics | null = null;
 
@@ -67,6 +68,8 @@ export class Player implements Entity, PolygonalCollider {
         this.pos = team.playerCentroid;
         this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
+
+        this.getCat();
 
         Keyboard.onPushSubscribe(
             this.keyBindings.buy,
@@ -162,7 +165,70 @@ export class Player implements Entity, PolygonalCollider {
     }
 
     getFiringPos(from: Vector2D): Vector2D {
-        return closestPointOnPolygon(this.collider.verts, from);
+        if (this.currentAnimation !== null) {
+            return new Vector2D(
+                this.pos.x + this.currentAnimation.width / 2,
+                this.pos.y + this.currentAnimation.height / 2,
+            )
+        } else {
+            return this.pos.copy();
+        }
+        // return closestPointOnPolygon(this.collider.verts, from);
+    }
+
+    async getCat() {
+        const catSpriteSheet = await Assets.cache.get('/sprites/black_cat_run.json');
+        const animations = catSpriteSheet.data.animations;
+        this.playerSpritePack =  {
+            'u': AnimatedSprite.fromFrames(animations["u/black_0"]),
+            'ur': AnimatedSprite.fromFrames(animations["ur/black_0"]),
+            'r': AnimatedSprite.fromFrames(animations["r/black_0"]),
+            'dr': AnimatedSprite.fromFrames(animations["dr/black_0"]),
+            'd': AnimatedSprite.fromFrames(animations["d/black_0"]),
+            'dl': AnimatedSprite.fromFrames(animations["dl/black_0"]),
+            'l': AnimatedSprite.fromFrames(animations["l/black_0"]),
+            'ul': AnimatedSprite.fromFrames(animations["ul/black_0"]),
+        };
+        Object.keys(this.playerSpritePack).forEach(key => {
+            if (this.playerSpritePack) {
+                const animation = this.playerSpritePack[key as keyof DirectionalSpriteSheet];
+                animation.loop = true;
+                animation.visible = false;
+                this.scene.pixiRef.stage.addChild(animation);
+            }
+        });
+    }
+
+    determineDirectionFromAngle(): string {
+        const {x, y} = this.vel;
+
+        // If velocity is zero, return idle animation
+        if (x === 0 && y === 0) {
+            return 'd'; // Default to 'down'
+        }
+
+        // Calculate the angle in radians
+        const angle = Math.atan2(y, x);
+
+        // Map angle to one of the 8 directions
+        const directionIndex = Math.round((angle + Math.PI) / (Math.PI / 4)) % 8;
+        return ['l', 'dl', 'd', 'dr', 'r', 'ur', 'u', 'ul'][directionIndex]
+
+    }
+
+    setAnimation() {
+        if (this.playerSpritePack === null) return
+        const key = this.determineDirectionFromAngle();
+        const newAnimation = this.playerSpritePack[key as keyof DirectionalSpriteSheet];
+        if (newAnimation === this.currentAnimation) return;
+        if (this.currentAnimation) {
+            this.currentAnimation.stop();
+            this.currentAnimation.visible = false;
+        }
+
+        this.currentAnimation = newAnimation;
+        this.currentAnimation.visible = true;
+        this.currentAnimation.play();
     }
 
     render() {
@@ -172,15 +238,12 @@ export class Player implements Entity, PolygonalCollider {
     }
 
     renderSelf() {
-        if (this.playerSprite === null) {
-            this.playerSprite = new Graphics()
-                .rect(0, 0, 40, 40)
-                .fill({color: this.team.color, alpha: 1});
-            this.scene.pixiRef.stage.addChild(this.playerSprite);
+        this.setAnimation();
+        if (this.currentAnimation !== null) {
+            this.currentAnimation.x = this.pos.x
+            this.currentAnimation.y = this.pos.y
+            this.currentAnimation.animationSpeed = (this.vel.magnitude() / this.maxVel) / 7 ;
         }
-
-        this.playerSprite.x = this.pos.x;
-        this.playerSprite.y = this.pos.y;
     }
 
     renderAttack(): void {
@@ -196,9 +259,16 @@ export class Player implements Entity, PolygonalCollider {
         if (!this.isAlive()) return;
 
         const healthRatio = this._health / this.maxHealth;
+        let midX;
+        const lx = 40;
+        if (this.currentAnimation !== null) {
+            midX = this.currentAnimation.x + this.currentAnimation.width / 2;
+        } else {
+            midX = this.pos.x;
+        }
         this.healthSprite
-            .moveTo(this.pos.x, this.pos.y - 5)
-            .lineTo(this.pos.x + (40 * healthRatio), this.pos.y - 5)
+            .moveTo(midX - (lx / 2), this.pos.y - 5)
+            .lineTo((midX - (lx / 2)) + (lx * healthRatio), this.pos.y - 5)
             .stroke({
                 color: this.team.color,
                 alpha: .8,
@@ -236,6 +306,11 @@ export class Player implements Entity, PolygonalCollider {
         } else {
             this.vel.scale(.9);
         }
+        if (this.vel.sqMagnitude() < (.1 * .1)) {
+            this.vel.x = 0;
+            this.vel.y = 0;
+        }
+
         this.pos.add(this.vel);
     }
 

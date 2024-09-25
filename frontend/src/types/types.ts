@@ -1,7 +1,7 @@
 import {Player} from "../GameComps/Player";
 import {Castle} from "../GameComps/Castle";
 import {Vector2D} from "../GameComps/Utility";
-import {Sprite, Texture} from "pixi.js";
+import {AnimatedSprite, Sprite, Texture} from "pixi.js";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -62,4 +62,15 @@ export interface popUpEvent{
 
 export enum Units {
     'laser'
+}
+
+export interface DirectionalSpriteSheet {
+    'u': AnimatedSprite,
+    'ur': AnimatedSprite,
+    'r': AnimatedSprite,
+    'dr': AnimatedSprite,
+    'd': AnimatedSprite,
+    'dl': AnimatedSprite,
+    'l': AnimatedSprite,
+    'ul': AnimatedSprite,
 }

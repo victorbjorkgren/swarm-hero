@@ -57,7 +57,7 @@ const MainGame: React.FC = () => {
 
         pixiRef.current = new Application();
         await pixiRef.current.init({
-            background: '#333333',
+            background: '#AAAAAA',
             width: screenVector.x,
             height: screenVector.y,
         });

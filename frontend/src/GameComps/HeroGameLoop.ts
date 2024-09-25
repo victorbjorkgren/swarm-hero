@@ -2,9 +2,17 @@ import {ParticleSystem} from "./ParticleSystem";
 import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
-import {ControllerMapping, Polygon, PolygonalCollider, popUpEvent, Team, TexturePack} from "../types/types";
+import {
+    ControllerMapping,
+    DirectionalSpriteSheet,
+    Polygon,
+    PolygonalCollider,
+    popUpEvent,
+    Team,
+    TexturePack
+} from "../types/types";
 import React from "react";
-import {Application, Assets, Graphics, Sprite} from "pixi.js";
+import {AnimatedSprite, Application, Assets, Graphics, Sprite} from "pixi.js";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -20,7 +28,9 @@ export default class HeroGameLoop {
     public graphics:  Graphics | undefined
     public particleSystem: ParticleSystem | undefined = undefined;
     public startTime: number | undefined
+
     public castleTexturePack: TexturePack | null = null;
+    public catSprite: DirectionalSpriteSheet | null = null;
 
     private dayLength: number = 10; // seconds
 
@@ -66,12 +76,16 @@ export default class HeroGameLoop {
     }
 
     async preload() {
-        const castle = await Assets.load('castle-sprite.png');
-        const castleHighlight = await Assets.load('castle-sprite-highlight.png');
+        const castle = Assets.load('/sprites/castle-sprite.png');
+        const castleHighlight = Assets.load('/sprites/castle-sprite-highlight.png');
+        const cat = Assets.load('/sprites/black_cat_run.json');;
+
         this.castleTexturePack = {
-            'normal': castle,
-            'highlight': castleHighlight,
+            'normal': await castle,
+            'highlight': await castleHighlight,
         }
+        await cat;
+
         this.players = [];
         this.teams = [];
         this.castles = [];

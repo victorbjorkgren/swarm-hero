@@ -10,6 +10,10 @@ export class Vector2D {
         return this;
     }
 
+    copy(): Vector2D {
+        return new Vector2D(this.x, this.y);
+    }
+
     add(other: Vector2D): Vector2D {
         this.x += other.x;
         this.y += other.y;

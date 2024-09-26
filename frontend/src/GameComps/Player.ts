@@ -1,6 +1,14 @@
 import {closestPointOnPolygon, Vector2D} from "./Utility";
 import {ParticleSystem} from "./ParticleSystem";
-import {ControllerMapping, DirectionalSpriteSheet, Entity, Polygon, PolygonalCollider, Team} from "../types/types";
+import {
+    Controller,
+    ControllerMapping,
+    DirectionalSpriteSheet,
+    Entity,
+    Polygon,
+    PolygonalCollider,
+    Team
+} from "../types/types";
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
@@ -19,11 +27,9 @@ export class Player implements Entity {
             this.scene.onDeath(w.toString());
         }
     }
-
     get health(): number {
         return this._health;
     }
-
     get collider(): Polygon {
         return {
             verts: [
@@ -43,6 +49,8 @@ export class Player implements Entity {
     public radius: number = 20;
     public mass: number = 50**3;
     public myPopUpIsOpen: boolean = false;
+    public maxAcc: number = 0.1;
+    public maxVel: number = 1.0;
     public gold: number = 10000;
     public givesIncome: number = 0;
 
@@ -51,8 +59,6 @@ export class Player implements Entity {
     private attackSprite: Graphics | null = null;
     private healthSprite: Graphics | null = null;
 
-    private maxAcc: number = 0.1;
-    private maxVel: number = 1.0;
     private maxHealth: number = 1000;
     private _health: number = this.maxHealth;
     private particleSystem: ParticleSystem | undefined;
@@ -70,15 +76,6 @@ export class Player implements Entity {
         this.team.players.push(this);
 
         this.getCat();
-
-        Keyboard.onPushSubscribe(
-            this.keyBindings.buy,
-            () => this.toggleCityPopup()
-        );
-        Keyboard.onPushSubscribe(
-            this.keyBindings.special,
-            () => this.health = 0
-        )
     }
 
     gainCastleControl(castle: Castle) {
@@ -274,44 +271,6 @@ export class Player implements Entity {
                 alpha: .8,
                 width: 2
             })
-    }
-
-    movement() {
-        if (!this.keyBindings) return;
-
-        this.acc = Vector2D.zeros();
-        let controlling = false;
-
-        if (Keyboard.state.get(this.keyBindings.left)) {
-            this.acc.x -= this.maxAcc;
-            controlling = true;
-        }
-        if (Keyboard.state.get(this.keyBindings.right)) {
-            this.acc.x += this.maxAcc;
-            controlling = true;
-        }
-        if (Keyboard.state.get(this.keyBindings.up)) {
-            this.acc.y -= this.maxAcc;
-            controlling = true;
-        }
-        if (Keyboard.state.get(this.keyBindings.down)) {
-            this.acc.y += this.maxAcc;
-            controlling = true;
-        }
-
-        if (controlling) {
-            this.acc.limit(this.maxAcc);
-            this.vel.add(this.acc);
-            this.vel.limit(this.maxVel);
-        } else {
-            this.vel.scale(.9);
-        }
-        if (this.vel.sqMagnitude() < (.1 * .1)) {
-            this.vel.x = 0;
-            this.vel.y = 0;
-        }
-
-        this.pos.add(this.vel);
     }
 
 }

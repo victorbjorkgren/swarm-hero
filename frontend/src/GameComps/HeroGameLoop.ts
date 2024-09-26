@@ -3,6 +3,7 @@ import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {
+    Controller,
     ControllerMapping,
     DirectionalSpriteSheet,
     Polygon,
@@ -13,6 +14,7 @@ import {
 } from "../types/types";
 import React from "react";
 import {AnimatedSprite, Application, Assets, Graphics, Sprite} from "pixi.js";
+import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -28,6 +30,7 @@ export default class HeroGameLoop {
     public graphics:  Graphics | undefined
     public particleSystem: ParticleSystem | undefined = undefined;
     public startTime: number | undefined
+    private controllers: Controller[] = [];
 
     public castleTexturePack: TexturePack | null = null;
     public catSprite: DirectionalSpriteSheet | null = null;
@@ -91,10 +94,18 @@ export default class HeroGameLoop {
         this.castles = [];
     };
 
+    resetControllers() {
+        this.controllers.forEach(controller => {
+            controller.cleanup()
+        })
+        this.controllers = [];
+    }
+
     create() {
         this.graphics = new Graphics();
         this.players = [];
         this.castles = [];
+        this.resetControllers();
 
         const player1Keys: ControllerMapping = {
             up: "KeyW",
@@ -151,6 +162,9 @@ export default class HeroGameLoop {
         this.castles.push(new Castle(this.teams[1], this))
         this.players[0].gainCastleControl(this.castles[0]);
         this.players[1].gainCastleControl(this.castles[1]);
+        this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
+        this.controllers.push(new LocalPlayerController(this.players[1], player2Keys));
+
         // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
         const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
 
@@ -181,21 +195,23 @@ export default class HeroGameLoop {
 
     update() {
         if (!this.gameOn) return
+        if (this.particleSystem === undefined) return
 
         this.updateDayTime();
 
-        this.teams.forEach(team => {
-            team.players.forEach(player => {
-                player.movement();
-                player.render();
-            });
-            team.castles.forEach(castle => {
-                castle.render();
-            })
-        });
-
-        if (this.particleSystem === undefined) return
+        // Updates
         this.particleSystem.update();
+        this.controllers.forEach(controller => {
+            controller.movement();
+        })
+
+        // Renders
+        this.players.forEach(player => {
+            player.render();
+        })
+        this.castles.forEach(castle => {
+            castle.render();
+        })
         this.particleSystem.render();
     };
 }

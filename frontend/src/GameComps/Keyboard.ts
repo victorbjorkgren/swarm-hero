@@ -26,6 +26,19 @@ export class Keyboard {
         }
     }
 
+    public static onPushUnsubscribe(keyCode: string, bindFunc: () => void): void {
+        const listeners = Keyboard.onPushListeners.get(keyCode);
+        if (listeners) {
+            const index = listeners.indexOf(bindFunc);
+            if (index > -1) {
+                listeners.splice(index, 1);
+                if (listeners.length === 0) {
+                    Keyboard.onPushListeners.delete(keyCode);
+                }
+            }
+        }
+    }
+
     private static onPush(e: KeyboardEvent): void {
         const listeners = Keyboard.onPushListeners.get(e.code);
         if (listeners !== undefined) {

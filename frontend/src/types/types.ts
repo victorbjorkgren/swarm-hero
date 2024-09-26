@@ -74,3 +74,10 @@ export interface DirectionalSpriteSheet {
     'l': AnimatedSprite,
     'ul': AnimatedSprite,
 }
+
+export interface Controller {
+    movement(): void;
+    buy(): void;
+    special(): void;
+    cleanup(): void;
+}

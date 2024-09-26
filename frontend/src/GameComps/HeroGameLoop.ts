@@ -15,6 +15,7 @@ import {
 import React from "react";
 import {AnimatedSprite, Application, Assets, Graphics, Sprite} from "pixi.js";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
+import {AIController} from "./Controllers/AIController";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -163,7 +164,7 @@ export default class HeroGameLoop {
         this.players[0].gainCastleControl(this.castles[0]);
         this.players[1].gainCastleControl(this.castles[1]);
         this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
-        this.controllers.push(new LocalPlayerController(this.players[1], player2Keys));
+        this.controllers.push(new AIController(this.players[1], this.players[0]));
 
         // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
         const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
@@ -207,6 +208,7 @@ export default class HeroGameLoop {
 
         // Renders
         this.players.forEach(player => {
+            player.updateMovement();
             player.render();
         })
         this.castles.forEach(castle => {

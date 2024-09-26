@@ -4,17 +4,6 @@ import {Graphics} from "pixi.js";
 import HeroGameLoop from "./HeroGameLoop";
 
 export class Particle implements Entity {
-    get health(): number {
-        return this._health;
-    }
-
-    set health(value: number) {
-        this._health = value;
-        if (this._health < 0) {
-            this.onDeath();
-        }
-    }
-
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
     leaderPosition: Vector2D | undefined;
@@ -31,6 +20,9 @@ export class Particle implements Entity {
     desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
     maxAcc: number = .05;
     givesIncome: number = 0;
+
+    myDrones: Particle[] = [];
+    targetedBy: Entity[] = [];
 
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
@@ -52,6 +44,17 @@ export class Particle implements Entity {
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
+    }
+
+    get health(): number {
+        return this._health;
+    }
+
+    set health(value: number) {
+        this._health = value;
+        if (this._health < 0) {
+            this.onDeath();
+        }
     }
 
     render() {

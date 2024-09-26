@@ -24,6 +24,9 @@ export class Castle implements Entity {
     private pixiRef: Application;
     private texture: TexturePack
 
+    myDrones: Particle[] = [];
+    targetedBy: Entity[] = [];
+
     constructor(
         private team: Team,
         private scene: HeroGameLoop,
@@ -72,9 +75,10 @@ export class Castle implements Entity {
             } else {
                 this.castleSprite.texture = this.texture.normal;
             }
-        } else if (this.castleSprite) {
-            this.castleSprite.destroy();
-            this.castleSprite = null;
+        } else {
+            if (this.castleSprite !== null) {
+                this.castleSprite.visible = false;
+            }
         }
     }
 
@@ -106,5 +110,4 @@ export class Castle implements Entity {
     renderAttack() {
 
     }
-
 }

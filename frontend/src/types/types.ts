@@ -2,6 +2,7 @@ import {Player} from "../GameComps/Player";
 import {Castle} from "../GameComps/Castle";
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Sprite, Texture} from "pixi.js";
+import {Particle} from "../GameComps/Particle";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -16,6 +17,9 @@ export interface Entity {
     mass: number;
     health: number;
     givesIncome: number;
+
+    myDrones: Particle[];
+    targetedBy: Entity[];
 
     isAlive(): boolean;
 

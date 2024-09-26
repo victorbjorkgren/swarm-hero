@@ -6,6 +6,7 @@ import {popUpEvent} from "../types/types";
 import {Application, Assets, Sprite} from "pixi.js";
 import {Keyboard} from "./Keyboard";
 import {Vector2D} from "./Utility";
+import {WinnerDisplay} from "../UI-Comps/WinnerDisplay";
 
 
 const MainGame: React.FC = () => {
@@ -22,9 +23,6 @@ const MainGame: React.FC = () => {
     const resizeApp = (): Vector2D => {
         const ASPECT_RATIO = 16 / 9;
 
-        // if (gameContainerRef.current === null) return Vector2D.zeros()
-        // const containerWidth = gameContainerRef.current.clientWidth;
-        // const containerHeight = gameContainerRef.current.clientHeight;
         const containerWidth = window.innerWidth;
         const containerHeight = window.innerHeight;
 
@@ -52,12 +50,14 @@ const MainGame: React.FC = () => {
     // window.addEventListener('resize', resizeApp);
 
     const initGame = async () => {
+        if (pixiRef.current !== null) return;
+
         Keyboard.initialize();
         const screenVector = resizeApp();
 
         pixiRef.current = new Application();
         await pixiRef.current.init({
-            background: '#AAAAAA',
+            background: '#72b372',
             width: screenVector.x,
             height: screenVector.y,
         });
@@ -82,21 +82,33 @@ const MainGame: React.FC = () => {
         initGame();
 
         return () => {
-            if (gameContainerRef.current) {
-                gameContainerRef.current.innerHTML = '';
+            if (gameSceneRef.current) {
+                gameSceneRef.current.stopGame();
+                gameSceneRef.current.resetControllers();
+                gameSceneRef.current = null;
+            }
+
+            if (pixiRef.current && pixiRef.current.renderer) {
+                pixiRef.current.destroy();
+                pixiRef.current = null;
             }
         };
     }, []);
 
     const handleRematch = () => {
         if (gameSceneRef.current) {
-            setWinner(undefined); // Reset the winner state
-            // gameSceneRef.current.start();
-            if (gameContainerRef.current) {
-                gameContainerRef.current.innerHTML = '';
-            }
-            initGame();
+            gameSceneRef.current.stopGame();
+            gameSceneRef.current.resetControllers();
+            gameSceneRef.current = null;
         }
+
+        if (pixiRef.current && pixiRef.current.renderer) {
+            pixiRef.current.destroy();
+            pixiRef.current = null;
+        }
+        setWinner(undefined); // Reset the winner state
+            // gameSceneRef.current.start();
+        initGame();
     };
 
     const handleRecruit = (playerID?: number): boolean => {
@@ -148,15 +160,7 @@ const MainGame: React.FC = () => {
                             )
                         ))
                     }
-                    {winner && (
-                        <div className="absolute top-10 right-10 flex flex-col items-center">
-                            <span className="text-white">Winner: {winner}</span>
-                            <button
-                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded"
-                                onClick={handleRematch}
-                                content={"Rematch!"}/>
-                        </div>
-                    )}
+                    <WinnerDisplay winner={winner} handleRematch={handleRematch} />
                 </div>
             </div>
         </>

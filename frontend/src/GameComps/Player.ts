@@ -62,8 +62,10 @@ export class Player implements Entity {
     private maxHealth: number = 1000;
     private _health: number = this.maxHealth;
     private particleSystem: ParticleSystem | undefined;
-    private myDrones: Particle[] = [];
-    private myCastles: Castle[] = [];
+
+    public myCastles: Castle[] = [];
+    public myDrones: Particle[] = [];
+    public targetedBy: Entity[] = [];
 
     private readonly keyBindings: ControllerMapping;
 
@@ -159,6 +161,20 @@ export class Player implements Entity {
 
     isAlive(): boolean {
         return this._health > 0;
+    }
+
+    updateMovement() {
+        if (this.acc.isZero()) {
+            this.vel.scale(.9)
+        } else {
+            this.vel.add(this.acc);
+            this.vel.limit(this.maxVel);
+        }
+        if (this.vel.sqMagnitude() < (.1 * .1)) {
+            this.vel.x = 0;
+            this.vel.y = 0;
+        }
+        this.pos.add(this.vel);
     }
 
     getFiringPos(from: Vector2D): Vector2D {

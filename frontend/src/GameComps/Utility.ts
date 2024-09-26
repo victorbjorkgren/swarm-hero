@@ -36,6 +36,22 @@ export class Vector2D {
         return this;
     }
 
+    toUnit(): Vector2D {
+        const mag = this.magnitude();
+        if (mag !== 0)
+            this.scale(1 / mag);
+        return this;
+    }
+
+    sqDistanceTo(other: Vector2D): number {
+        return Vector2D.subtract(this, other).sqMagnitude();
+    }
+
+    isZero(): boolean {
+        return this.x === 0 && this.y === 0;
+
+    }
+
     magnitude(): number {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }

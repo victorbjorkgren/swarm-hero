@@ -103,13 +103,24 @@ export class ParticleSystem {
         if (!other.isAlive()) return;
         if (this.sqFiringDistance(me, other) > me.sqEngageRadius) return;
         me.engaging.push(other)
+        other.targetedBy.push(me);
     }
 
     engageFights(): void {
         particleLoop:
         for (const me of this.particles) {
-            me.engaging = me.engaging.filter(foe => foe && foe.isAlive());
-            me.engaging = me.engaging.filter(foe => this.sqFiringDistance(me, foe) < me.sqEngageRadius);
+            // Filter out those that we are no longer engaging with
+            for (let i = me.engaging.length - 1; i >= 0; i--) {
+                const foe = me.engaging[i];
+                if (!foe || !foe.isAlive() || this.sqFiringDistance(me, foe) >= me.sqEngageRadius) {
+                    me.engaging.splice(i, 1);
+                    const targetIndex = foe.targetedBy.findIndex(target => target === me);
+                    if (targetIndex !== -1) {
+                        foe.targetedBy.splice(targetIndex, 1);
+                    }
+                }
+            }
+
             if (me.engaging.length >= me.maxTargets) continue;
             for (const team of this.teams) {
                 if (team.id === me.teamID) continue

@@ -3,6 +3,7 @@ import {Player} from "../Player";
 import {Vector2D} from "../Utility";
 import {Particle} from "../Particle";
 import {AIBehavior} from "./AIBehavior";
+import HeroGameLoop from "../HeroGameLoop";
 
 export class AIController implements Controller {
     private target: Vector2D
@@ -11,26 +12,26 @@ export class AIController implements Controller {
 
     constructor(
         private player: Player,
-        otherPlayer: Player)
+        otherPlayer: Player,
+        scene: HeroGameLoop,
+        )
     {
-        this.behavior = new AIBehavior(player, otherPlayer);
+        this.behavior = new AIBehavior(player, otherPlayer, scene);
         this.target = player.pos.copy();
     }
 
     movement(): void {
-        if (this.behaviorCallCooldown <= 0) {
-            this.target = this.behavior.getTarget();
-            if (this.behavior.wantsDrone() > 0) {
-                this.buy();
-            }
-            this.behaviorCallCooldown = this.behavior.framesBetweenCalls;
-        } else {
-            this.behaviorCallCooldown--;
+        this.behavior.update();
+        this.player.acc = this.behavior.targetDir.copy().toUnit().scale(this.player.maxAcc);
+
+        if (this.behavior.doBuy) {
+            this.behavior.doBuy = false;
+            this.buy();
         }
-        this.player.acc = this.target.copy();
-        this.player.acc.toUnit().scale(this.player.maxAcc);
-
-
+        if (this.behavior.doSpecial) {
+            this.behavior.doSpecial = false;
+            this.special();
+        }
     }
     buy(): void {
         this.player.buyDrone()

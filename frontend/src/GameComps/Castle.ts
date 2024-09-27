@@ -18,7 +18,7 @@ export class Castle implements Entity {
     private healthSprite: Graphics | null = null;
 
     private isActive: boolean = false;
-    private sqActivationDist: number = 70 ** 2;
+    public sqActivationDist: number = 70 ** 2;
     public nearbyPlayers: Player[] = [];
     public garrison: Particle[] = [];
     private pixiRef: Application;

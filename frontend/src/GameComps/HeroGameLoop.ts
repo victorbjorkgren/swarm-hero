@@ -40,8 +40,8 @@ export default class HeroGameLoop {
     private dayLength: number = 10; // seconds
 
     private gameOn: boolean = true;
-    private readonly sceneWidth: number;
-    private readonly sceneHeight: number;
+    public readonly sceneWidth: number;
+    public readonly sceneHeight: number;
     colliders: AABBCollider[] = [];
 
     constructor(
@@ -164,7 +164,7 @@ export default class HeroGameLoop {
         this.players[0].gainCastleControl(this.castles[0]);
         this.players[1].gainCastleControl(this.castles[1]);
         this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
-        // this.controllers.push(new AIController(this.players[1], this.players[0]));
+        this.controllers.push(new AIController(this.players[1], this.players[0], this));
 
         this.particleSystem = new ParticleSystem(10, this.teams, this);
         for (const player of this.players) {

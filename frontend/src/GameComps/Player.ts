@@ -181,7 +181,7 @@ export class Player implements Entity {
             this.vel.add(this.acc);
             this.vel.limit(this.maxVel);
         }
-        if (this.vel.sqMagnitude() < (.1 * .1)) {
+        if (this.vel.sqMagnitude() < (.075 * .075)) {
             this.vel.x = 0;
             this.vel.y = 0;
         }

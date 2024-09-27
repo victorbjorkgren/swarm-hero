@@ -35,6 +35,14 @@ export interface PolygonalCollider {
     vel: Vector2D;
 }
 
+export interface AABBCollider {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    inverted: boolean;
+}
+
 export interface Team {
     color: number,
     id: number,
@@ -84,4 +92,10 @@ export interface Controller {
     buy(): void;
     special(): void;
     cleanup(): void;
+}
+
+export interface CollisionResult {
+    collides: boolean;
+    normal1?: Vector2D;
+    normal2?: Vector2D;
 }

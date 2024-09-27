@@ -3,6 +3,7 @@ import {Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {
+    AABBCollider,
     Controller,
     ControllerMapping,
     DirectionalSpriteSheet,
@@ -41,6 +42,7 @@ export default class HeroGameLoop {
     private gameOn: boolean = true;
     private readonly sceneWidth: number;
     private readonly sceneHeight: number;
+    colliders: AABBCollider[] = [];
 
     constructor(
         public pixiRef: Application,
@@ -56,7 +58,7 @@ export default class HeroGameLoop {
 
     stopGame() {
         this.gameOn = false;
-        this.pixiRef.ticker.stop();
+        this.pixiRef?.ticker.stop();
     }
 
     resumeGame() {
@@ -82,7 +84,7 @@ export default class HeroGameLoop {
     async preload() {
         const castle = Assets.load('/sprites/castle-sprite.png');
         const castleHighlight = Assets.load('/sprites/castle-sprite-highlight.png');
-        const cat = Assets.load('/sprites/black_cat_run.json');;
+        const cat = Assets.load('/sprites/black_cat_run.json');
 
         this.castleTexturePack = {
             'normal': await castle,
@@ -125,16 +127,14 @@ export default class HeroGameLoop {
             special: "KeyP",
         };
 
-        const boundPoly: Polygon = {
-            verts: [
-                new Vector2D(0, 0),
-                new Vector2D(this.sceneWidth, 0),
-                new Vector2D(this.sceneWidth, this.sceneHeight),
-                new Vector2D(0, this.sceneHeight)
-            ],
-            attackable: false,
-            isInside: true,
+        const boundaryCollider: AABBCollider = {
+            minX: 0,
+            minY: 0,
+            maxX: this.sceneWidth,
+            maxY: this.sceneHeight,
+            inverted: true,
         }
+        this.colliders = [boundaryCollider];
 
         this.teams = [
             {
@@ -164,12 +164,9 @@ export default class HeroGameLoop {
         this.players[0].gainCastleControl(this.castles[0]);
         this.players[1].gainCastleControl(this.castles[1]);
         this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
-        this.controllers.push(new AIController(this.players[1], this.players[0]));
+        // this.controllers.push(new AIController(this.players[1], this.players[0]));
 
-        // const colliders: PolygonalCollider[] = [players[0], players[1], {collider: boundPoly}];
-        const colliders: PolygonalCollider[] = [{collider: boundPoly, vel: Vector2D.zeros()}];
-
-        this.particleSystem = new ParticleSystem(10, this.teams, this, colliders);
+        this.particleSystem = new ParticleSystem(10, this.teams, this);
         for (const player of this.players) {
             player.setParticleSystem(this.particleSystem);
         }

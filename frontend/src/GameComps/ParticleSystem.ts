@@ -70,11 +70,11 @@ export class ParticleSystem {
         for (let i=0; i < this.particles.length; ++i) {
             for (const polygonHolder of this.polygonColliderEntities)
                 ParticleSystem.handleBallPolygonCollision(this.particles[i], polygonHolder);
-            for (const team of this.teams) {
-                for (const player of team.players) {
-                    ParticleSystem.handleBallPolygonCollision(this.particles[i], player);
-                }
-            }
+            // for (const team of this.teams) {
+            //     for (const player of team.players) {
+            //         ParticleSystem.handleBallPolygonCollision(this.particles[i], player);
+            //     }
+            // }
             for (let j = i + 1; j < this.particles.length; j++) {
                 ParticleSystem.handleCircleCollision(this.particles[i], this.particles[j]);
             }
@@ -226,7 +226,7 @@ export class ParticleSystem {
         const combinedRadius = p1.radius + p2.radius;
 
         // If the particles are either at the same position or not touching, return
-        if (distSq === 0 || distSq > combinedRadius * combinedRadius) return;
+        if (distSq === 0 || distSq > (combinedRadius * combinedRadius)) return;
 
         // Dot product of relative velocity and relative position
         const dotProduct = dvx * dx + dvy * dy;

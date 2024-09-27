@@ -1,4 +1,5 @@
-import {Graphics} from "pixi.js";
+import {Graphics, Sprite} from "pixi.js";
+import {AABBCollider, CollisionResult, Entity} from "../types/types";
 
 export class Vector2D {
     constructor(public x: number, public y: number) {
@@ -147,3 +148,81 @@ export const massToRadius = (mass: number): number => {
     return mass ** (1 / 3);
 }
 
+export const spriteToAABBCollider = (sprite: Sprite): AABBCollider => {
+    return {
+        minX: sprite.x,
+        maxX: sprite.x + sprite.width,
+        minY: sprite.y,
+        maxY: sprite.y + sprite.height,
+        inverted: false
+    };
+}
+
+export const checkAABBCollision = (obj1: AABBCollider, obj2: AABBCollider): CollisionResult => {
+    if (obj1.inverted && obj2.inverted) throw Error('Cant collide two inverted objects');
+    if (obj1.inverted) return checkAABBInside(obj2, obj1);
+    if (obj2.inverted) return checkAABBInside(obj1, obj2);
+
+    const overlapX = Math.min(obj1.maxX - obj2.minX, obj2.maxX - obj1.minX);
+    const overlapY = Math.min(obj1.maxY - obj2.minY, obj2.maxY - obj1.minY);
+
+    if (overlapX > 0 && overlapY > 0) {
+        if (overlapX < overlapY) {
+            // Horizontal collision
+            const normalX = obj1.minX < obj2.minX ? -1 : 1;
+            return {
+                collides: true,
+                normal1: new Vector2D(normalX, 0),
+                normal2: new Vector2D(-normalX, 0)
+            };
+        } else {
+            // Vertical collision
+            const normalY = obj1.minY < obj2.minY ? -1 : 1;
+            return {
+                collides: true,
+                normal1: new Vector2D(0, normalY ),
+                normal2: new Vector2D(0, -normalY )
+            };
+        }
+    }
+
+    return { collides: false };
+}
+
+const checkAABBInside = (inner: AABBCollider, outer: AABBCollider): CollisionResult => {
+    if (
+        inner.minX >= outer.minX &&
+        inner.maxX <= outer.maxX &&
+        inner.minY >= outer.minY &&
+        inner.maxY <= outer.maxY
+    )
+        return {collides: false}
+
+    // Determine the smallest distance to the edges of the outer box
+    const distLeft = inner.minX - outer.minX;
+    const distRight = outer.maxX - inner.maxX;
+    const distTop = inner.minY - outer.minY;
+    const distBottom = outer.maxY - inner.maxY;
+
+    // Find the minimum distance and assign the normal accordingly
+    const minDistX = Math.min(distLeft, distRight);
+    const minDistY = Math.min(distTop, distBottom);
+
+    if (minDistX < minDistY) {
+        // Horizontal normal (either left or right)
+        const normalX = distLeft < distRight ? -1 : 1;
+        return {
+            collides: true,
+            normal1: new Vector2D(normalX, 0),
+            normal2: new Vector2D(-normalX, 0)
+        };
+    } else {
+        // Vertical normal (either top or bottom)
+        const normalY = distTop < distBottom ? -1 : 1;
+        return {
+            collides: true,
+            normal1: new Vector2D(0, normalY ),
+            normal2: new Vector2D(0, -normalY )
+        };
+    }
+}

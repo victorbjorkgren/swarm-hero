@@ -1,6 +1,7 @@
-import {closestPointOnPolygon, Vector2D} from "./Utility";
+import {checkAABBCollision, closestPointOnPolygon, spriteToAABBCollider, Vector2D} from "./Utility";
 import {ParticleSystem} from "./ParticleSystem";
 import {
+    AABBCollider, CollisionResult,
     Controller,
     ControllerMapping,
     DirectionalSpriteSheet,
@@ -30,17 +31,18 @@ export class Player implements Entity {
     get health(): number {
         return this._health;
     }
-    get collider(): Polygon {
-        return {
-            verts: [
-                new Vector2D(this.pos.x, this.pos.y),
-                new Vector2D(this.pos.x, this.pos.y+40),
-                new Vector2D(this.pos.x+40, this.pos.y+40),
-                new Vector2D(this.pos.x+40, this.pos.y),
-            ],
-            attackable: true,
-            isInside: false,
-        };
+    get collider(): AABBCollider {
+        if (this.currentAnimation !== null) {
+            return spriteToAABBCollider(this.currentAnimation);
+        } else {
+            return {
+                minX: this.pos.x,
+                maxX: this.pos.x + 20,
+                minY: this.pos.y,
+                maxY: this.pos.y + 20,
+                inverted: false
+            };
+        }
     }
 
     public pos: Vector2D;
@@ -77,7 +79,7 @@ export class Player implements Entity {
         this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
 
-        this.getCat();
+        this.getCat().catch(e => console.error(e));
     }
 
     gainCastleControl(castle: Castle) {
@@ -163,6 +165,15 @@ export class Player implements Entity {
         return this._health > 0;
     }
 
+    checkCollisions(): CollisionResult {
+        const myCollider = this.collider;
+        for (const collider of this.scene.colliders) {
+            const collisionTest = checkAABBCollision(myCollider, collider);
+            if (collisionTest.collides) return collisionTest;
+        }
+        return { collides: false };
+    }
+
     updateMovement() {
         if (this.acc.isZero()) {
             this.vel.scale(.9)
@@ -174,6 +185,15 @@ export class Player implements Entity {
             this.vel.x = 0;
             this.vel.y = 0;
         }
+        const collisionTest = this.checkCollisions();
+        if (collisionTest.collides) {
+            const normal = collisionTest.normal1!;
+            if (normal.x > 0 && this.vel.x > 0) this.vel.x = 0;
+            else if (normal.x < 0 && this.vel.x < 0) this.vel.x = 0;
+            if (normal.y > 0 && this.vel.y > 0) this.vel.y = 0;
+            else if (normal.y < 0 && this.vel.y < 0) this.vel.y = 0;
+        }
+
         this.pos.add(this.vel);
     }
 

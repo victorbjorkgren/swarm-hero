@@ -46,6 +46,7 @@ export interface AABBCollider {
 export interface Team {
     color: number,
     id: number,
+    name: string,
     playerCentroid: Vector2D,
     castleCentroid: Vector2D,
     controllerMapping: ControllerMapping,

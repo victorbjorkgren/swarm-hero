@@ -20,11 +20,11 @@ export class Player implements Entity {
     set health(value: number) {
         this._health = value;
         if (!this.isAlive()) {
-            let w: number;
+            let w: string;
             if (this.team.id === 0)
-                w = 1;
+                w = this.scene.teams[1].name;
             else
-                w = 0;
+                w = this.scene.teams[0].name;
             this.scene.onDeath(w.toString());
         }
     }

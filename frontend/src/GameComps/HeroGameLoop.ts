@@ -148,7 +148,6 @@ export default class HeroGameLoop {
                 const tX = Math.floor(Math.random() * columns);
                 const tY = Math.floor(Math.random() * rows);
                 const frameName = `tile_${tX}_${tY}`
-                console.log(frameName);
                 const sprite = new Sprite(spritesheet.textures[frameName]);
                 sprite.x = x * tileSize;
                 sprite.y = y * tileSize;

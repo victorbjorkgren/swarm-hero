@@ -154,6 +154,7 @@ export class AIBehavior {
 
     fightCastleCondition(): boolean {
         const castles = this.nearbyFoeCastles(this.visibleDistance);
+        castles.filter(castle => castle && castle.isAlive());
         if (castles.length === 0) return false;
         let minDifficulty = 1;
         for (const castle of castles) {
@@ -214,8 +215,10 @@ export class AIBehavior {
     nearbyFoeCastles(dist: number): Castle[] {
         const nearbyFoeCastles = [];
         for (const castle of this.otherPlayer.team.castles) {
-            const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
-            if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle);
+            if (castle && castle.isAlive()) {
+                const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
+                if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle);
+            }
         }
         return nearbyFoeCastles;
     }

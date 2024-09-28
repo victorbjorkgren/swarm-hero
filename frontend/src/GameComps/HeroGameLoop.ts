@@ -14,7 +14,17 @@ import {
     TexturePack
 } from "../types/types";
 import React from "react";
-import {AnimatedSprite, Application, Assets, Graphics, Sprite} from "pixi.js";
+import {
+    AnimatedSprite,
+    Application,
+    Assets,
+    Container,
+    Graphics,
+    Rectangle,
+    Sprite,
+    Spritesheet, SpritesheetData,
+    Texture
+} from "pixi.js";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
 
@@ -82,20 +92,70 @@ export default class HeroGameLoop {
     }
 
     async preload() {
-        const castle = Assets.load('/sprites/castle-sprite.png');
-        const castleHighlight = Assets.load('/sprites/castle-sprite-highlight.png');
+        const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
+        const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
         const cat = Assets.load('/sprites/black_cat_run.json');
+        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png')
+
+        const backgroundReady = this.setupBackground(backgroundSheetTexture);
 
         this.castleTexturePack = {
             'normal': await castle,
             'highlight': await castleHighlight,
         }
         await cat;
+        await backgroundReady;
 
         this.players = [];
         this.teams = [];
         this.castles = [];
     };
+
+    async setupBackground(texture_: Promise<Texture>) {
+        // Load your spritesheet texture
+        const texture = await texture_;
+
+        const tileSize: number = 64;
+        const columns = Math.floor(texture.width / tileSize);
+        const rows = Math.floor(texture.height / tileSize);
+        const screenCols = Math.ceil(this.sceneWidth / tileSize);
+        const screenRows = Math.ceil(this.sceneHeight / tileSize);
+
+        const atlasData: SpritesheetData = {
+            frames: {},
+            meta: {
+                scale: 1,
+            }
+        };
+
+        const frameNames: string[] = [];
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < columns; x++) {
+                const frameName = `tile_${x}_${y}`;
+                frameNames.push(frameName);
+                atlasData.frames[frameName] = {
+                    frame: { x: x * tileSize, y: y * tileSize, w: tileSize, h: tileSize }
+                };
+            }
+        }
+
+        const spritesheet = new Spritesheet(texture, atlasData);
+
+        await spritesheet.parse();
+
+        for (let y = 0; y < screenRows; y++) {
+            for (let x = 0; x < screenCols; x++) {
+                const tX = Math.floor(Math.random() * columns);
+                const tY = Math.floor(Math.random() * rows);
+                const frameName = `tile_${tX}_${tY}`
+                console.log(frameName);
+                const sprite = new Sprite(spritesheet.textures[frameName]);
+                sprite.x = x * tileSize;
+                sprite.y = y * tileSize;
+                this.pixiRef.stage.addChild(sprite);
+            }
+        }
+    }
 
     resetControllers() {
         this.controllers.forEach(controller => {
@@ -139,7 +199,8 @@ export default class HeroGameLoop {
         this.teams = [
             {
                 id: 0,
-                color: 0xff0000,
+                name: 'Yellow',
+                color: 0xffff00,
                 playerCentroid: new Vector2D(.25 * this.sceneWidth, .5 * this.sceneHeight),
                 castleCentroid: new Vector2D(this.sceneWidth/8, this.sceneHeight/2),
                 controllerMapping: player1Keys,
@@ -148,6 +209,7 @@ export default class HeroGameLoop {
             },
             {
                 id: 1,
+                name: 'White',
                 color: 0xffffff,
                 playerCentroid: new Vector2D(.75 * this.sceneWidth, .5 * this.sceneHeight),
                 castleCentroid: new Vector2D(this.sceneWidth*7/8, this.sceneHeight/2),

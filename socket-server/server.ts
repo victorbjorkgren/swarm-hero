@@ -1,10 +1,34 @@
-import WebSocket, { Server } from 'ws';
+import WebSocket, {WebSocketServer} from 'ws';
+// const { Server } = WebSocket;
 import express from 'express';
 import http from 'http';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import os from 'os';
+
+// Manually define __dirname in ES module scope
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const wss = new Server({ server });
+const wss = new WebSocketServer({ server });
+
+const port = process.env.PORT || 8080;
+
+const getNetworkIP = (): string | undefined => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name] || []) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;  // Return the network IP
+            }
+        }
+    }
+    return undefined;
+};
+
+app.use(express.static('public'));
 
 wss.on('connection', (ws: WebSocket) => {
     console.log('Client connected');
@@ -25,6 +49,17 @@ wss.on('connection', (ws: WebSocket) => {
     });
 });
 
-server.listen(8080, () => {
-    console.log('WebSocket server running on port 8080');
+app.get('*', (req, res) => {
+    res.sendFile(path.join('public', 'index.html'));
+});
+
+server.listen(port, () => {
+    const networkIP = getNetworkIP();
+    console.log('WebSocket server running on:');
+    console.log(`- Local: http://localhost:${port}`);
+    if (networkIP) {
+        console.log(`- Network: http://${networkIP}:${port}`);
+    } else {
+        console.log('- Network IP not found.');
+    }
 });

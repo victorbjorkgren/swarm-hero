@@ -1,14 +1,23 @@
 {
   "name": "socket-server",
   "version": "1.0.0",
-  "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "frontend:build": "(cd ../frontend && yarn build)",
+    "server:build": "tsc",
+    "build": "yarn frontend:build && yarn server:build",
+    "transfer": "mkdir -p public/ && cp -r ../frontend/build/* public/",
+    "start": "node dist/server.js",
+    "launch": "yarn build && yarn transfer && yarn start"
+  },
+  "type": "module",
   "dependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.4",
     "@types/ws": "^8.5.12",
     "express": "^4.19.2",
     "http": "^0.0.1-security",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "ws": "^8.18.0"
   }

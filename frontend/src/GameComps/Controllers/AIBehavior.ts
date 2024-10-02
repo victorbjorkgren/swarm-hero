@@ -4,6 +4,7 @@ import {Vector2D} from "../Utility";
 import {Castle} from "../Castle";
 import {Entity} from "../../types/types";
 import HeroGameLoop from "../HeroGameLoop";
+import {NavMesh} from "../NavMesh";
 
 enum State {
     Flee,
@@ -19,22 +20,30 @@ export class AIBehavior {
     private safeSeparationDistanceCastle: number;
     public readonly framesBetweenConditionCalls: number = 40;
     public readonly framesBetweenBehaviorCalls: number = 10;
+    public readonly framesBetweenNavmeshCalls: number = 60;
     private state: State = State.RaiseArmy;
     private engaging: Entity | null = null;
     private fleeDir: Vector2D;
+    private navMesh: NavMesh;
 
     private frameCounter: number = 0;
 
-    public targetDir: Vector2D
+    public targetDir: Vector2D;
+    public targetPath: Vector2D[] = [];
+    public pathTarget: Vector2D;
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
     constructor(private player: Player, private otherPlayer: Player, scene: HeroGameLoop) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
+        this.pathTarget = player.pos.copy();
         this.visibleDistance = Math.max(scene.sceneWidth, scene.sceneHeight);
         this.safeSeparationDistancePlayer = scene.sceneWidth / 2;
         this.safeSeparationDistanceCastle = scene.sceneWidth / 3;
+
+        this.navMesh = new NavMesh(scene);
+        this.navMesh.updateNavMesh(scene.colliders);
     }
 
     update() {
@@ -47,7 +56,7 @@ export class AIBehavior {
     }
 
     executeState() {
-        console.log(this.state);
+        // console.log(this.state);
         switch (this.state) {
             case State.RaiseArmy:
                 this.raiseArmyBehavior();
@@ -88,13 +97,37 @@ export class AIBehavior {
         }
     }
 
+    updateTargetPath(target: Vector2D) {
+        if (this.targetPath.length > 0) {
+            if (Vector2D.sqDist(this.targetPath[0], this.player.pos) <= ((NavMesh.scale / 2) ** 2)) {
+                this.targetPath.shift();
+            }
+            if (this.targetPath.length === 0) {
+                this.targetPath.push(target.copy());
+                this.targetDir = Vector2D.subtract(this.targetPath[0], this.player.pos);
+                this.pathTarget = target.copy();
+                return;
+            }
+        }
+        if ((this.frameCounter % this.framesBetweenNavmeshCalls === 0) || this.targetPath.length === 0) {
+            if (!Vector2D.isEqual(target, this.pathTarget)) {
+                this.targetPath = this.navMesh.aStar(this.player.pos, target);
+            }
+        }
+        if (this.targetPath.length === 0) {
+            this.targetDir = Vector2D.subtract(target, this.player.pos);
+        } else {
+            this.targetDir = Vector2D.subtract(this.targetPath[0], this.player.pos);
+        }
+        this.pathTarget = target.copy();
+    }
+
     fleeBehavior() {
         const nearestCastle = this.nearestFriendlyCastle();
         if (nearestCastle === null) {
             this.targetDir = this.fleeDir.scale(this.framesBetweenConditionCalls);
         } else {
-            this.targetDir = Vector2D.subtract(nearestCastle.pos, this.player.pos);
-            // this.targetDir = Vector2D.add(this.fleeDir.scale(.1), castleDir).toUnit().scale(this.framesBetweenConditionCalls);
+            this.updateTargetPath(nearestCastle.pos.copy());
             this.doBuy = true;
         }
     }
@@ -128,7 +161,8 @@ export class AIBehavior {
 
     fightPlayerBehavior() {
         if (this.engaging && this.engaging.isAlive()) {
-            this.targetDir = Vector2D.subtract(this.engaging.pos.copy(), this.player.pos);
+            this.updateTargetPath(this.engaging.pos.copy());
+            // this.targetDir = Vector2D.subtract(this.engaging.pos.copy(), this.player.pos);
         }
     }
 
@@ -148,7 +182,8 @@ export class AIBehavior {
 
     fightCastleBehavior() {
         if (this.engaging && this.engaging.isAlive()) {
-            this.targetDir = Vector2D.subtract(this.engaging.pos, this.player.pos);
+            this.updateTargetPath(this.engaging.pos.copy());
+            // this.targetDir = Vector2D.subtract(this.engaging.pos, this.player.pos);
         }
     }
 
@@ -169,7 +204,8 @@ export class AIBehavior {
 
     reinforceCastleBehavior() {
         if (this.engaging && this.engaging.isAlive()) {
-            this.targetDir = Vector2D.subtract(this.engaging.pos.copy(), this.player.pos);
+            this.updateTargetPath(this.engaging.pos.copy());
+            // this.targetDir = Vector2D.subtract(this.engaging.pos.copy(), this.player.pos);
         }
         this.doBuy = true;
     }
@@ -193,7 +229,8 @@ export class AIBehavior {
     raiseArmyBehavior() {
         const castle = this.nearestFriendlyCastle();
         if (castle && castle.isAlive() && castle.pos.sqDistanceTo(this.player.pos) > castle.sqActivationDist) {
-            this.targetDir = Vector2D.subtract(castle.pos, this.player.pos);
+            this.updateTargetPath(castle.pos.copy());
+            // this.targetDir = Vector2D.subtract(castle.pos, this.player.pos);
         } else {
             this.targetDir = Vector2D.zeros();
         }

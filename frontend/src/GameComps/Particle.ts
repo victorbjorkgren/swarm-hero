@@ -68,6 +68,7 @@ export class Particle implements Entity {
             this.particleSprite = new Graphics()
                 .circle(0, 0, this.radius)
                 .fill({color: this.color, alpha: 1});
+            this.particleSprite.zIndex = HeroGameLoop.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.particleSprite);
         }
         this.particleSprite.x = this.pos.x;
@@ -108,6 +109,7 @@ export class Particle implements Entity {
     renderHealthBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
+            this.healthSprite.zIndex = HeroGameLoop.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         this.healthSprite.clear();

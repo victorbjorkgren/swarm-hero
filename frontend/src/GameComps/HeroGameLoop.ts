@@ -1,5 +1,5 @@
 import {ParticleSystem} from "./ParticleSystem";
-import {Vector2D} from "./Utility";
+import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {
@@ -27,6 +27,8 @@ import {
 } from "pixi.js";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
+import {NavMesh} from "./NavMesh";
+import DebugDrawer from "../DebugTools/DebugDrawer";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -36,6 +38,12 @@ export interface ReactVars {
 }
 
 export default class HeroGameLoop {
+    static zIndex = {
+        'environment': 0,
+        'ground': 1,
+        'flyers': 2,
+        'hud': 3,
+    }
     public players: Player[] = [];
     public teams: Team[] = [];
     public castles: Castle[] = [];
@@ -43,6 +51,7 @@ export default class HeroGameLoop {
     public particleSystem: ParticleSystem | undefined = undefined;
     public startTime: number | undefined
     private controllers: Controller[] = [];
+    public navMesh: NavMesh;
 
     public castleTexturePack: TexturePack | null = null;
     public catSprite: DirectionalSpriteSheet | null = null;
@@ -64,6 +73,7 @@ export default class HeroGameLoop {
     ) {
         this.sceneWidth = pixiRef.canvas.width;
         this.sceneHeight = pixiRef.canvas.height;
+        this.navMesh = new NavMesh(this);
     }
 
     stopGame() {
@@ -92,12 +102,19 @@ export default class HeroGameLoop {
     }
 
     async preload() {
+        this.players = [];
+        this.teams = [];
+        this.castles = [];
+        this.colliders = [];
+
         const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
         const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
         const cat = Assets.load('/sprites/black_cat_run.json');
-        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png')
+        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
+        const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
 
         const backgroundReady = this.setupBackground(backgroundSheetTexture);
+        const blockersReady = this.setupBlockers(walls);
 
         this.castleTexturePack = {
             'normal': await castle,
@@ -105,14 +122,10 @@ export default class HeroGameLoop {
         }
         await cat;
         await backgroundReady;
-
-        this.players = [];
-        this.teams = [];
-        this.castles = [];
+        await blockersReady;
     };
 
     async setupBackground(texture_: Promise<Texture>) {
-        // Load your spritesheet texture
         const texture = await texture_;
 
         const tileSize: number = 64;
@@ -151,9 +164,22 @@ export default class HeroGameLoop {
                 const sprite = new Sprite(spritesheet.textures[frameName]);
                 sprite.x = x * tileSize;
                 sprite.y = y * tileSize;
+                sprite.zIndex = HeroGameLoop.zIndex.environment
                 this.pixiRef.stage.addChild(sprite);
             }
         }
+    }
+
+    async setupBlockers(wallSpriteSheet: Promise<Spritesheet>) {
+        const sheet = await wallSpriteSheet;
+        const texture: Texture = sheet.textures['TX Tileset Wall-0.png'];
+        const blockerSprite: Sprite = new Sprite(texture);
+        blockerSprite.x = this.sceneWidth / 2 - blockerSprite.width / 2;
+        blockerSprite.y = this.sceneHeight / 2 - blockerSprite.height / 2;
+
+        blockerSprite.zIndex = HeroGameLoop.zIndex.ground;
+        this.pixiRef.stage.addChild(blockerSprite);
+        this.colliders.push(spriteToAABBCollider(blockerSprite));
     }
 
     resetControllers() {
@@ -164,6 +190,7 @@ export default class HeroGameLoop {
     }
 
     create() {
+        DebugDrawer.setPixi(this.pixiRef);
         this.graphics = new Graphics();
         this.players = [];
         this.castles = [];
@@ -193,7 +220,7 @@ export default class HeroGameLoop {
             maxY: this.sceneHeight,
             inverted: true,
         }
-        this.colliders = [boundaryCollider];
+        this.colliders.push(boundaryCollider);
 
         this.teams = [
             {
@@ -253,6 +280,7 @@ export default class HeroGameLoop {
     }
 
     update() {
+        DebugDrawer.reset();
         if (!this.gameOn) return
         if (this.particleSystem === undefined) return
 

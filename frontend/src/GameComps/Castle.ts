@@ -66,6 +66,7 @@ export class Castle implements Entity {
             if (!this.castleSprite) {
                 this.castleSprite = new Sprite(this.texture.normal);
                 this.castleSprite.scale = .1;
+                this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
                 this.pixiRef.stage.addChild(this.castleSprite);
             }
             this.castleSprite.x = this.pos.x;
@@ -85,11 +86,13 @@ export class Castle implements Entity {
     renderHealthBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
+            this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         if (!this.castleSprite) {
             this.castleSprite = new Sprite(this.texture.normal);
             this.castleSprite.scale = .1;
+            this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
             this.pixiRef.stage.addChild(this.castleSprite);
         }
         this.healthSprite.clear();

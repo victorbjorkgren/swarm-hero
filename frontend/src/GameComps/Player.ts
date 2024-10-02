@@ -14,7 +14,7 @@ import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
 import {Keyboard} from "./Keyboard";
-import {AnimatedSprite, Assets, Graphics} from "pixi.js";
+import {AnimatedSprite, Assets, Graphics, Spritesheet, SpritesheetData} from "pixi.js";
 
 export class Player implements Entity {
     set health(value: number) {
@@ -210,8 +210,8 @@ export class Player implements Entity {
     }
 
     async getCat() {
-        const catSpriteSheet = await Assets.cache.get('/sprites/black_cat_run.json');
-        const animations = catSpriteSheet.data.animations;
+        const catSpriteSheet: Spritesheet = await Assets.cache.get('/sprites/black_cat_run.json');
+        const animations = catSpriteSheet.data.animations!;
         this.playerSpritePack =  {
             'u': AnimatedSprite.fromFrames(animations["u/black_0"]),
             'ur': AnimatedSprite.fromFrames(animations["ur/black_0"]),
@@ -227,6 +227,7 @@ export class Player implements Entity {
                 const animation = this.playerSpritePack[key as keyof DirectionalSpriteSheet];
                 animation.loop = true;
                 animation.visible = false;
+                animation.zIndex = HeroGameLoop.zIndex.ground;
                 this.scene.pixiRef.stage.addChild(animation);
             }
         });
@@ -286,6 +287,7 @@ export class Player implements Entity {
     renderHealthBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
+            this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         this.healthSprite.clear();

@@ -82,6 +82,10 @@ export class Vector2D {
         return new Vector2D(v.x * a, v.y * a);
     }
 
+    static isEqual(v1: Vector2D, v2: Vector2D): boolean {
+        return v1.x === v2.x && v2.y === v2.y;
+    }
+
     static zeros(): Vector2D {
         return new Vector2D(0, 0);
     }
@@ -163,30 +167,54 @@ export const checkAABBCollision = (obj1: AABBCollider, obj2: AABBCollider): Coll
     if (obj1.inverted) return checkAABBInside(obj2, obj1);
     if (obj2.inverted) return checkAABBInside(obj1, obj2);
 
-    const overlapX = Math.min(obj1.maxX - obj2.minX, obj2.maxX - obj1.minX);
-    const overlapY = Math.min(obj1.maxY - obj2.minY, obj2.maxY - obj1.minY);
+    if (
+        obj1.minX < obj2.maxX &&
+        obj1.maxX > obj2.minX &&
+        obj1.minY < obj2.maxY &&
+        obj1.maxY > obj2.minY
+    ) {
+        const penetrationX1 = obj2.maxX - obj1.minX; // obj1 is to the left
+        const penetrationX2 = obj1.maxX - obj2.minX; // obj1 is to the right
+        const penetrationY1 = obj2.maxY - obj1.minY; // obj1 is below
+        const penetrationY2 = obj1.maxY - obj2.minY; // obj1 is above
 
-    if (overlapX > 0 && overlapY > 0) {
-        if (overlapX < overlapY) {
+        const minPenetrationX = Math.min(penetrationX1, penetrationX2);
+        const minPenetrationY = Math.min(penetrationY1, penetrationY2);
+
+        if (minPenetrationX < minPenetrationY) {
             // Horizontal collision
-            const normalX = obj1.minX < obj2.minX ? -1 : 1;
-            return {
-                collides: true,
-                normal1: new Vector2D(normalX, 0),
-                normal2: new Vector2D(-normalX, 0)
-            };
+            if (penetrationX1 < penetrationX2) {
+                return {
+                    collides: true,
+                    normal1: new Vector2D(-1, 0), // obj1 is to the left
+                    normal2: new Vector2D(1, 0), // obj2 is to the right
+                };
+            } else {
+                return {
+                    collides: true,
+                    normal1: new Vector2D(1, 0),  // obj1 is to the right
+                    normal2: new Vector2D(-1, 0)  // obj2 is to the left
+                };
+            }
         } else {
             // Vertical collision
-            const normalY = obj1.minY < obj2.minY ? -1 : 1;
-            return {
-                collides: true,
-                normal1: new Vector2D(0, normalY ),
-                normal2: new Vector2D(0, -normalY )
-            };
+            if (penetrationY1 < penetrationY2) {
+                return {
+                    collides: true,
+                    normal1: new Vector2D(0, -1), // obj1 is below
+                    normal2: new Vector2D(0, 1),   // obj2 is above
+                };
+            } else {
+                return {
+                    collides: true,
+                    normal1: new Vector2D(0, 1),  // obj1 is above
+                    normal2: new Vector2D(0, -1)  // obj2 is below
+                };
+            }
         }
     }
 
-    return { collides: false };
+    return {collides: false};
 }
 
 const checkAABBInside = (inner: AABBCollider, outer: AABBCollider): CollisionResult => {

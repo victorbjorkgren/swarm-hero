@@ -5,6 +5,7 @@ import {Castle} from "../Castle";
 import {Entity} from "../../types/types";
 import HeroGameLoop from "../HeroGameLoop";
 import {NavMesh} from "../NavMesh";
+import DebugDrawer from "../../DebugTools/DebugDrawer";
 
 enum State {
     Flee,
@@ -47,6 +48,7 @@ export class AIBehavior {
     }
 
     update() {
+        DebugDrawer.addPath(this.targetPath, 0xFF0000)
         if (this.frameCounter % this.framesBetweenConditionCalls === 0) {
             this.setState()
         }
@@ -101,12 +103,6 @@ export class AIBehavior {
         if (this.targetPath.length > 0) {
             if (Vector2D.sqDist(this.targetPath[0], this.player.pos) <= ((NavMesh.scale / 2) ** 2)) {
                 this.targetPath.shift();
-            }
-            if (this.targetPath.length === 0) {
-                this.targetPath.push(target.copy());
-                this.targetDir = Vector2D.subtract(this.targetPath[0], this.player.pos);
-                this.pathTarget = target.copy();
-                return;
             }
         }
         if ((this.frameCounter % this.framesBetweenNavmeshCalls === 0) || this.targetPath.length === 0) {

@@ -76,11 +76,10 @@ export  class NavMesh {
             closedList.add(`${currentNode.position.x},${currentNode.position.y}`);
 
             // Check if reached goal
-            if (currentNode.position.x === goal.x && currentNode.position.y === goal.y) {
+            if (Vector2D.isEqual(currentNode.position, goal)) {
                 const finalPath = this.reconstructPath(currentNode);
                 finalPath.forEach(node => node.scale(NavMesh.scale));
                 finalPath.shift();
-                DebugDrawer.addPath(finalPath, 0xFF0000);
                 return finalPath;
             }
 
@@ -176,7 +175,7 @@ export  class NavMesh {
             path.push(node.position);
             node = node.parent;
         }
-        return this.smoothPath(path.reverse());
+        return path.reverse();
     };
 
 }

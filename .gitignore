@@ -10,6 +10,8 @@
 
 # production
 */build
+/socket-server/public/*
+/socket-server/dist/*
 
 # misc
 .DS_Store

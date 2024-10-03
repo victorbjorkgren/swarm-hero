@@ -233,9 +233,9 @@ export class AIBehavior {
         this.doBuy = true;
     }
 
-    estimateFoeStrength(foe: Entity, target: Entity): number {
-        if (target.myDrones.length === 0) return 1000;
-        return foe.myDrones.length / target.myDrones.length;
+    estimateFoeStrength(foe: Entity, attacker: Entity): number {
+        if (attacker.myDrones.length === 0) return 1000;
+        return foe.myDrones.length / attacker.myDrones.length;
     }
 
     nearbyFoes(dist: number): Player[] {

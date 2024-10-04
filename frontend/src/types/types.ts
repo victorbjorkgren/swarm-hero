@@ -1,7 +1,7 @@
 import {Player} from "../GameComps/Player";
 import {Castle} from "../GameComps/Castle";
 import {Vector2D} from "../GameComps/Utility";
-import {AnimatedSprite, Sprite, Texture} from "pixi.js";
+import {AnimatedSprite, Texture} from "pixi.js";
 import {Particle} from "../GameComps/Particle";
 
 export interface Polygon {
@@ -74,7 +74,12 @@ export interface popUpEvent{
 }
 
 export enum Units {
-    'laser'
+    LaserDrone= 'LaserDrone',
+}
+
+export enum Spells {
+    Explosion = 'Explosion',
+    LaserBurst= 'LaserBurst',
 }
 
 export interface DirectionalSpriteSheet {

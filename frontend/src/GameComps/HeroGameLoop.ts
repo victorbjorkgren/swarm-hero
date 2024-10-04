@@ -29,6 +29,7 @@ import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
 import {NavMesh} from "./NavMesh";
 import DebugDrawer from "../DebugTools/DebugDrawer";
+import {SpellPack} from "../UI-Comps/SpellPicker";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -45,6 +46,7 @@ export default class HeroGameLoop {
         'hud': 3,
     }
     public players: Player[] = [];
+    public localPlayer: Player | null = null;
     public teams: Team[] = [];
     public castles: Castle[] = [];
     public graphics:  Graphics | undefined
@@ -62,6 +64,7 @@ export default class HeroGameLoop {
     public readonly sceneWidth: number;
     public readonly sceneHeight: number;
     colliders: AABBCollider[] = [];
+    public defaultCursorTexture: Texture | null = null;
 
     constructor(
         public pixiRef: Application,
@@ -70,6 +73,7 @@ export default class HeroGameLoop {
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
         private playersRef: React.MutableRefObject<Player[]>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
+        public setSpellSlots: React.Dispatch<React.SetStateAction<SpellPack[]>>,
     ) {
         this.sceneWidth = pixiRef.canvas.width;
         this.sceneHeight = pixiRef.canvas.height;
@@ -92,6 +96,11 @@ export default class HeroGameLoop {
         this.stopGame();
     }
 
+    setLocalPlayer(player: Player) {
+        this.localPlayer = player;
+        player.isLocal = true;
+    }
+
     start() {
         this.stopGame();
         this.preload().then(() => {
@@ -112,6 +121,7 @@ export default class HeroGameLoop {
         const cat = Assets.load('/sprites/black_cat_run.json');
         const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
         const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
+        // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
 
         const backgroundReady = this.setupBackground(backgroundSheetTexture);
         const blockersReady = this.setupBlockers(walls);
@@ -120,6 +130,7 @@ export default class HeroGameLoop {
             'normal': await castle,
             'highlight': await castleHighlight,
         }
+        // this.defaultCursorTexture= await defaultCursor;
         await cat;
         await backgroundReady;
         await blockersReady;
@@ -141,11 +152,11 @@ export default class HeroGameLoop {
             }
         };
 
-        const frameNames: string[] = [];
+        // const frameNames: string[] = [];
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < columns; x++) {
                 const frameName = `tile_${x}_${y}`;
-                frameNames.push(frameName);
+                // frameNames.push(frameName);
                 atlasData.frames[frameName] = {
                     frame: { x: x * tileSize, y: y * tileSize, w: tileSize, h: tileSize }
                 };
@@ -251,6 +262,7 @@ export default class HeroGameLoop {
         this.castles.push(new Castle(this.teams[1], this))
         this.players[0].gainCastleControl(this.castles[0]);
         this.players[1].gainCastleControl(this.castles[1]);
+        this.setLocalPlayer(this.players[0]);
         this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
         this.controllers.push(new AIController(this.players[1], this.players[0], this));
 

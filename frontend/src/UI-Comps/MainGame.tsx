@@ -1,12 +1,14 @@
 import React, {useEffect, useRef, useState} from 'react';
-import HeroGameLoop from "./HeroGameLoop";
-import {CityPopup} from "../UI-Comps/CityPopup";
-import {Player} from "./Player";
+import HeroGameLoop from "../GameComps/HeroGameLoop";
+import {CityPopup} from "./CityPopup";
+import {Player} from "../GameComps/Player";
 import {popUpEvent} from "../types/types";
 import {Application, Assets, Sprite} from "pixi.js";
-import {Keyboard} from "./Keyboard";
-import {Vector2D} from "./Utility";
-import {WinnerDisplay} from "../UI-Comps/WinnerDisplay";
+import {Keyboard} from "../GameComps/Keyboard";
+import {Vector2D} from "../GameComps/Utility";
+import {WinnerDisplay} from "./WinnerDisplay";
+import {PlayerBar} from "./PlayerBar";
+import {SpellPack} from "./SpellPicker";
 
 
 const MainGame: React.FC = () => {
@@ -19,6 +21,7 @@ const MainGame: React.FC = () => {
     const [playerPopUpEvent, setPlayerPopUpEvent] = useState<popUpEvent | undefined>(undefined);
     const [winner, setWinner] = useState<string | undefined>(undefined);
     const [dayTime, setDayTime] = useState<number>(0);
+    const [spellSlots, setSpellSlots] = useState<SpellPack[]>([]);
 
     const resizeApp = (): Vector2D => {
         const ASPECT_RATIO = 16 / 9;
@@ -66,13 +69,17 @@ const MainGame: React.FC = () => {
             gameContainerRef.current.appendChild(pixiRef.current.canvas);
         }
 
+        pixiRef.current.stage.eventMode = 'static';
+        pixiRef.current.stage.hitArea = pixiRef.current.screen;
+
         gameSceneRef.current = new HeroGameLoop(
             pixiRef.current,
             setWinner,
             winner,
             setPlayerPopUpEvent,
             playersRef,
-            setDayTime
+            setDayTime,
+            setSpellSlots,
         );
 
         gameSceneRef.current.start();
@@ -160,6 +167,11 @@ const MainGame: React.FC = () => {
                             )
                         ))
                     }
+                    <PlayerBar
+                        pickerCallback={(spell, castingDoneCallback)=>{gameSceneRef.current?.localPlayer?.prepareSpell(spell, castingDoneCallback)}}
+                        spellSlots={spellSlots}
+                        player={gameSceneRef.current ? gameSceneRef.current.localPlayer : null}
+                    />
                     <WinnerDisplay winner={winner} handleRematch={handleRematch} />
                 </div>
             </div>

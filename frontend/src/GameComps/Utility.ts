@@ -1,5 +1,5 @@
 import {Graphics, Sprite} from "pixi.js";
-import {AABBCollider, CollisionResult, Entity} from "../types/types";
+import {AABBCollider, CollisionResult, Entity, PolygonalCollider} from "../types/types";
 
 export class Vector2D {
     constructor(public x: number, public y: number) {
@@ -254,3 +254,15 @@ const checkAABBInside = (inner: AABBCollider, outer: AABBCollider): CollisionRes
         };
     }
 }
+
+const cart2pol = (x: number, y: number): { r: number; theta: number } => {
+    const r = Math.sqrt(x * x + y * y); // Radius
+    const theta = Math.atan2(y, x);     // Angle in radians
+    return { r, theta };
+};
+
+export const pol2cart = (r: number, theta: number): { x: number; y: number } => {
+    const x = r * Math.cos(theta);  // x coordinate
+    const y = r * Math.sin(theta);  // y coordinate
+    return { x, y };
+};

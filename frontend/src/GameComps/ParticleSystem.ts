@@ -24,15 +24,19 @@ export class ParticleSystem {
         private polygonColliderEntities: PolygonalCollider[] = [])
     { }
 
+    getParticles(): Particle[] {
+        return this.particles;
+    }
+
     render() {
         this.particles.forEach((particle: Particle) => {
             particle.render();
         });
     }
 
-    createParticle(origin: Vector2D, mass: number, maxVel: number, teamID: number, color: number): Particle {
-        const p = new Particle( origin , mass, teamID, maxVel, color, this.scene);
-        p.setLeaderPosition(this.teams[teamID].playerCentroid)
+    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team): Particle {
+        const p = new Particle( origin , mass, team, maxVel, team.color, this.scene);
+        p.setLeaderPosition(team.playerCentroid)
         this.particles.push(p);
         return p;
     }
@@ -87,11 +91,10 @@ export class ParticleSystem {
 
     getNewParticle(player: Player, castle: Castle): Particle {
         return this.createParticle(
-            new Vector2D(castle.pos.x, castle.pos.y),
+            new Vector2D(castle.pos.x + (Math.random()-.5)*30, castle.pos.y + (Math.random()-.5)*30),
             10,
             1,
-            player.team.id,
-            player.team.color
+            player.team
         );
     }
 
@@ -123,7 +126,7 @@ export class ParticleSystem {
 
             if (me.engaging.length >= me.maxTargets) continue;
             for (const team of this.teams) {
-                if (team.id === me.teamID) continue
+                if (team === me.team) continue
                 for (const player of team.players) {
                     this.engageIfClose(me, player)
                     if (me.engaging.length >= me.maxTargets) continue particleLoop;
@@ -136,7 +139,7 @@ export class ParticleSystem {
             for (const other of this.particles) {
                 if (me.engaging.length >= me.maxTargets) continue particleLoop;
                 if (me === other) continue
-                if (me.teamID === other.teamID) continue
+                if (me.team === other.team) continue
                 this.engageIfClose(me, other);
 
             }
@@ -175,7 +178,7 @@ export class ParticleSystem {
             let nCoh = 0;
             for (let j = 0; j < this.particles.length; j++) {
                 if (this.particles[i] === this.particles[j]) continue;
-                if (this.particles[i].teamID === this.particles[j].teamID) {
+                if (this.particles[i].team === this.particles[j].team) {
                     const sqDist = Vector2D.sqDist(this.particles[i].pos, this.particles[j].pos);
                     // Separate
                     if (sqDist < this.sqSeparateDistance) {

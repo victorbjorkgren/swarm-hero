@@ -51,10 +51,15 @@ const SaveButton: React.FC<SaveButtonProps> = ({ grids, transparentImage}) => {
             if (!spriteName) return;
 
             animation.push(spriteName)
+
+            const x = grid.left / grid.scale.x;
+            const y = grid.top / grid.scale.y;
+            const w = grid.width / grid.scale.x;
+            const h = grid.height / grid.scale.y;
             data.frames[spriteName] = {
-                frame: { x: grid.left, y: grid.top, w: grid.width, h: grid.height },
-                sourceSize: { w: grid.width, h: grid.height },
-                spriteSourceSize: { x: 0, y: 0, w: grid.width, h: grid.height },
+                frame: { x: x, y: y, w: w, h: h},
+                sourceSize: { w: w, h: h },
+                spriteSourceSize: { x: 0, y: 0, w: w, h: h },
                 anchor: grid.anchor,
             };
         });

@@ -75,21 +75,44 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     return (
         <div
             style={style}
-            className={`absolute transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white select-none flex justify-around items-center border border-white backdrop-blur w-1/5 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+            className={`flex flex-col gap-2 rounded-xl justify-between transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white select-none border border-white backdrop-blur w-1/4 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
         >
-            <span className="font-bold">{`Gold: ${player.gold}`}</span>
-            <div className="flex flex-col items-center justify-center space-y-2">
-                <span>Recruit:</span>
-                <UnitButton n={1} unit={Units.LaserDrone} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
-                <span>To Garrison:</span>
-                <UnitButton n={1} unit={Units.LaserDrone} clickHandler={handleFlashGarrison} flashError={garrisonFlashError} />
-                <span>From Garrison:</span>
-                <UnitButton n={1} unit={Units.LaserDrone} clickHandler={handleFlashBring} flashError={buyLaserBurstFlashError} />
+            {/*General Info*/}
+            <div className="flex flex-row justify-end px-2">
+                <span className="font-bold">{`Gold: ${player.gold}`}</span>
             </div>
-            <div className="flex flex-col items-center justify-center space-y-2">
-                <span>Buy Spells:</span>
-                <UnitButton n={1} unit={Spells.Explosion} clickHandler={() => handleBuySpell(SpellPacks[Spells.Explosion], setBuyExplosionFlashError)} flashError={buyExplosionFlashError} />
-                <UnitButton n={1} unit={Spells.LaserBurst} clickHandler={() => handleBuySpell(SpellPacks[Spells.LaserBurst], setBuyLaserBurstFlashError)} flashError={buyLaserBurstFlashError} />
+            {/*Purchasing*/}
+            <div className="flex flex-row justify-around px-2">
+                <div className="flex flex-col text-2xl items-end justify-start gap-y-2">
+                    <span className="text-2xl">Recruit</span>
+                    <UnitButton n={1} unit={Units.LaserDrone} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
+                    <UnitButton n={10} unit={Units.LaserDrone} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
+                </div>
+                {/*Spells*/}
+                <div className="flex flex-col text-6xl items-start justify-start space-y-2">
+                    <span className="text-2xl">Buy Spells</span>
+                    <UnitButton n={0} unit={Spells.Explosion} clickHandler={() => handleBuySpell(SpellPacks[Spells.Explosion], setBuyExplosionFlashError)} flashError={buyExplosionFlashError} />
+                    <UnitButton n={0} unit={Spells.LaserBurst} clickHandler={() => handleBuySpell(SpellPacks[Spells.LaserBurst], setBuyLaserBurstFlashError)} flashError={buyLaserBurstFlashError} />
+                </div>
+            </div>
+            {/*Garrison*/}
+            <div className="flex flex-row gap-3 py-2">
+                <div className="flex flex-col px-2 gap-2 items-center justify-around">
+                    <span>Town</span>
+                    <span>Player</span>
+                </div>
+                <div className="flex flex-col px-2 gap-2 items-start justify-start">
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                </div>
+                <div className="flex flex-col px-2 gap-2 items-start justify-start">
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                </div>
+                <div className="flex flex-col px-2 gap-2 items-start justify-start">
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
+                </div>
             </div>
         </div>
     );

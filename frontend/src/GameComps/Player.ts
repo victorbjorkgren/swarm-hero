@@ -119,6 +119,10 @@ export class Player implements Entity {
         })
     }
 
+    receiveDamage(damage: number) {
+        this.health = this.health - damage;
+    }
+
     toggleCityPopup() {
         if (!this.scene.setPlayerPopOpen) return;
         if (this.myPopUpIsOpen) {
@@ -150,17 +154,20 @@ export class Player implements Entity {
         return undefined
     }
 
-    buyDrone(): boolean {
+    buyDrone(n: number): boolean {
         if (!this.particleSystem) return false;
         const castle = this.findNearbyCastle();
         if (castle === undefined || castle === null) return false;
         if (!castle.isAlive()) return false;
-        if (this.gold < Particle.price) return false
+        if (this.gold < (Particle.price * n)) return false
 
-        this.gold -= Particle.price;
-        this.myDrones.push(
-            this.particleSystem.getNewParticle(this, castle)
-        );
+        this.gold -= Particle.price * n;
+
+        for (let i=0; i < n; i++) {
+            this.myDrones.push(
+                this.particleSystem.getNewParticle(this, castle)
+            );
+        }
         return true;
 
     }
@@ -314,8 +321,14 @@ export class Player implements Entity {
         if (!this.isCasting) return
         if (this.activeSpell === null) return
         if (this.spellCursorSprite === null) return
-        const x = this.spellCursorSprite.position.x
-        const y = this.spellCursorSprite.position.y
+
+        const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
+        const sqRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
+        this.scene.areaDamage(effectPos, sqRange, this.activeSpell.effectAmount);
+        console.log(this.activeSpell.effectRange);
+        this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
+
+        // Reset casting preparation
         this.castingDoneCallback();
         this.castingDoneCallback = ()=>{};
         this.isCasting = false;

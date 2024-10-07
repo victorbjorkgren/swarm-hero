@@ -15,7 +15,7 @@ import {
 } from "../types/types";
 import React from "react";
 import {
-    AnimatedSprite,
+    AnimatedSprite, AnimatedSpriteFrames,
     Application,
     Assets,
     Container,
@@ -55,8 +55,9 @@ export default class HeroGameLoop {
     private controllers: Controller[] = [];
     public navMesh: NavMesh;
 
+
     public castleTexturePack: TexturePack | null = null;
-    public catSprite: DirectionalSpriteSheet | null = null;
+    private explosionSprite: AnimatedSpriteFrames | null = null;
 
     private dayLength: number = 10; // seconds
 
@@ -116,15 +117,19 @@ export default class HeroGameLoop {
         this.castles = [];
         this.colliders = [];
 
+        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
+        const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
+        const explosion = Assets.load('/sprites/explosion_toon.json');
+
         const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
         const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
         const cat = Assets.load('/sprites/black_cat_run.json');
-        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
-        const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
+
         // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
 
         const backgroundReady = this.setupBackground(backgroundSheetTexture);
         const blockersReady = this.setupBlockers(walls);
+        const explosionReady = this.setupExplosion(explosion)
 
         this.castleTexturePack = {
             'normal': await castle,
@@ -132,9 +137,35 @@ export default class HeroGameLoop {
         }
         // this.defaultCursorTexture= await defaultCursor;
         await cat;
+        await explosionReady;
         await backgroundReady;
         await blockersReady;
     };
+
+    async setupExplosion(explosionSheet: Promise<Spritesheet>) {
+        const sheet = await explosionSheet;
+        await sheet.parse();
+        this.explosionSprite = sheet.animations.animation0;
+    }
+
+    renderExplosion(position: Vector2D, radius: number) {
+        if (this.explosionSprite === null) return
+        const explosion = new AnimatedSprite(this.explosionSprite);
+        explosion.zIndex = HeroGameLoop.zIndex.hud;
+        explosion.loop = false;
+        explosion.animationSpeed = .5;
+        explosion.anchor.set(0.5);
+        explosion.scale = .15 * radius / 100;
+        explosion.x = position.x;
+        explosion.y = position.y;
+        explosion.visible = true;
+        this.pixiRef.stage.addChild(explosion);
+        explosion.gotoAndPlay(0);
+        explosion.onComplete = () => {
+            this.pixiRef.stage.removeChild(explosion);
+            explosion.destroy();
+        }
+    }
 
     async setupBackground(texture_: Promise<Texture>) {
         const texture = await texture_;
@@ -272,6 +303,26 @@ export default class HeroGameLoop {
         }
         this.playersRef.current = this.players;
     };
+
+    areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
+        for (const player of this.players) {
+            if (safeTeam.includes(player.team)) continue;
+            if (Vector2D.sqDist(position, player.pos) > sqRange) continue;
+            player.receiveDamage(damage);
+        }
+        for (const castle of this.castles) {
+            if (safeTeam.includes(castle.team)) continue;
+            if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
+            castle.receiveDamage(damage);
+        }
+        if (this.particleSystem) {
+            for (const particle of this.particleSystem.getParticles()) {
+                if (safeTeam.includes(particle.team)) continue;
+                if (Vector2D.sqDist(position, particle.pos) > sqRange) continue;
+                particle.receiveDamage(damage);
+            }
+        }
+    }
 
     updateDayTime() {
         if (this.startTime === undefined)

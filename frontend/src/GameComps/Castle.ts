@@ -28,13 +28,17 @@ export class Castle implements Entity {
     targetedBy: Entity[] = [];
 
     constructor(
-        private team: Team,
+        public team: Team,
         private scene: HeroGameLoop,
     ) {
         this.pos = team.castleCentroid;
         this.team.castles.push(this);
         this.pixiRef = scene.pixiRef;
         this.texture = scene.castleTexturePack!;
+    }
+
+    receiveDamage(damage: number): void {
+        this.health = this.health - damage;
     }
 
     getFiringPos(from: Vector2D): Vector2D {

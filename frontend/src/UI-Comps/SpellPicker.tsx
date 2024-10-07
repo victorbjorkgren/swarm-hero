@@ -3,12 +3,21 @@ import {GiCornerExplosion, GiLaserBurst} from "react-icons/gi";
 import {SpellCastIcon} from "./SpellCastIcon";
 import {Spells} from "../types/types";
 
+enum SpellEffects {
+    Damage,
+    Morale,
+    Speed,
+    Teleport,
+}
+
 export interface SpellPack {
     element: Spells;
     castCost: number;
     buyCost: number;
     castRange: number;
     effectRange: number;
+    effectType: SpellEffects;
+    effectAmount: number;
     coolDown: number;
 }
 
@@ -24,6 +33,8 @@ export const SpellPacks = {
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
+        effectType: SpellEffects.Damage,
+        effectAmount: 50,
         coolDown: 5,
     },
     [Spells.LaserBurst]: {
@@ -32,6 +43,8 @@ export const SpellPacks = {
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
+        effectType: SpellEffects.Damage,
+        effectAmount: 50,
         coolDown: 5,
     }
 }

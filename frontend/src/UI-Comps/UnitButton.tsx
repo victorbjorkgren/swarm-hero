@@ -8,7 +8,7 @@ import {SpellICon} from "./SpellICon";
 
 interface UnitButtonProps {
     n: number;
-    unit: Units | Spells;
+    unit: Units | Spells | null;
     clickHandler: (n: number)=>void;
     flashError?: boolean;
 }
@@ -17,7 +17,7 @@ export const UnitButton: React.FC<UnitButtonProps> = ( {n, unit, clickHandler, f
     let ware;
     switch (unit) {
         case Spells.Explosion:
-            ware = <SpellICon spell={SpellPacks[Spells.LaserBurst]} />;
+            ware = <SpellICon spell={SpellPacks[Spells.Explosion]} />;
             break;
         case Spells.LaserBurst:
             ware = <SpellICon spell={SpellPacks[Spells.LaserBurst]} />;
@@ -30,9 +30,10 @@ export const UnitButton: React.FC<UnitButtonProps> = ( {n, unit, clickHandler, f
     }
     return (
         <div className="flex flex-row items-center justify-center space-x-2 text-white">
-            <span className="text-xl mr-1 select-none">{n.toString()}</span><LiaTimesSolid className="text-sm"/>
+            {n > 0 && <span className="text-xl mr-1 select-none">{n.toString()}</span>}
+            {n > 0 && <LiaTimesSolid className="text-sm"/>}
             <div
-                className={`${flashError ? "bg-red-500" : "bg-gray-300 active:bg-opacity-90"} bg-opacity-50 items-center hover:bg-opacity-70 text-2xl border border-white rounded-xl shadow p-2 transition duration-100`}
+                className={`${flashError ? "bg-red-500" : "bg-gray-300 active:bg-opacity-90"} aspect-square min-w-10 flex flex-col items-center flex-grow justify-center bg-opacity-50 hover:bg-opacity-70 border border-white rounded-xl shadow p-2 transition duration-100`}
                 onClick={()=>clickHandler(n)}
             >
                 {ware}

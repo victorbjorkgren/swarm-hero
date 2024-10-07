@@ -118,11 +118,10 @@ const MainGame: React.FC = () => {
         initGame();
     };
 
-    const handleRecruit = (playerID?: number): boolean => {
+    const handleRecruit = (playerID: number, n: number): boolean => {
         if (playerID === undefined) return false
         if (playersRef.current === null) return false
-
-        const success = playersRef.current[playerID].buyDrone();
+        const success = playersRef.current[playerID].buyDrone(n);
         return success;
     }
 
@@ -154,8 +153,8 @@ const MainGame: React.FC = () => {
                                     key={player.team.id}
                                     anchorPoint={playerPopUpEvent.point}
                                     player={player}
-                                    recruitFunc={() => {
-                                        return handleRecruit(player.team.id);
+                                    recruitFunc={(n) => {
+                                        return handleRecruit(player.team.id, n);
                                     }}
                                     garrisonFunc={() => {
                                         return handleGarrisonDrone(player.team.id)

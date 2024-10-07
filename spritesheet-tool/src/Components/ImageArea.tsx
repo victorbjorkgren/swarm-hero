@@ -7,6 +7,7 @@ export interface GridArea {
     width: number;
     height: number;
     anchor: AnchorPoint;
+    scale: {x: number; y: number};
 }
 
 export interface AnchorPoint {
@@ -60,12 +61,15 @@ export const calculateGrid = (
     const img = document.getElementById('spritesheet') as HTMLImageElement;
     const width = img ? img.width : 0;
     const height = img ? img.height : 0;
+    const naturalWidth = img ? img.naturalWidth : 1;
+    const naturalHeight = img ? img.naturalHeight : 1;
+    const scale = {x: width / naturalWidth, y: height / naturalHeight};
     const w_pad = imgPadding.left + imgPadding.right;
     const h_pad = imgPadding.up + imgPadding.down
     const gridWidth = (width + w_pad - (columns - 1) * gridPadding) / columns;
     const gridHeight = (height + h_pad - (rows - 1) * gridPadding) / rows;
 
-    let grids = [];
+    let grids: GridArea[] = [];
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < columns; c++) {
             const top = imgPadding.up + r * (gridHeight + gridPadding);
@@ -79,6 +83,7 @@ export const calculateGrid = (
                 width: gridWidth + leftDelta,
                 height: gridHeight + topDelta,
                 anchor: anchor,
+                scale: {x: scale.x, y: scale.y},
             });
         }
     }

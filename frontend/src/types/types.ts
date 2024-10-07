@@ -22,6 +22,7 @@ export interface Entity {
     targetedBy: Entity[];
 
     isAlive(): boolean;
+    receiveDamage(damage: number): void
 
     getFiringPos(from: Vector2D): Vector2D;
 

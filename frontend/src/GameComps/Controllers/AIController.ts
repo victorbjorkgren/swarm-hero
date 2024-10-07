@@ -34,7 +34,7 @@ export class AIController implements Controller {
         }
     }
     buy(): void {
-        this.player.buyDrone()
+        this.player.buyDrone(1);
     }
     special(): void {
         throw new Error("Method not implemented.");

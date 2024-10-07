@@ -1,5 +1,5 @@
 import {massToRadius, randomUnitVector, Vector2D} from "./Utility";
-import {Entity} from "../types/types";
+import {Entity, Team} from "../types/types";
 import {Graphics} from "pixi.js";
 import HeroGameLoop from "./HeroGameLoop";
 
@@ -37,13 +37,17 @@ export class Particle implements Entity {
     constructor(
         public pos: Vector2D,
         public mass: number,
-        public teamID: number,
+        public team: Team,
         public maxVel: number = 1,
         public color: number,
         private scene: HeroGameLoop
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
+    }
+
+    receiveDamage(damage: number): void {
+        this.health = this.health - damage;
     }
 
     get health(): number {

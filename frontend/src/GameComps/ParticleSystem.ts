@@ -155,7 +155,7 @@ export class ParticleSystem {
                 const firingPos = foe.getFiringPos(me.pos);
                 if (existingFoe) {
                     existingFoe.intensity = Math.min(existingFoe.intensity + .01, 1);
-                    existingFoe.target.health -= existingFoe.intensity;
+                    existingFoe.target.receiveDamage(existingFoe.intensity);
                     existingFoe.firingPos = firingPos;
                 } else {
                     if (Vector2D.sqDist(me.pos, firingPos) < me.sqFireRadius) {

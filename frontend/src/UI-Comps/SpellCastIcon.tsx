@@ -15,7 +15,6 @@ export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) =>
     const [coolDownProgress, setCoolDownProgress] = useState(0);
 
     const handleClick = (spell: SpellPack) => {
-        console.log("click", isCoolingDown);
         if (isCoolingDownRef.current) return;
         setIsActive(true);
         pickerCallback(spell, ()=>startCoolDown());

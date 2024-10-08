@@ -47,7 +47,10 @@ export class Particle implements Entity {
     }
 
     receiveDamage(damage: number): void {
-        this.health = this.health - damage;
+        this._health -= damage;
+        if (this._health <= 0) {
+            this.onDeath();
+        }
     }
 
     get health(): number {
@@ -56,15 +59,34 @@ export class Particle implements Entity {
 
     set health(value: number) {
         this._health = value;
-        if (this._health < 0) {
+        if (this._health <= 0) {
             this.onDeath();
         }
     }
 
+    killSprites() {
+        if (this.particleSprite) {
+            this.scene.pixiRef.stage.removeChild(this.particleSprite);
+            this.particleSprite.destroy();
+        }
+        if (this.attackSprite) {
+            this.scene.pixiRef.stage.removeChild(this.attackSprite);
+            this.attackSprite.destroy();
+        }
+        if (this.healthSprite) {
+            this.scene.pixiRef.stage.removeChild(this.healthSprite);
+            this.healthSprite.destroy();
+        }
+    }
+
     render() {
-        this.renderSelf();
-        this.renderAttack();
-        this.renderHealthBar();
+        if (this.isAlive()) {
+            this.renderSelf();
+            this.renderAttack();
+            this.renderHealthBar();
+        } else {
+            this.killSprites();
+        }
     }
 
     renderSelf() {
@@ -133,10 +155,7 @@ export class Particle implements Entity {
     }
 
     onDeath() {
-        this.particleSprite?.destroy();
-        this.attackSprite?.destroy();
-        this.particleSprite = null;
-        this.attackSprite = null;
+        this.killSprites();
     }
 
     setLeaderPosition(position: Vector2D) {

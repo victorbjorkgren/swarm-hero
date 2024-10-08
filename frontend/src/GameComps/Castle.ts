@@ -11,7 +11,7 @@ export class Castle implements Entity {
     public radius: number = 20;
     public vel: Vector2D = Vector2D.zeros();
     public givesIncome: number = 1000;
-    private maxHealth: number = 40;
+    private maxHealth: number = 400;
     public health: number = this.maxHealth;
 
     private castleSprite: Sprite | null = null;

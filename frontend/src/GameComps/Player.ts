@@ -1,13 +1,10 @@
-import {checkAABBCollision, closestPointOnPolygon, pol2cart, spriteToAABBCollider, Vector2D} from "./Utility";
+import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "./Utility";
 import {ParticleSystem} from "./ParticleSystem";
 import {
     AABBCollider, CollisionResult,
-    Controller,
     ControllerMapping,
     DirectionalSpriteSheet,
     Entity,
-    Polygon,
-    PolygonalCollider, Spells,
     Team
 } from "../types/types";
 import {Particle} from "./Particle";
@@ -80,12 +77,7 @@ export class Player implements Entity {
     set health(value: number) {
         this._health = value;
         if (!this.isAlive()) {
-            let w: string;
-            if (this.team.id === 0)
-                w = this.scene.teams[1].name;
-            else
-                w = this.scene.teams[0].name;
-            this.scene.onDeath(w.toString());
+            this.onDeath()
         }
     }
     get health(): number {
@@ -105,6 +97,15 @@ export class Player implements Entity {
         }
     }
 
+    onDeath(): void {
+        let w: string;
+        if (this.team.id === 0)
+            w = this.scene.teams[1].name;
+        else
+            w = this.scene.teams[0].name;
+        this.scene.onDeath(w.toString());
+    }
+
     gainCastleControl(castle: Castle) {
         this.myCastles.push(castle);
     }
@@ -120,7 +121,10 @@ export class Player implements Entity {
     }
 
     receiveDamage(damage: number) {
-        this.health = this.health - damage;
+        this._health -= damage;
+        if (this._health < 0) {
+            this.onDeath();
+        }
     }
 
     toggleCityPopup() {
@@ -325,7 +329,6 @@ export class Player implements Entity {
         const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
         const sqRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
         this.scene.areaDamage(effectPos, sqRange, this.activeSpell.effectAmount);
-        console.log(this.activeSpell.effectRange);
         this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
 
         // Reset casting preparation

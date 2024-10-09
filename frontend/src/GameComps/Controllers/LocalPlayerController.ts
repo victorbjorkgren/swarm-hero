@@ -75,7 +75,7 @@ export class LocalPlayerController implements Controller {
     }
 
     special(): void {
-
+        this.player.receiveDamage(100);
     }
 
 }

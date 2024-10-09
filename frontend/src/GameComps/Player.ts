@@ -16,7 +16,7 @@ import {SpellPack} from "../UI-Comps/SpellPicker";
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 
 export class Player implements Entity {
-    private availableSpells: SpellPack[] = [];
+    public availableSpells: SpellPack[] = [];
     public isLocal: boolean = false;
 
     public pos: Vector2D;

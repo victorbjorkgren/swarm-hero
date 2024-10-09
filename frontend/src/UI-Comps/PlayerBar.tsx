@@ -6,12 +6,11 @@ import {Player} from "../GameComps/Player";
 
 interface SpellPickerProps {
     pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
-    spellSlots: SpellPack[];
     player: Player | null;
 }
 
 
-export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, spellSlots, player}) => {
+export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, player}) => {
     return (
         <div className="absolute w-full h-full top-0 left-0 flex justify-center pointer-events-none">
 
@@ -21,7 +20,7 @@ export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, spellSlot
                 {/*    <span>Gold: {player && player.gold}</span>*/}
                 {/*    <span>Mana: {player && player.mana}</span>*/}
                 {/*</div>*/}
-                <SpellPicker pickerCallback={pickerCallback} spellSlots={spellSlots}/>
+                <SpellPicker pickerCallback={pickerCallback} spellSlots={player ? player.availableSpells : []}/>
         </div>
     );
 };

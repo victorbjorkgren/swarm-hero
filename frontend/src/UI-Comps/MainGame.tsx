@@ -51,8 +51,8 @@ const MainGame: React.FC = () => {
     }
 
     // window.addEventListener('resize', resizeApp);
-
     const initGame = async () => {
+        console.log('init-pixi-ref', pixiRef.current)
         if (pixiRef.current !== null) return;
 
         Keyboard.initialize();
@@ -90,20 +90,11 @@ const MainGame: React.FC = () => {
         initGame();
 
         return () => {
-            if (gameSceneRef.current) {
-                gameSceneRef.current.stopGame();
-                gameSceneRef.current.resetControllers();
-                gameSceneRef.current = null;
-            }
-
-            if (pixiRef.current && pixiRef.current.renderer) {
-                pixiRef.current.destroy();
-                pixiRef.current = null;
-            }
+            cleanUpGame();
         };
     }, []);
 
-    const handleRematch = () => {
+    const cleanUpGame = () => {
         if (gameSceneRef.current) {
             gameSceneRef.current.stopGame();
             gameSceneRef.current.resetControllers();
@@ -111,11 +102,16 @@ const MainGame: React.FC = () => {
         }
 
         if (pixiRef.current && pixiRef.current.renderer) {
+            gameContainerRef.current?.removeChild(pixiRef.current.canvas);
             pixiRef.current.destroy();
             pixiRef.current = null;
         }
-        setWinner(undefined); // Reset the winner state
-            // gameSceneRef.current.start();
+
+        setWinner(undefined);
+    }
+
+    const handleRematch = () => {
+        cleanUpGame();
         initGame();
     };
 
@@ -157,7 +153,6 @@ const MainGame: React.FC = () => {
                     />
                     <PlayerBar
                         pickerCallback={(spell, castingDoneCallback)=>{gameSceneRef.current?.localPlayer?.prepareSpell(spell, castingDoneCallback)}}
-                        spellSlots={spellSlots}
                         player={gameSceneRef.current ? gameSceneRef.current.localPlayer : null}
                     />
                     <WinnerDisplay winner={winner} handleRematch={handleRematch} />

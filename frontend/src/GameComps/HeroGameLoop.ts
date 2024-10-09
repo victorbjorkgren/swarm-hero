@@ -239,15 +239,8 @@ export default class HeroGameLoop {
             down: "KeyS",
             right: "KeyD",
             buy: "KeyE",
-            special: "KeyO"
-        };
-        const player2Keys: ControllerMapping = {
-            up: "ArrowUp",
-            left: "ArrowLeft",
-            down: "ArrowDown",
-            right: "ArrowRight",
-            buy: "Period",
-            special: "KeyP",
+            special: "KeyO",
+            cancel: "Escape"
         };
 
         const boundaryCollider: AABBCollider = {
@@ -276,7 +269,7 @@ export default class HeroGameLoop {
                 color: 0xffffff,
                 playerCentroid: new Vector2D(.75 * this.sceneWidth, .5 * this.sceneHeight),
                 castleCentroid: new Vector2D(this.sceneWidth*7/8, this.sceneHeight/2),
-                controllerMapping: player2Keys,
+                controllerMapping: null,
                 players: [],
                 castles: []
             }

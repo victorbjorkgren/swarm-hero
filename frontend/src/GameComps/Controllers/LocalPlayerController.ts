@@ -6,6 +6,7 @@ import {Keyboard} from "../Keyboard";
 export class LocalPlayerController implements Controller {
     private readonly specialHandler: () => void;
     private readonly buyHandler: () => void;
+    private readonly cancelHandler: () => void;
 
     constructor(
         private player: Player,
@@ -13,6 +14,7 @@ export class LocalPlayerController implements Controller {
     ) {
         this.specialHandler = () => this.special()
         this.buyHandler = () => this.buy();
+        this.cancelHandler = () => this.cancel();
 
         Keyboard.onPushSubscribe(
             this.keyBindings.buy,
@@ -21,7 +23,11 @@ export class LocalPlayerController implements Controller {
         Keyboard.onPushSubscribe(
             this.keyBindings.special,
             this.specialHandler,
-        )
+        );
+        Keyboard.onPushSubscribe(
+            this.keyBindings.cancel,
+            this.cancelHandler,
+        );
     }
 
     cleanup(): void {
@@ -32,6 +38,10 @@ export class LocalPlayerController implements Controller {
         Keyboard.onPushUnsubscribe(
             this.keyBindings.special,
             this.specialHandler,
+        );
+        Keyboard.onPushUnsubscribe(
+            this.keyBindings.cancel,
+            this.cancelHandler,
         )
     }
 
@@ -59,8 +69,13 @@ export class LocalPlayerController implements Controller {
     buy(): void {
         this.player.toggleCityPopup();
     }
+    cancel(): void {
+        this.player.closeCityPopUp();
+        this.player.cancelSpell();
+    }
+
     special(): void {
-        this.player.health = 0
+
     }
 
 }

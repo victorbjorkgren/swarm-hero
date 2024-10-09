@@ -24,7 +24,7 @@ export class Player implements Entity {
     public acc: Vector2D = Vector2D.zeros();
     public radius: number = 20;
     public mass: number = 50**3;
-    public myPopUpIsOpen: boolean = false;
+    public popUpCastle: Castle | null = null;
     public maxAcc: number = 0.1;
     public maxVel: number = 1.0;
     public gold: number = 10000;
@@ -54,16 +54,14 @@ export class Player implements Entity {
     public myDrones: Particle[] = [];
     public targetedBy: Entity[] = [];
 
-    private readonly keyBindings: ControllerMapping;
     private activeSpell: SpellPack | null = null;
-    private castingDoneCallback: () => void = () => {};
+    private castingDoneCallback: (didCast: boolean) => void = () => {};
 
     constructor(
         public team: Team,
         private scene: HeroGameLoop,
     ) {
         this.pos = team.playerCentroid;
-        this.keyBindings = team.controllerMapping;
         this.team.players.push(this);
 
         this.scene.pixiRef.stage.on('pointermove', (event) => {
@@ -128,21 +126,30 @@ export class Player implements Entity {
         }
     }
 
+    closeCityPopUp(): void {
+        this.scene.setPlayerPopOpen(undefined);
+        this.popUpCastle = null;
+    }
+
+    playerLeavingCastleMenu() {
+        if (this.popUpCastle === null) return;
+        if (!this.popUpCastle.nearbyPlayers.includes(this)) {
+            this.closeCityPopUp();
+        }
+    }
+
     toggleCityPopup() {
         if (!this.scene.setPlayerPopOpen) return;
-        if (this.myPopUpIsOpen) {
-            this.scene.setPlayerPopOpen(undefined);
-            this.myPopUpIsOpen = false;
-        } else {
-            for (const castle of this.team.castles) {
-                if (castle.nearbyPlayers.find(player => player === this)) {
-                    this.scene.setPlayerPopOpen(
-                        {
-                            playerID: this.team.id,
-                            point: castle.pos
-                        });
-                    this.myPopUpIsOpen = true;
-                }
+        if (this.popUpCastle !== null) return this.closeCityPopUp();
+
+        for (const castle of this.team.castles) {
+            if (castle.nearbyPlayers.includes(this)) {
+                this.scene.setPlayerPopOpen(
+                    {
+                        playerID: this.team.id,
+                        castle: castle
+                    });
+                this.popUpCastle = castle;
             }
         }
     }
@@ -316,7 +323,8 @@ export class Player implements Entity {
         this.currentAnimation.play();
     }
 
-    prepareSpell(spell: SpellPack, castingDoneCallback: () => void) {
+    prepareSpell(spell: SpellPack, castingDoneCallback: (didCast: boolean) => void) {
+        if (this.activeSpell === spell) return this.cancelSpell();
         this.isCasting = true;
         this.activeSpell = spell;
         this.castingDoneCallback = castingDoneCallback;
@@ -329,12 +337,23 @@ export class Player implements Entity {
 
         const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
         const sqRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
+
+        if (Vector2D.sqDist(effectPos, this.pos) > sqRange)
+            return this.cancelSpell();
+
         this.scene.areaDamage(effectPos, sqRange, this.activeSpell.effectAmount);
         this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
 
         // Reset casting preparation
-        this.castingDoneCallback();
-        this.castingDoneCallback = ()=>{};
+        this.castingDoneCallback(true);
+        this.castingDoneCallback = (didCast)=>{};
+        this.isCasting = false;
+        this.activeSpell = null;
+    }
+
+    cancelSpell() {
+        this.castingDoneCallback(false);
+        this.castingDoneCallback = (didCast)=>{};
         this.isCasting = false;
         this.activeSpell = null;
     }
@@ -343,6 +362,7 @@ export class Player implements Entity {
         this.renderSelf();
         this.renderAttack();
         this.renderHUD();
+        this.playerLeavingCastleMenu();
     }
 
     renderSelf() {

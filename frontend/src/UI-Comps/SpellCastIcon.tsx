@@ -5,7 +5,7 @@ import {SpellICon} from "./SpellICon";
 interface Props {
     spell: SpellPack;
     slot: number;
-    pickerCallback: (spell: SpellPack, castingDoneCallback: ()=>void) => void;
+    pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
 }
 
 export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) => {
@@ -17,7 +17,10 @@ export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) =>
     const handleClick = (spell: SpellPack) => {
         if (isCoolingDownRef.current) return;
         setIsActive(true);
-        pickerCallback(spell, ()=>startCoolDown());
+        pickerCallback(spell, (didCast)=> {
+            didCast && startCoolDown();
+            setIsActive(false);
+        });
     }
 
     const startCoolDown = () => {

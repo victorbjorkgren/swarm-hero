@@ -50,7 +50,7 @@ export interface Team {
     name: string,
     playerCentroid: Vector2D,
     castleCentroid: Vector2D,
-    controllerMapping: ControllerMapping,
+    controllerMapping: ControllerMapping | null,
     players: Player[],
     castles: Castle[]
 }
@@ -66,12 +66,13 @@ export interface ControllerMapping {
     'left': string;
     'right': string;
     'buy': string;
-    'special': string
+    'special': string;
+    'cancel': string;
 }
 
 export interface popUpEvent{
     playerID: number;
-    point: Vector2D;
+    castle: Castle;
 }
 
 export enum Units {

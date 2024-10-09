@@ -5,7 +5,7 @@ import {SpellPack, SpellPicker} from "./SpellPicker";
 import {Player} from "../GameComps/Player";
 
 interface SpellPickerProps {
-    pickerCallback: (spell: SpellPack, castingDoneCallback: ()=>void) => void;
+    pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
     spellSlots: SpellPack[];
     player: Player | null;
 }

@@ -119,7 +119,7 @@ const MainGame: React.FC = () => {
         initGame();
     };
 
-    const handleRecruit = (playerID: number, n: number): boolean => {
+    const handleRecruit = (playerID: number | undefined, n: number): boolean => {
         if (playerID === undefined) return false
         if (playersRef.current === null) return false
         const success = playersRef.current[playerID].buyDrone(n);
@@ -148,25 +148,13 @@ const MainGame: React.FC = () => {
                 <div style={gameContainerStyle} className="relative">
                     <div style={{width: `${100 * dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
                     <div ref={gameContainerRef}></div>
-                    {playersRef.current.map(player => (
-                        playerPopUpEvent !== undefined && playerPopUpEvent.playerID === player.team.id && (
-                                <CityPopup
-                                    key={player.team.id}
-                                    anchorPoint={playerPopUpEvent.point}
-                                    player={player}
-                                    recruitFunc={(n) => {
-                                        return handleRecruit(player.team.id, n);
-                                    }}
-                                    garrisonFunc={() => {
-                                        return handleGarrisonDrone(player.team.id)
-                                    }}
-                                    bringFunc={() => {
-                                        return handleBringDrone(player.team.id);
-                                    }}
-                                />
-                            )
-                        ))
-                    }
+                    <CityPopup
+                        anchorPoint={playerPopUpEvent?.castle.pos}
+                        player={gameSceneRef.current?.localPlayer}
+                        recruitFunc={(n) => {return handleRecruit(gameSceneRef.current?.localPlayer?.team.id, n)}}
+                        garrisonFunc={() => {return handleGarrisonDrone(gameSceneRef.current?.localPlayer?.team.id)}}
+                        bringFunc={() => {return handleBringDrone(gameSceneRef.current?.localPlayer?.team.id)}}
+                    />
                     <PlayerBar
                         pickerCallback={(spell, castingDoneCallback)=>{gameSceneRef.current?.localPlayer?.prepareSpell(spell, castingDoneCallback)}}
                         spellSlots={spellSlots}

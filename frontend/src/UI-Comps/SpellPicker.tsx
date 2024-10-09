@@ -50,7 +50,7 @@ export const SpellPacks = {
 }
 
 interface SpellPickerProps {
-    pickerCallback: (spell: SpellPack, castingDoneCallback: ()=>void) => void;
+    pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
     spellSlots: SpellPack[];
 }
 

@@ -1,19 +1,22 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {Vector2D} from "../GameComps/Utility";
 import {UnitButton} from "./UnitButton";
 import {Spells, Units} from "../types/types";
 import {Player} from "../GameComps/Player";
 import {SpellPack, SpellPacks} from "./SpellPicker";
+import {Simulate} from "react-dom/test-utils";
+
 
 interface CityPopupProps {
-    anchorPoint: Vector2D;
-    player: Player;
+    anchorPoint: Vector2D | undefined;
+    player: Player | null | undefined;
     recruitFunc: (n: number)=>boolean;
     garrisonFunc: (n: number)=>boolean;
     bringFunc: (n: number)=>boolean;
 }
 
 export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc, garrisonFunc, bringFunc}) => {
+    const divRef = useRef<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
     const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
@@ -22,7 +25,21 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     const [buyExplosionFlashError, setBuyExplosionFlashError] = useState<boolean>(false);
     const [buyLaserBurstFlashError, setBuyLaserBurstFlashError] = useState<boolean>(false);
 
+    const handleClickOutside = (event: MouseEvent) => {
+        if (divRef.current && !divRef.current.contains(event.target as Node)) {
+            setIsVisible(false);
+            player && player.closeCityPopUp();
+        }
+    };
+
     useEffect(() => {
+        if (player === null || player === undefined) return;
+        if (anchorPoint === undefined || player.popUpCastle === null ) {
+            setIsVisible(false);
+            document.removeEventListener('mousedown', handleClickOutside)
+            return
+        }
+
         const margin = 20;
         let x = Math.max(anchorPoint.x, margin);
         let y = Math.max(anchorPoint.y, margin);
@@ -37,8 +54,15 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             transform: 'translate(-50%, -50%)'
         });
 
-        setIsVisible(true); // Trigger the scale-up effect
-    }, [anchorPoint]);
+        setIsVisible(true);
+
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+    }, [anchorPoint, player?.popUpCastle]);
 
     const handleFlashRecruit = (n: number) => {
         const success = recruitFunc(n);
@@ -65,6 +89,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     }
 
     const handleBuySpell = (spell: SpellPack, setFlashError: React.Dispatch<React.SetStateAction<boolean>>) => {
+        if (player === null || player === undefined) return;
         const success = player.buySpell(spell);
         if (!success) {
             setFlashError(true);
@@ -72,10 +97,13 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         }
     }
 
+    if (player === undefined || player === null) return null;
+
     return (
         <div
             style={style}
             className={`flex flex-col gap-2 rounded-xl justify-between transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white select-none border border-white backdrop-blur w-1/4 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+            ref={divRef}
         >
             {/*General Info*/}
             <div className="flex flex-row justify-end px-2">

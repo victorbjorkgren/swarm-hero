@@ -331,12 +331,13 @@ export class Player implements Entity {
         if (this.spellCursorSprite === null) return
 
         const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
-        const sqRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
+        const sqCastRange = this.activeSpell.castRange * this.activeSpell.castRange;
 
-        if (Vector2D.sqDist(effectPos, this.pos) > sqRange)
+        if (Vector2D.sqDist(effectPos, this.pos) > sqCastRange)
             return this.cancelSpell();
 
-        this.scene.areaDamage(effectPos, sqRange, this.activeSpell.effectAmount);
+        const sqEffectRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
+        this.scene.areaDamage(effectPos, sqEffectRange, this.activeSpell.effectAmount);
         this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
 
         // Reset casting preparation

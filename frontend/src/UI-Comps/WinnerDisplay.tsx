@@ -9,10 +9,10 @@ export const WinnerDisplay: React.FC<WinnerDisplayProps> = ({winner, handleRemat
     return (
         <>
             {winner && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                    <span className="text-white text-8xl">{winner} Wins!</span>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col gap-10 items-center">
+                    <span className="text-white text-9xl">{winner} Wins!</span>
                     <button
-                        className="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 mt-4 rounded"
+                        className="bg-gray-300 w-1/2 active:bg-opacity-100 bg-opacity-0 hover:bg-opacity-40 text-white text-xl border border-white rounded-xl shadow p-2 transition duration-100"
                         onClick={handleRematch}>Rematch?</button>
                 </div>)
             };

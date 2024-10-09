@@ -87,7 +87,7 @@ const MainGame: React.FC = () => {
         return () => {
             cleanUpGame();
         };
-    }, [initGame]);
+    }, []);
 
     const cleanUpGame = () => {
         if (gameSceneRef.current) {
@@ -133,7 +133,14 @@ const MainGame: React.FC = () => {
             <div className="relative w-screen h-screen bg-green-950 flex items-center justify-center overflow-visible">
                 <div style={gameContainerStyle} className="relative">
                     <div style={{width: `${100 * dayTime}%`}} className="absolute h-2 top-1 left-0 bg-green-100"></div>
-                    <div ref={gameContainerRef}></div>
+                    <div
+                        ref={gameContainerRef}
+                        className={`
+                        ${winner === undefined ? "" : "opacity-50 blur-sm saturate-0"}
+                        ${gameSceneRef.current?.localPlayer?.popUpCastle !== null ? "blur-sm opacity-50": ""} 
+                        transition duration-1000
+                        `}
+                    ></div>
                     <CityPopup
                         anchorPoint={playerPopUpEvent?.castle.pos}
                         player={gameSceneRef.current?.localPlayer}
@@ -141,10 +148,13 @@ const MainGame: React.FC = () => {
                         garrisonFunc={() => {return handleGarrisonDrone(gameSceneRef.current?.localPlayer?.team.id)}}
                         bringFunc={() => {return handleBringDrone(gameSceneRef.current?.localPlayer?.team.id)}}
                     />
-                    <PlayerBar
-                        pickerCallback={(spell, castingDoneCallback)=>{gameSceneRef.current?.localPlayer?.prepareSpell(spell, castingDoneCallback)}}
-                        player={gameSceneRef.current ? gameSceneRef.current.localPlayer : null}
-                    />
+                    {winner === undefined &&
+                        <PlayerBar
+                            pickerCallback={(spell, castingDoneCallback) => {
+                                gameSceneRef.current?.localPlayer?.prepareSpell(spell, castingDoneCallback)
+                            }}
+                            player={gameSceneRef.current ? gameSceneRef.current.localPlayer : null}
+                        />}
                     <WinnerDisplay winner={winner} handleRematch={handleRematch} />
                 </div>
             </div>

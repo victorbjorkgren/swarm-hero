@@ -110,7 +110,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     return (
         <div
             style={style}
-            className={`flex flex-col gap-2 rounded-xl justify-between transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-10 text-white select-none border border-white backdrop-blur w-1/4 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+            className={`flex flex-col gap-2 rounded-xl justify-between transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-30 text-white select-none border border-white backdrop-blur-sm w-1/4 h-1/2 pointer-events-auto origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
             ref={divRef}
         >
             {/*General Info*/}

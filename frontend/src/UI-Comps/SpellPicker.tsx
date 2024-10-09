@@ -58,7 +58,7 @@ export const SpellPicker: React.FC<SpellPickerProps> = ({pickerCallback, spellSl
     if (spellSlots.length === 0) return null
 
     return (
-        <div className="absolute bottom-5 gap-x-14 px-14 py-8 flex justify-around items-center shadow-white-shadow backdrop-blur rounded-xl text-white">
+        <div className="absolute bottom-5 gap-x-14 px-14 py-8 flex justify-around items-center shadow-white-shadow backdrop-blur-sm rounded-xl text-white">
             {spellSlots.map((spell: SpellPack, index: number) => (
                 <SpellCastIcon key={index} spell={spell} slot={index+1} pickerCallback={pickerCallback} />
             ))}

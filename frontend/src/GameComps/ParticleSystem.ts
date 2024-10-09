@@ -272,10 +272,10 @@ export class ParticleSystem {
         if (dist >= particle.radius) return; // No collision if the ball is not intersecting
         if (isInsidePolygon(polygonHolder.collider.verts, particle.pos)) {
             // Calculate the vector from the particle to the closest point
-            const moveDirection = new Vector2D(
-                particle.pos.x - closestPoint.x,
-                particle.pos.y - closestPoint.y
-            );
+            // const moveDirection = new Vector2D(
+            //     particle.pos.x - closestPoint.x,
+            //     particle.pos.y - closestPoint.y
+            // );
 
             particle.vel.x = polygonHolder.vel.x;
             particle.vel.y = polygonHolder.vel.y;
@@ -312,7 +312,7 @@ export class ParticleSystem {
             particle.pos.y + relativeVel.y
         );
 
-        const dt = predictedPosition.x / relativeVel.x
+        // const dt = predictedPosition.x / relativeVel.x
 
         // Find the closest point on the polygon to the predicted position
         const closestPoint = closestPointOnPolygon(polygonHolder.collider.verts, predictedPosition);

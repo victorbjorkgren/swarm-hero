@@ -1,10 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Vector2D} from "../GameComps/Utility";
 import {UnitButton} from "./UnitButton";
-import {Spells, Units} from "../types/types";
+import {Units} from "../types/types";
 import {Player} from "../GameComps/Player";
-import {SpellPack, SpellPacks} from "./SpellPicker";
-import {Simulate} from "react-dom/test-utils";
+import {SpellPack} from "./SpellPicker";
 
 
 interface CityPopupProps {
@@ -20,19 +19,18 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     const [isVisible, setIsVisible] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
     const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
-    const [garrisonFlashError, setGarrisonFlashError] = useState<boolean>(false);
-    const [bringFlashError, setBringFlashError] = useState<boolean>(false);
+    // const [garrisonFlashError, setGarrisonFlashError] = useState<boolean>(false);
+    // const [bringFlashError, setBringFlashError] = useState<boolean>(false);
     const [buySpellFlashError, setBuySpellFlashError] = useState<boolean[]>([]);
-    const [buyLaserBurstFlashError, setBuyLaserBurstFlashError] = useState<boolean>(false);
-
-    const handleClickOutside = (event: MouseEvent) => {
-        if (divRef.current && !divRef.current.contains(event.target as Node)) {
-            setIsVisible(false);
-            player && player.closeCityPopUp();
-        }
-    };
 
     useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (divRef.current && !divRef.current.contains(event.target as Node)) {
+                setIsVisible(false);
+                player && player.closeCityPopUp();
+            }
+        };
+
         if (player === null || player === undefined) return;
         if (anchorPoint === undefined || player.popUpCastle === null ) {
             setIsVisible(false);
@@ -62,7 +60,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             document.removeEventListener('mousedown', handleClickOutside);
         }
 
-    }, [anchorPoint, player?.popUpCastle]);
+    }, [anchorPoint, player?.popUpCastle, player]);
 
     const handleFlashRecruit = (n: number) => {
         const success = recruitFunc(n);
@@ -72,21 +70,21 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         }
     }
 
-    const handleFlashGarrison = (n: number) => {
-        const success = garrisonFunc(n);
-        if (!success) {
-            setGarrisonFlashError(true);
-            setTimeout(() => setGarrisonFlashError(false), 750);
-        }
-    }
+    // const handleFlashGarrison = (n: number) => {
+    //     const success = garrisonFunc(n);
+    //     if (!success) {
+    //         setGarrisonFlashError(true);
+    //         setTimeout(() => setGarrisonFlashError(false), 750);
+    //     }
+    // }
 
-    const handleFlashBring = (n: number) => {
-        const success = bringFunc(n);
-        if (!success) {
-            setBringFlashError(true);
-            setTimeout(() => setBringFlashError(false), 750);
-        }
-    }
+    // const handleFlashBring = (n: number) => {
+    //     const success = bringFunc(n);
+    //     if (!success) {
+    //         setBringFlashError(true);
+    //         setTimeout(() => setBringFlashError(false), 750);
+    //     }
+    // }
 
     const handleBuySpell = (spell: SpellPack, index: number) => {
         if (player === null || player === undefined) return;

@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React from "react";
 import {GiCornerExplosion, GiLaserBurst} from "react-icons/gi";
 import {SpellCastIcon} from "./SpellCastIcon";
 import {Spells} from "../types/types";

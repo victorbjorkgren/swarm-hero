@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {SpellIcons, SpellPack} from "./SpellPicker";
+import {SpellPack} from "./SpellPicker";
 import {SpellICon} from "./SpellICon";
 
 interface Props {
@@ -44,7 +44,7 @@ export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) =>
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [handleClick, slot, spell]);
 
     useEffect(() => {
         let interval: NodeJS.Timer;
@@ -65,7 +65,7 @@ export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) =>
         }
 
         return () => clearInterval(interval); // Clean up interval on unmount
-    }, [isCoolingDown]);
+    }, [isCoolingDown, spell.coolDown]);
 
     return (
         <div

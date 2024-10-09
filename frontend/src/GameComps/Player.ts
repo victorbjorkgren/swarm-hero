@@ -2,7 +2,6 @@ import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "./Ut
 import {ParticleSystem} from "./ParticleSystem";
 import {
     AABBCollider, CollisionResult,
-    ControllerMapping,
     DirectionalSpriteSheet,
     Entity,
     Team
@@ -10,8 +9,7 @@ import {
 import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
-import {Keyboard} from "./Keyboard";
-import {AnimatedSprite, Assets, Container, FillGradient, Graphics, Sprite, Spritesheet, SpritesheetData} from "pixi.js";
+import {AnimatedSprite, Assets, Container, Graphics, Spritesheet} from "pixi.js";
 import {SpellPack} from "../UI-Comps/SpellPicker";
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 
@@ -33,15 +31,12 @@ export class Player implements Entity {
 
     private playerSpritePack: DirectionalSpriteSheet | null = null;
     private currentAnimation: AnimatedSprite | null = null;
-    private attackSprite: Graphics | null = null;
     private healthSprite: Graphics | null = null;
     private rangeSprite: Graphics | null = null;
-    private defaultCursorSprite: Sprite | null = null;
     private spellCursorSprite: Container | null = null;
 
     private isCasting: boolean = false;
     private currentSpellRangeSpell: SpellPack | null = null;
-    private spellEffectRange: number = 10;
 
     private maxHealth: number = 1000;
     private _health: number = this.maxHealth;
@@ -195,9 +190,6 @@ export class Player implements Entity {
         this.gold -= spell.buyCost;
         this.availableSpells.push(spell);
         this.popUpCastle.availableSpells.splice(spellIndex, 1);
-        if (this.isLocal) {
-            this.scene.setSpellSlots(this.availableSpells);
-        }
 
         return true;
     }
@@ -349,14 +341,14 @@ export class Player implements Entity {
 
         // Reset casting preparation
         this.castingDoneCallback(true);
-        this.castingDoneCallback = (didCast)=>{};
+        this.castingDoneCallback = ()=>{};
         this.isCasting = false;
         this.activeSpell = null;
     }
 
     cancelSpell() {
         this.castingDoneCallback(false);
-        this.castingDoneCallback = (didCast)=>{};
+        this.castingDoneCallback = ()=>{};
         this.isCasting = false;
         this.activeSpell = null;
     }

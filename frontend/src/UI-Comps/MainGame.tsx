@@ -3,12 +3,11 @@ import HeroGameLoop from "../GameComps/HeroGameLoop";
 import {CityPopup} from "./CityPopup";
 import {Player} from "../GameComps/Player";
 import {popUpEvent} from "../types/types";
-import {Application, Assets, Sprite} from "pixi.js";
+import {Application} from "pixi.js";
 import {Keyboard} from "../GameComps/Keyboard";
 import {Vector2D} from "../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
-import {SpellPack} from "./SpellPicker";
 
 
 const MainGame: React.FC = () => {
@@ -21,7 +20,6 @@ const MainGame: React.FC = () => {
     const [playerPopUpEvent, setPlayerPopUpEvent] = useState<popUpEvent | undefined>(undefined);
     const [winner, setWinner] = useState<string | undefined>(undefined);
     const [dayTime, setDayTime] = useState<number>(0);
-    const [spellSlots, setSpellSlots] = useState<SpellPack[]>([]);
 
     const resizeApp = (): Vector2D => {
         const ASPECT_RATIO = 16 / 9;
@@ -52,7 +50,6 @@ const MainGame: React.FC = () => {
 
     // window.addEventListener('resize', resizeApp);
     const initGame = async () => {
-        console.log('init-pixi-ref', pixiRef.current)
         if (pixiRef.current !== null) return;
 
         Keyboard.initialize();
@@ -76,11 +73,9 @@ const MainGame: React.FC = () => {
         gameSceneRef.current = new HeroGameLoop(
             pixiRef.current,
             setWinner,
-            winner,
             setPlayerPopUpEvent,
             playersRef,
             setDayTime,
-            setSpellSlots,
         );
 
         gameSceneRef.current.start();
@@ -92,7 +87,7 @@ const MainGame: React.FC = () => {
         return () => {
             cleanUpGame();
         };
-    }, []);
+    }, [initGame]);
 
     const cleanUpGame = () => {
         if (gameSceneRef.current) {
@@ -118,24 +113,19 @@ const MainGame: React.FC = () => {
     const handleRecruit = (playerID: number | undefined, n: number): boolean => {
         if (playerID === undefined) return false
         if (playersRef.current === null) return false
-        const success = playersRef.current[playerID].buyDrone(n);
-        return success;
+        return playersRef.current[playerID].buyDrone(n);
     }
 
     const handleGarrisonDrone = (playerID?: number): boolean => {
         if (playerID === undefined) return false
         if (playersRef.current === null) return false
-
-        const success = playersRef.current[playerID].garrisonDrone();
-        return success;
+        return playersRef.current[playerID].garrisonDrone();
     }
 
     const handleBringDrone = (playerID?: number): boolean => {
         if (playerID === undefined) return false
         if (playersRef.current === null) return false
-
-        const success = playersRef.current[playerID].bringGarrisonDrone();
-        return success;
+        return playersRef.current[playerID].bringGarrisonDrone();
     }
 
     return (

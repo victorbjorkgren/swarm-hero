@@ -24,7 +24,6 @@ import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
 import {NavMesh} from "./NavMesh";
 import DebugDrawer from "../DebugTools/DebugDrawer";
-import {SpellPack} from "../UI-Comps/SpellPicker";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -65,11 +64,9 @@ export default class HeroGameLoop {
     constructor(
         public pixiRef: Application,
         private setWinner: React.Dispatch<React.SetStateAction<string | undefined>>,
-        private winner: string | undefined,
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
         private playersRef: React.MutableRefObject<Player[]>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
-        public setSpellSlots: React.Dispatch<React.SetStateAction<SpellPack[]>>,
     ) {
         this.sceneWidth = pixiRef.canvas.width;
         this.sceneHeight = pixiRef.canvas.height;

@@ -423,14 +423,15 @@ export class Player implements Entity {
         const gapSizeRatio = .5;
         const dashLength = 2 * Math.PI / ((1 + gapSizeRatio) * nDashes);
 
-        if (this.currentSpellRangeSpell?.element !== this.activeSpell.element) {
+        if (this.currentSpellRangeSpell?.castRange !== this.activeSpell.castRange) {
+            this.currentSpellRangeSpell = this.activeSpell;
             for (let i = 0; i < nDashes; i++) {
                 const startAngle = i * (1 + gapSizeRatio) * dashLength;
                 const startPos = pol2cart(this.activeSpell.castRange, startAngle);
                 this.rangeSprite.moveTo(startPos.x, startPos.y);
                 this.rangeSprite.arc(0, 0, this.activeSpell.castRange, startAngle, startAngle + dashLength);
-                this.rangeSprite.stroke({color: this.team.color, alpha: .3, width: 3});
             }
+            this.rangeSprite.stroke({color: 0xffffff, alpha: 0.1, width: 5});
         }
 
         this.rangeSprite.x = this.pos.x;

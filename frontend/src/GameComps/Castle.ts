@@ -1,9 +1,10 @@
 import {Vector2D} from "./Utility";
 import {Player} from "./Player";
-import {Entity, Team, TexturePack} from "../types/types";
+import {Entity, Spells, Team, TexturePack} from "../types/types";
 import {Particle} from "./Particle";
 import HeroGameLoop from "./HeroGameLoop";
 import {Application, Graphics, Sprite} from "pixi.js";
+import {SpellPack, SpellPacks} from "../UI-Comps/SpellPicker";
 
 export class Castle implements Entity {
     public pos: Vector2D;
@@ -20,12 +21,17 @@ export class Castle implements Entity {
     private isActive: boolean = false;
     public sqActivationDist: number = 70 ** 2;
     public nearbyPlayers: Player[] = [];
-    public garrison: Particle[] = [];
     private pixiRef: Application;
     private texture: TexturePack
 
-    myDrones: Particle[] = [];
-    targetedBy: Entity[] = [];
+    public garrison: Particle[] = [];
+    public myDrones: Particle[] = [];
+    public targetedBy: Entity[] = [];
+
+    public availableSpells: SpellPack[] = [
+        SpellPacks[Spells.Explosion],
+        SpellPacks[Spells.LaserBurst]
+    ];
 
     constructor(
         public team: Team,

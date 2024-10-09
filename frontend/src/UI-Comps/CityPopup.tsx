@@ -22,7 +22,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
     const [garrisonFlashError, setGarrisonFlashError] = useState<boolean>(false);
     const [bringFlashError, setBringFlashError] = useState<boolean>(false);
-    const [buyExplosionFlashError, setBuyExplosionFlashError] = useState<boolean>(false);
+    const [buySpellFlashError, setBuySpellFlashError] = useState<boolean[]>([]);
     const [buyLaserBurstFlashError, setBuyLaserBurstFlashError] = useState<boolean>(false);
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,12 +88,22 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         }
     }
 
-    const handleBuySpell = (spell: SpellPack, setFlashError: React.Dispatch<React.SetStateAction<boolean>>) => {
+    const handleBuySpell = (spell: SpellPack, index: number) => {
         if (player === null || player === undefined) return;
         const success = player.buySpell(spell);
         if (!success) {
-            setFlashError(true);
-            setTimeout(() => setFlashError(false), 750);
+            setBuySpellFlashError(prevErrors => {
+                const newErrors = [...prevErrors];
+                newErrors[index] = true;
+                return newErrors;
+            });
+            setTimeout(() => {
+                setBuySpellFlashError(prevErrors => {
+                    const newErrors = [...prevErrors];
+                    newErrors[index] = false;
+                    return newErrors;
+                })
+            }, 750);
         }
     }
 
@@ -119,8 +129,9 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                 {/*Spells*/}
                 <div className="flex flex-col text-6xl items-start justify-start space-y-2">
                     <span className="text-2xl">Buy Spells</span>
-                    <UnitButton n={0} unit={Spells.Explosion} clickHandler={() => handleBuySpell(SpellPacks[Spells.Explosion], setBuyExplosionFlashError)} flashError={buyExplosionFlashError} />
-                    <UnitButton n={0} unit={Spells.LaserBurst} clickHandler={() => handleBuySpell(SpellPacks[Spells.LaserBurst], setBuyLaserBurstFlashError)} flashError={buyLaserBurstFlashError} />
+                    {player.popUpCastle && player.popUpCastle.availableSpells.map((spell: SpellPack, index: number) => (
+                        <UnitButton key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]} />
+                    ))}
                 </div>
             </div>
             {/*Garrison*/}

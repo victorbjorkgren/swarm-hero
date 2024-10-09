@@ -185,13 +185,16 @@ export class Player implements Entity {
     }
 
     buySpell(spell: SpellPack): boolean {
-        const castle = this.findNearbyCastle();
-        if (castle === undefined || castle === null) return false;
-        if (!castle.isAlive()) return false;
+        if (this.popUpCastle === undefined || this.popUpCastle === null) return false;
+        if (!this.popUpCastle.isAlive()) return false;
         if (this.gold < spell.buyCost) return false
+
+        const spellIndex = this.popUpCastle.availableSpells.indexOf(spell);
+        if (spellIndex === -1) return false;
 
         this.gold -= spell.buyCost;
         this.availableSpells.push(spell);
+        this.popUpCastle.availableSpells.splice(spellIndex, 1);
         if (this.isLocal) {
             this.scene.setSpellSlots(this.availableSpells);
         }
@@ -362,6 +365,7 @@ export class Player implements Entity {
         this.renderSelf();
         this.renderAttack();
         this.renderHUD();
+
         this.playerLeavingCastleMenu();
     }
 

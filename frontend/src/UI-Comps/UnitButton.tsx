@@ -2,13 +2,12 @@ import {LiaTimesSolid} from "react-icons/lia";
 import {GiLaserBurst} from "react-icons/gi";
 import React from "react";
 import {Spells, Units} from "../types/types";
-import {SpellCastIcon} from "./SpellCastIcon";
-import {SpellIcons, SpellPacks} from "./SpellPicker";
+import {SpellPack, SpellPacks} from "./SpellPicker";
 import {SpellICon} from "./SpellICon";
 
 interface UnitButtonProps {
     n: number;
-    unit: Units | Spells | null;
+    unit: Units | SpellPack | null;
     clickHandler: (n: number)=>void;
     flashError?: boolean;
 }
@@ -16,10 +15,10 @@ interface UnitButtonProps {
 export const UnitButton: React.FC<UnitButtonProps> = ( {n, unit, clickHandler, flashError} ) => {
     let ware;
     switch (unit) {
-        case Spells.Explosion:
+        case SpellPacks[Spells.Explosion]:
             ware = <SpellICon spell={SpellPacks[Spells.Explosion]} />;
             break;
-        case Spells.LaserBurst:
+        case SpellPacks[Spells.LaserBurst]:
             ware = <SpellICon spell={SpellPacks[Spells.LaserBurst]} />;
             break;
         case Units.LaserDrone:

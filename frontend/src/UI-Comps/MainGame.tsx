@@ -63,6 +63,7 @@ const MainGame: React.FC = () => {
             background: '#72b372',
             width: screenVector.x,
             height: screenVector.y,
+            antialias: true
         });
 
         if (gameContainerRef.current) {

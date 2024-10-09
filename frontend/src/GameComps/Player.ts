@@ -11,8 +11,9 @@ import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
 import {Keyboard} from "./Keyboard";
-import {AnimatedSprite, Assets, FillGradient, Graphics, Sprite, Spritesheet, SpritesheetData} from "pixi.js";
+import {AnimatedSprite, Assets, Container, FillGradient, Graphics, Sprite, Spritesheet, SpritesheetData} from "pixi.js";
 import {SpellPack} from "../UI-Comps/SpellPicker";
+import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 
 export class Player implements Entity {
     private availableSpells: SpellPack[] = [];
@@ -36,7 +37,7 @@ export class Player implements Entity {
     private healthSprite: Graphics | null = null;
     private rangeSprite: Graphics | null = null;
     private defaultCursorSprite: Sprite | null = null;
-    private spellCursorSprite: Graphics | null = null;
+    private spellCursorSprite: Container | null = null;
 
     private isCasting: boolean = false;
     private currentSpellRangeSpell: SpellPack | null = null;
@@ -367,21 +368,10 @@ export class Player implements Entity {
 
     renderCursor() {
         if (this.spellCursorSprite === null) {
-            this.spellCursorSprite = new Graphics();
-            this.spellCursorSprite.zIndex = HeroGameLoop.zIndex.hud;
-            this.spellCursorSprite.visible = true;
-            this.scene.pixiRef.stage.addChild(this.spellCursorSprite);
+            this.spellCursorSprite = renderArcaneWheel(this.scene.pixiRef);
         }
-
         const cursor = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y)
         if (this.activeSpell !== null && (Vector2D.sqDist(cursor, this.pos) < (this.activeSpell.castRange ** 2))) {
-            this.spellCursorSprite
-                .circle(0, 0, this.activeSpell.effectRange)
-                .moveTo(0,0).lineTo(this.activeSpell.effectRange, 0)
-                .moveTo(0,0).lineTo(-this.activeSpell.effectRange, 0)
-                .moveTo(0,0).lineTo(0, this.activeSpell.effectRange)
-                .moveTo(0,0).lineTo(0, -this.activeSpell.effectRange)
-                .stroke({color: 0x0000FF, alpha: 0.3});
             this.spellCursorSprite.visible = true;
             this.scene.pixiRef.stage.cursor = "none";
         } else {

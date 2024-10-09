@@ -6,9 +6,6 @@ import {
     AABBCollider,
     Controller,
     ControllerMapping,
-    DirectionalSpriteSheet,
-    Polygon,
-    PolygonalCollider,
     popUpEvent,
     Team,
     TexturePack
@@ -18,9 +15,7 @@ import {
     AnimatedSprite, AnimatedSpriteFrames,
     Application,
     Assets,
-    Container,
     Graphics,
-    Rectangle,
     Sprite,
     Spritesheet, SpritesheetData,
     Texture

@@ -8,93 +8,93 @@ import {Player} from "./Player";
 import {Castle} from "./Castle";
 import {Entity, PolygonalCollider, Team} from "../types/types";
 import HeroGameLoop from "./HeroGameLoop";
+import {UnitPack} from "../types/unitTypes";
+import {UnitManager} from "./UnitManager";
 
 export class ParticleSystem {
-    private particles: Particle[] = [];
     private sqCohedeDist: number = 250 ** 2;
     private sqSeparateDistance: number = 75 ** 2;
     private cohesionFactor: number = .1;
     private separationFactor: number = 2;
     private alignFactor: number = 40;
+    private unitManager: UnitManager;
 
     constructor(
         private particleN: number,
         private teams: Team[],
         private scene: HeroGameLoop,
         private polygonColliderEntities: PolygonalCollider[] = [])
-    { }
+    {
+        this.unitManager = new UnitManager();
+    }
 
-    getParticles(): Particle[] {
-        return this.particles;
+    getParticles(): UnitManager {
+        return this.unitManager;
     }
 
     render() {
-        this.particles.forEach((particle: Particle) => {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.render();
         });
     }
 
-    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team): Particle {
-        const p = new Particle( origin , mass, team, maxVel, team.color, this.scene);
+    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: Entity): Particle {
+        const p = new Particle( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner, this.unitManager);
         p.setLeaderPosition(team.playerCentroid)
-        this.particles.push(p);
+        this.unitManager.add(p);
         return p;
     }
 
     update(): void {
-        // this.refillTeams();
         this.engageFights();
         this.fightFights();
-        this.bringOutYourDead();
-        // this.checkCollisions();
         this.particleBehavior();
         this.updateBoid();
         this.updatePos()
     }
 
     updatePos(): void {
-        for (const particle of this.particles) {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.acc.limit(particle.maxAcc);
             particle.vel.add(particle.acc);
             particle.vel.limit(particle.maxVel);
             particle.pos.add(particle.vel);
-        }
+        })
     }
 
     particleBehavior(): void {
-        for (const particle of this.particles) {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.initFrame();
             particle.approachDesiredVel();
             particle.calcDesiredPos();
             particle.approachDesiredPos();
-        }
+        })
     }
 
     checkCollisions(): void {
-        for (let i=0; i < this.particles.length; ++i) {
-            for (const polygonHolder of this.polygonColliderEntities)
-                ParticleSystem.handleBallPolygonCollision(this.particles[i], polygonHolder);
+        // for (let i=0; i < this.particles.length; ++i) {
+        //     for (const polygonHolder of this.polygonColliderEntities)
+        //         ParticleSystem.handleBallPolygonCollision(this.particles[i], polygonHolder);
             // for (const team of this.teams) {
             //     for (const player of team.players) {
             //         ParticleSystem.handleBallPolygonCollision(this.particles[i], player);
             //     }
             // }
-            for (let j = i + 1; j < this.particles.length; j++) {
-                ParticleSystem.handleCircleCollision(this.particles[i], this.particles[j]);
-            }
-        }
+            // for (let j = i + 1; j < this.particles.length; j++) {
+            //     ParticleSystem.handleCircleCollision(this.particles[i], this.particles[j]);
+            // }
+        // }
     }
 
-    bringOutYourDead() {
-        this.particles = this.particles.filter(particle => particle.isAlive());
-    }
-
-    getNewParticle(player: Player, castle: Castle): Particle {
+    getNewParticle(player: Player, castle: Castle, groupID: number, unitInfo: UnitPack, owner: Entity): Particle {
         return this.createParticle(
             new Vector2D(castle.pos.x + (Math.random()-.5)*30, castle.pos.y + (Math.random()-.5)*30),
             10,
             1,
-            player.team
+            player.team,
+            groupID,
+            unitInfo,
+            owner
         );
     }
 
@@ -104,15 +104,15 @@ export class ParticleSystem {
 
     engageIfClose(me: Particle, other: Entity) {
         if (!other.isAlive()) return;
+        if (me === other) return
+        if (me.team === other.team) return
         if (this.sqFiringDistance(me, other) > me.sqEngageRadius) return;
         me.engaging.push(other)
         other.targetedBy.push(me);
     }
 
     engageFights(): void {
-        particleLoop:
-        for (const me of this.particles) {
-            // Filter out those that we are no longer engaging with
+        this.unitManager.deepForEach((me: Particle) => {
             for (let i = me.engaging.length - 1; i >= 0; i--) {
                 const foe = me.engaging[i];
                 if (!foe || !foe.isAlive() || this.sqFiringDistance(me, foe) >= me.sqEngageRadius) {
@@ -124,30 +124,31 @@ export class ParticleSystem {
                 }
             }
 
-            if (me.engaging.length >= me.maxTargets) continue;
+            if (me.engaging.length >= me.maxTargets) return;
             for (const team of this.teams) {
                 if (team === me.team) continue
                 for (const player of team.players) {
                     this.engageIfClose(me, player)
-                    if (me.engaging.length >= me.maxTargets) continue particleLoop;
+                    if (me.engaging.length >= me.maxTargets) return;
+                    this.unitManager.ownerForEach(player, (other) => {
+                        if (me.engaging.length >= me.maxTargets) return;
+                        this.engageIfClose(me, other);
+                    })
                 }
                 for (const castle of team.castles) {
                     this.engageIfClose(me, castle)
-                    if (me.engaging.length >= me.maxTargets) continue particleLoop;
+                    if (me.engaging.length >= me.maxTargets) return;
+                    this.unitManager.ownerForEach(castle, (other) => {
+                        if (me.engaging.length >= me.maxTargets) return;
+                        this.engageIfClose(me, other);
+                    })
                 }
             }
-            for (const other of this.particles) {
-                if (me.engaging.length >= me.maxTargets) continue particleLoop;
-                if (me === other) continue
-                if (me.team === other.team) continue
-                this.engageIfClose(me, other);
-
-            }
-        }
+        })
     }
 
     fightFights(): void {
-        for (const me of this.particles) {
+        this.unitManager.deepForEach((me: Particle) => {
             me.firingLaserAt = me.firingLaserAt.filter(foe => foe.target && foe.target.isAlive());
             me.firingLaserAt = me.firingLaserAt.filter(foe => Vector2D.sqDist(me.pos, foe.target.pos) < me.sqFireRadius);
             for (const foe of me.engaging) {
@@ -167,51 +168,43 @@ export class ParticleSystem {
                     }
                 }
             }
-        }
+        })
     }
 
     updateBoid(): void {
-        for (let i=0; i < this.particles.length; ++i) {
+        this.unitManager.deepForEach((p1: Particle) => {
             const cohedePoint = Vector2D.zeros();
             const sepPoint = Vector2D.zeros();
             const alignV = Vector2D.zeros();
             let nCoh = 0;
-            for (let j = 0; j < this.particles.length; j++) {
-                if (this.particles[i] === this.particles[j]) continue;
-                if (this.particles[i].team === this.particles[j].team) {
-                    const sqDist = Vector2D.sqDist(this.particles[i].pos, this.particles[j].pos);
-                    // Separate
-                    if (sqDist < this.sqSeparateDistance) {
-                        sepPoint.x += 0.03 * this.sqSeparateDistance * (this.particles[i].pos.x - this.particles[j].pos.x) / sqDist;
-                        sepPoint.y += 0.03 * this.sqSeparateDistance * (this.particles[i].pos.y - this.particles[j].pos.y) / sqDist;
-                    }
-                    // Cohede & Align if boiding
-                    if (!this.particles[i].isBoiding) continue
-                    if (sqDist < this.sqCohedeDist && sqDist > this.sqSeparateDistance) {
-                        cohedePoint.add(this.particles[j].pos);
-                        alignV.add(this.particles[j].vel);
-                        nCoh += 1
-                    }
+            this.unitManager.ownerForEach(p1.owner, (p2: Particle) => {
+                if (p1 === p2) return;
+
+                const sqDist = Vector2D.sqDist(p1.pos, p2.pos);
+                // Separate
+                if (sqDist < this.sqSeparateDistance) {
+                    sepPoint.x += 0.03 * this.sqSeparateDistance * (p1.pos.x - p2.pos.x) / sqDist;
+                    sepPoint.y += 0.03 * this.sqSeparateDistance * (p1.pos.y - p2.pos.y) / sqDist;
                 }
-            }
+                // Cohede & Align if boiding
+                if (p1.isBoiding && sqDist < this.sqCohedeDist && sqDist > this.sqSeparateDistance) {
+                    cohedePoint.add(p2.pos);
+                    alignV.add(p2.vel);
+                    nCoh += 1
+                }
+
+            })
             if (nCoh > 0) {
-                cohedePoint.scale(1 / nCoh).sub(this.particles[i].pos).scale(this.cohesionFactor);
-                alignV.scale(1 / nCoh).sub(this.particles[i].vel).scale(this.alignFactor);
+                cohedePoint.scale(1 / nCoh).sub(p1.pos).scale(this.cohesionFactor);
+                alignV.scale(1 / nCoh).sub(p1.vel).scale(this.alignFactor);
             }
             sepPoint.scale(this.separationFactor);
-
-            // this.particles[i].debugSprite?.clear();
-            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos, cohedePoint), 0xFF0000);
-            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos, sepPoint), 0x00FF00);
-            // this.particles[i].debugLine(this.particles[i].pos, Vector2D.add(this.particles[i].pos,  alignV), 0xFFFF00);
-
             const desiredV = new Vector2D(
                 cohedePoint.x + sepPoint.x + alignV.x,
                 cohedePoint.y + sepPoint.y + alignV.y
             );
-            this.particles[i].acc.add(Vector2D.subtract(desiredV, this.particles[i].vel));
-
-        }
+            p1.acc.add(Vector2D.subtract(desiredV, p1.vel));
+        })
     }
 
     static handleCircleCollision(

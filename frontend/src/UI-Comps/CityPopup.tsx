@@ -1,17 +1,18 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Vector2D} from "../GameComps/Utility";
 import {UnitButton} from "./UnitButton";
-import {Units} from "../types/types";
 import {Player} from "../GameComps/Player";
-import {SpellPack} from "./SpellPicker";
+
+import {SpellPack} from "../types/spellTypes";
+import {Units} from "../types/unitTypes";
 
 
 interface CityPopupProps {
     anchorPoint: Vector2D | undefined;
     player: Player | null | undefined;
-    recruitFunc: (n: number)=>boolean;
-    garrisonFunc: (n: number)=>boolean;
-    bringFunc: (n: number)=>boolean;
+    recruitFunc: (unit: Units, n: number)=>boolean;
+    garrisonFunc: (unit: Units, n: number)=>boolean;
+    bringFunc: (unit: Units, n: number)=>boolean;
 }
 
 export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc, garrisonFunc, bringFunc}) => {
@@ -62,8 +63,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     }, [anchorPoint, player?.popUpCastle, player]);
 
-    const handleFlashRecruit = (n: number) => {
-        const success = recruitFunc(n);
+    const handleFlashRecruit = (unit: Units, n: number) => {
+        const success = recruitFunc(unit, n);
         if (!success) {
             setRecruitFlashError(true);
             setTimeout(() => setRecruitFlashError(false), 750);
@@ -121,8 +122,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             <div className="flex flex-row justify-around px-2">
                 <div className="flex flex-col text-2xl items-end justify-start gap-y-2">
                     <span className="text-2xl">Recruit</span>
-                    <UnitButton n={1} unit={Units.LaserDrone} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
-                    <UnitButton n={10} unit={Units.LaserDrone} clickHandler={handleFlashRecruit} flashError={recruitFlashError} />
+                    <UnitButton n={1} unit={Units.LaserDrone} clickHandler={()=>{handleFlashRecruit(Units.LaserDrone, 1)}} flashError={recruitFlashError} />
+                    <UnitButton n={10} unit={Units.LaserDrone} clickHandler={()=>{handleFlashRecruit(Units.LaserDrone, 10)}} flashError={recruitFlashError} />
                 </div>
                 {/*Spells*/}
                 <div className="flex flex-col text-6xl items-start justify-start space-y-2">

@@ -2,6 +2,8 @@ import {massToRadius, randomUnitVector, Vector2D} from "./Utility";
 import {Entity, Team} from "../types/types";
 import {Graphics} from "pixi.js";
 import HeroGameLoop from "./HeroGameLoop";
+import {UnitPack} from "../types/unitTypes";
+import {UnitManager} from "./UnitManager";
 
 export class Particle implements Entity {
     vel: Vector2D;
@@ -21,7 +23,6 @@ export class Particle implements Entity {
     maxAcc: number = .05;
     givesIncome: number = 0;
 
-    myDrones: Particle[] = [];
     targetedBy: Entity[] = [];
 
     particleSprite: Graphics | null = null;
@@ -40,7 +41,11 @@ export class Particle implements Entity {
         public team: Team,
         public maxVel: number = 1,
         public color: number,
-        private scene: HeroGameLoop
+        private scene: HeroGameLoop,
+        public groupID: number,
+        public unitInfo: UnitPack,
+        public owner: Entity,
+        private unitManager: UnitManager,
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
@@ -62,6 +67,10 @@ export class Particle implements Entity {
         if (this._health <= 0) {
             this.onDeath();
         }
+    }
+
+    setGroupID(groupID: number): void {
+        this.groupID = groupID;
     }
 
     killSprites() {
@@ -155,6 +164,7 @@ export class Particle implements Entity {
     }
 
     onDeath() {
+        this.unitManager.remove(this);
         this.killSprites();
     }
 

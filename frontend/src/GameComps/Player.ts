@@ -6,12 +6,12 @@ import {
     Entity,
     Team
 } from "../types/types";
-import {Particle} from "./Particle";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet} from "pixi.js";
-import {SpellPack} from "../UI-Comps/SpellPicker";
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
+import {SpellPack} from "../types/spellTypes";
+import {UnitPacks, Units} from "../types/unitTypes";
 
 export class Player implements Entity {
     public availableSpells: SpellPack[] = [];
@@ -46,7 +46,6 @@ export class Player implements Entity {
     private particleSystem: ParticleSystem | undefined;
 
     public myCastles: Castle[] = [];
-    public myDrones: Particle[] = [];
     public targetedBy: Entity[] = [];
 
     private activeSpell: SpellPack | null = null;
@@ -109,7 +108,7 @@ export class Player implements Entity {
         this.myCastles.forEach(castle => {
             this.gold += castle.givesIncome;
         })
-        this.myDrones.forEach(drone => {
+        this.particleSystem?.getParticles().ownerForEach(this, (drone) => {
             this.gold += drone.givesIncome;
         })
     }
@@ -153,30 +152,27 @@ export class Player implements Entity {
         this.particleSystem = particleSystem;
     }
 
-    findNearbyCastle(): Castle | undefined {
+    findNearbyCastle(): Castle | null {
         for (const castle of this.team.castles) {
             if (castle.nearbyPlayers.find(player => player === this))
                 return castle;
         }
-        return undefined
+        return null
     }
 
-    buyDrone(n: number): boolean {
+    buyDrone(unit: Units, n: number): boolean {
         if (!this.particleSystem) return false;
-        const castle = this.findNearbyCastle();
+        const castle = this.popUpCastle;
         if (castle === undefined || castle === null) return false;
         if (!castle.isAlive()) return false;
-        if (this.gold < (Particle.price * n)) return false
+        if (this.gold < (UnitPacks[unit].buyCost * n)) return false
 
-        this.gold -= Particle.price * n;
+        this.gold -= UnitPacks[unit].buyCost * n;
 
         for (let i=0; i < n; i++) {
-            this.myDrones.push(
-                this.particleSystem.getNewParticle(this, castle)
-            );
+            this.particleSystem.getNewParticle(this, castle, 0, UnitPacks[unit], this)
         }
         return true;
-
     }
 
     buySpell(spell: SpellPack): boolean {
@@ -194,23 +190,39 @@ export class Player implements Entity {
         return true;
     }
 
-    garrisonDrone(): boolean {
-        const castle = this.findNearbyCastle();
-        if (castle === undefined) return false;
-        const p = this.myDrones.pop()
-        if (p === undefined) return false;
-        p.setLeaderPosition(castle.pos);
-        castle.garrison.push(p);
+    garrisonDrones(droneType: Units, n: number): boolean {
+        const castle = this.popUpCastle;
+        if (castle === null) return false;
+
+        const uMgr = this.particleSystem?.getParticles()
+        if (uMgr === undefined) return false;
+
+        const droneSet = uMgr.getUnits(this, droneType)
+        if (droneSet === null) return false;
+        if (droneSet.size < n) return false;
+
+        for (const drone of droneSet) {
+            uMgr.switchOwner(drone, castle)
+            drone.setLeaderPosition(castle.pos);
+        }
         return true;
     }
 
-    bringGarrisonDrone(): boolean {
-        const castle = this.findNearbyCastle();
-        if (castle === undefined) return false;
-        const p = castle.garrison.pop()
-        if (p === undefined) return false;
-        p.setLeaderPosition(this.pos);
-        this.myDrones.push(p);
+    bringGarrisonDrone(droneType: Units, n: number): boolean {
+        const castle = this.popUpCastle;
+        if (castle === null) return false;
+
+        const uMgr = this.particleSystem?.getParticles()
+        if (uMgr === undefined) return false;
+
+        const droneSet = uMgr.getUnits(castle, droneType)
+        if (droneSet === null) return false;
+        if (droneSet.size < n) return false;
+
+        for (const drone of droneSet) {
+            uMgr.switchOwner(drone, this)
+            drone.setLeaderPosition(this.pos);
+        }
         return true;
     }
 

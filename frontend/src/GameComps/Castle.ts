@@ -1,10 +1,9 @@
 import {Vector2D} from "./Utility";
 import {Player} from "./Player";
-import {Entity, Spells, Team, TexturePack} from "../types/types";
-import {Particle} from "./Particle";
+import {Entity, Team, TexturePack} from "../types/types";
 import HeroGameLoop from "./HeroGameLoop";
 import {Application, Graphics, Sprite} from "pixi.js";
-import {SpellPack, SpellPacks} from "../UI-Comps/SpellPicker";
+import {Spells, SpellPack, SpellPacks} from "../types/spellTypes";
 
 export class Castle implements Entity {
     public pos: Vector2D;
@@ -23,8 +22,6 @@ export class Castle implements Entity {
     private pixiRef: Application;
     private texture: TexturePack
 
-    public garrison: Particle[] = [];
-    public myDrones: Particle[] = [];
     public targetedBy: Entity[] = [];
 
     public availableSpells: SpellPack[] = [

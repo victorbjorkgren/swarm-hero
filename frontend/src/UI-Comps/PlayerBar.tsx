@@ -1,6 +1,7 @@
 import React from "react";
-import {SpellPack, SpellPicker} from "./SpellPicker";
+import {SpellPicker} from "./SpellPicker";
 import {Player} from "../GameComps/Player";
+import {SpellPack} from "../types/spellTypes";
 
 interface SpellPickerProps {
     pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;

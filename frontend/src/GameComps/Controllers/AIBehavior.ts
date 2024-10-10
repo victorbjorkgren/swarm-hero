@@ -1,11 +1,11 @@
 import {Player} from "../Player";
-import {Particle} from "../Particle";
 import {Vector2D} from "../Utility";
 import {Castle} from "../Castle";
 import {Entity} from "../../types/types";
 import HeroGameLoop from "../HeroGameLoop";
 import {NavMesh} from "../NavMesh";
 import DebugDrawer from "../../DebugTools/DebugDrawer";
+import {UnitManager} from "../UnitManager";
 
 enum State {
     Flee,
@@ -35,7 +35,7 @@ export class AIBehavior {
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
-    constructor(private player: Player, private otherPlayer: Player, scene: HeroGameLoop) {
+    constructor(private player: Player, private otherPlayer: Player, private scene: HeroGameLoop) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
         this.pathTarget = player.pos.copy();
@@ -45,6 +45,10 @@ export class AIBehavior {
 
         this.navMesh = new NavMesh(scene);
         this.navMesh.updateNavMesh(scene.colliders);
+    }
+
+    getUnitManager(): UnitManager | undefined {
+        return this.scene.particleSystem?.getParticles();
     }
 
     update() {
@@ -234,8 +238,10 @@ export class AIBehavior {
     }
 
     estimateFoeStrength(foe: Entity, attacker: Entity): number {
-        if (attacker.myDrones.length === 0) return 1000;
-        return foe.myDrones.length / attacker.myDrones.length;
+        const foeDrones = this.getUnitManager()?.flatOwnerCount(foe) || 0
+        const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker) || 0
+        if (attackerDrones === 0) return 1000;
+        return foeDrones / attackerDrones;
     }
 
     nearbyFoes(dist: number): Player[] {

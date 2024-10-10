@@ -301,11 +301,11 @@ export default class HeroGameLoop {
             castle.receiveDamage(damage);
         }
         if (this.particleSystem) {
-            for (const particle of this.particleSystem.getParticles()) {
-                if (safeTeam.includes(particle.team)) continue;
-                if (Vector2D.sqDist(position, particle.pos) > sqRange) continue;
+            this.particleSystem.getParticles().deepForEach((particle) => {
+                if (safeTeam.includes(particle.team)) return;
+                if (Vector2D.sqDist(position, particle.pos) > sqRange) return;
                 particle.receiveDamage(damage);
-            }
+            })
         }
     }
 

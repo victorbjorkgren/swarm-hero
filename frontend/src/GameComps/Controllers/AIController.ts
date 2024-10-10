@@ -1,14 +1,16 @@
 import {Controller} from "../../types/types";
 import {Player} from "../Player";
 import {Vector2D} from "../Utility";
-import {Particle} from "../Particle";
 import {AIBehavior} from "./AIBehavior";
 import HeroGameLoop from "../HeroGameLoop";
+import {Units} from "../../types/unitTypes";
+import {Castle} from "../Castle";
 
 export class AIController implements Controller {
     private target: Vector2D
     private behavior: AIBehavior
     private behaviorCallCooldown: number = 0;
+    private activeCastle: Castle | null = null;
 
     constructor(
         private player: Player,
@@ -34,7 +36,8 @@ export class AIController implements Controller {
         }
     }
     buy(): void {
-        this.player.buyDrone(1);
+        this.player.popUpCastle = this.player.findNearbyCastle();
+        this.player.buyDrone(Units.LaserDrone, 1);
     }
     special(): void {
         throw new Error("Method not implemented.");

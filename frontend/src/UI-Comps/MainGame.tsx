@@ -8,6 +8,7 @@ import {Keyboard} from "../GameComps/Keyboard";
 import {Vector2D} from "../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
+import {Units} from "../types/unitTypes";
 
 
 const MainGame: React.FC = () => {
@@ -110,22 +111,22 @@ const MainGame: React.FC = () => {
         initGame();
     };
 
-    const handleRecruit = (playerID: number | undefined, n: number): boolean => {
-        if (playerID === undefined) return false
-        if (playersRef.current === null) return false
-        return playersRef.current[playerID].buyDrone(n);
+    const handleRecruit = (unit: Units, n: number): boolean => {
+        if (gameSceneRef.current === null) return false
+        if (gameSceneRef.current.localPlayer === null) return false
+        return gameSceneRef.current.localPlayer.buyDrone(unit, n);
     }
 
-    const handleGarrisonDrone = (playerID?: number): boolean => {
-        if (playerID === undefined) return false
-        if (playersRef.current === null) return false
-        return playersRef.current[playerID].garrisonDrone();
+    const handleGarrisonDrone = (unit: Units, n: number): boolean => {
+        if (gameSceneRef.current === null) return false
+        if (gameSceneRef.current.localPlayer === null) return false
+        return gameSceneRef.current.localPlayer.garrisonDrones(unit, n);
     }
 
-    const handleBringDrone = (playerID?: number): boolean => {
-        if (playerID === undefined) return false
-        if (playersRef.current === null) return false
-        return playersRef.current[playerID].bringGarrisonDrone();
+    const handleBringDrone = (unit: Units, n: number): boolean => {
+        if (gameSceneRef.current === null) return false
+        if (gameSceneRef.current.localPlayer === null) return false
+        return gameSceneRef.current.localPlayer.bringGarrisonDrone(unit, n);
     }
 
     return (
@@ -144,9 +145,9 @@ const MainGame: React.FC = () => {
                     <CityPopup
                         anchorPoint={playerPopUpEvent?.castle.pos}
                         player={gameSceneRef.current?.localPlayer}
-                        recruitFunc={(n) => {return handleRecruit(gameSceneRef.current?.localPlayer?.team.id, n)}}
-                        garrisonFunc={() => {return handleGarrisonDrone(gameSceneRef.current?.localPlayer?.team.id)}}
-                        bringFunc={() => {return handleBringDrone(gameSceneRef.current?.localPlayer?.team.id)}}
+                        recruitFunc={handleRecruit}
+                        garrisonFunc={handleGarrisonDrone}
+                        bringFunc={handleBringDrone}
                     />
                     {winner === undefined &&
                         <PlayerBar

@@ -1,14 +1,13 @@
-import {LiaTimesSolid} from "react-icons/lia";
-import {GiLaserBurst} from "react-icons/gi";
 import React from "react";
-import {Spells, Units} from "../types/types";
-import {SpellPack, SpellPacks} from "./SpellPicker";
 import {SpellICon} from "./SpellICon";
+import {Spells, SpellPack, SpellPacks} from "../types/spellTypes";
+import {UnitPacks, Units} from "../types/unitTypes";
+import {UnitIcon} from "./UnitIcon";
 
 interface UnitButtonProps {
     n: number;
     unit: Units | SpellPack | null;
-    clickHandler: (n: number)=>void;
+    clickHandler: ()=>void;
     flashError?: boolean;
 }
 
@@ -22,18 +21,21 @@ export const UnitButton: React.FC<UnitButtonProps> = ( {n, unit, clickHandler, f
             ware = <SpellICon spell={SpellPacks[Spells.LaserBurst]} />;
             break;
         case Units.LaserDrone:
-            ware = <GiLaserBurst />
+            ware = <UnitIcon unit={UnitPacks[Units.LaserDrone]} n={n} />
             break;
         default:
             ware = ""
     }
     return (
         <div className="flex flex-row items-center justify-center space-x-2 text-white">
-            {n > 0 && <span className="text-xl mr-1 select-none">{n.toString()}</span>}
-            {n > 0 && <LiaTimesSolid className="text-sm"/>}
             <div
-                className={`${flashError ? "bg-red-500" : "bg-gray-300 active:bg-opacity-90"} aspect-square min-w-10 flex flex-col items-center flex-grow justify-center bg-opacity-50 hover:bg-opacity-70 border border-white rounded-xl shadow p-2 transition duration-100`}
-                onClick={()=>clickHandler(n)}
+                className={`
+                ${flashError ? "bg-red-500" : "bg-gray-300 active:bg-opacity-90"} 
+                aspect-square min-w-full flex flex-col items-center flex-shrink-0 justify-center 
+                bg-opacity-50 hover:bg-opacity-70 border border-white rounded-xl shadow 
+                gap-1 p-2 px-4 transition duration-100
+                `}
+                onClick={()=>clickHandler()}
             >
                 {ware}
             </div>

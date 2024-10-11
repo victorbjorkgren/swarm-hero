@@ -5,6 +5,7 @@ import {Player} from "../GameComps/Player";
 
 import {SpellPack} from "../types/spellTypes";
 import {Units} from "../types/unitTypes";
+import {MovePopup} from "../GameComps/MovePopup";
 
 
 interface CityPopupProps {
@@ -17,13 +18,17 @@ interface CityPopupProps {
 
 export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc, garrisonFunc, bringFunc}) => {
     const divRef = useRef<HTMLDivElement | null>(null);
+    const isBringing = useRef<boolean>(false);
+
     const [isVisible, setIsVisible] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
     const [recruitFlashError, setRecruitFlashError] = useState<boolean>(false);
-    // const [garrisonFlashError, setGarrisonFlashError] = useState<boolean>(false);
-    // const [bringFlashError, setBringFlashError] = useState<boolean>(false);
     const [buySpellFlashError, setBuySpellFlashError] = useState<boolean[]>([]);
+    const [moveGarrisonPopUpVisible, setMoveGarrisonPopUpVisible] = useState<boolean>(false);
+    const [maxMoveUnits, setMaxMoveUnits] = useState<number>(0);
+    const [moveUnit, setMoveUnit] = useState<Units | null>(null);
 
+    // Popup placement logic
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (divRef.current && !divRef.current.contains(event.target as Node)) {
@@ -50,7 +55,6 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             position: 'absolute',
             left: `${x}px`,
             top: `${y}px`,
-            transform: 'translate(-50%, -50%)'
         });
 
         setIsVisible(true);
@@ -61,7 +65,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             document.removeEventListener('mousedown', handleClickOutside);
         }
 
-    }, [anchorPoint, player?.popUpCastle, player]);
+    }, [anchorPoint]);
 
     const handleFlashRecruit = (unit: Units, n: number) => {
         const success = recruitFunc(unit, n);
@@ -71,21 +75,23 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         }
     }
 
-    // const handleFlashGarrison = (n: number) => {
-    //     const success = garrisonFunc(n);
-    //     if (!success) {
-    //         setGarrisonFlashError(true);
-    //         setTimeout(() => setGarrisonFlashError(false), 750);
-    //     }
-    // }
+    const handleOpenMovePopup = (unit : Units | null, max: number | null) => {
+        if (unit === null || max === null) return;
+        setMoveUnit(unit);
+        setMaxMoveUnits(max);
+        setMoveGarrisonPopUpVisible(true);
+    }
 
-    // const handleFlashBring = (n: number) => {
-    //     const success = bringFunc(n);
-    //     if (!success) {
-    //         setBringFlashError(true);
-    //         setTimeout(() => setBringFlashError(false), 750);
-    //     }
-    // }
+    const handleMoveGarrison = (unit: Units | null, n: number) => {
+        console.log('Moving', n, unit);
+        setMoveGarrisonPopUpVisible(false);
+        if (!unit || !player) return;
+        if (isBringing.current) {
+            player.bringGarrisonDrone(unit, n);
+        } else {
+            player.garrisonDrones(unit, n);
+        }
+    }
 
     const handleBuySpell = (spell: SpellPack, index: number) => {
         if (player === null || player === undefined) return;
@@ -108,49 +114,88 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     if (player === undefined || player === null) return null;
 
+    const playerDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player) || []);
+    const townDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.popUpCastle) || []);
+
+    const maxUnitBoxes = Math.max(playerDrones.length, townDrones.length) + 1;
+
+    const spellBoxSize = 30;
+    const recruitBoxSize = 16;
+    const garrisonBoxSize = 16;
+
     return (
-        <div
-            style={style}
-            className={`flex flex-col gap-2 rounded-xl justify-between transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-30 text-white select-none border border-white backdrop-blur-sm w-1/4 h-1/2 origin-center transition-transform duration-300 ease-out ${isVisible ? "scale-100 opacity-100 pointer-events-auto" : "scale-0 opacity-0 pointer-events-none"}`}
-            ref={divRef}
-        >
-            {/*General Info*/}
-            <div className="flex flex-row justify-end px-2">
-                <span className="font-bold">{`Gold: ${player.gold}`}</span>
+        <div ref={divRef}>
+            <div
+                style={style}
+                className={`
+                flex flex-col gap-2 rounded-xl justify-between transform -translate-y-1/2 
+                bg-white bg-opacity-30 text-white select-none border border-white backdrop-blur-sm
+                origin-center transition-transform duration-300 ease-out 
+                ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"} 
+                ${isVisible && moveGarrisonPopUpVisible ? "blur-sm opacity-70": ""} 
+                ${isVisible && !moveGarrisonPopUpVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+            >
+                {/*General Info*/}
+                <div className="flex flex-row justify-end px-2">
+                    <span className="font-bold">{`Gold: ${player.gold}`}</span>
+                </div>
+                {/*Purchasing*/}
+                <div className="flex flex-row justify-around px-4 gap-x-14">
+                    <div className="flex flex-col text-2xl items-end justify-start gap-y-2">
+                        <span className="text-2xl">Recruit</span>
+                        <UnitButton size={recruitBoxSize} n={1} unit={Units.LaserDrone} clickHandler={() => {
+                            handleFlashRecruit(Units.LaserDrone, 1)
+                        }} flashError={recruitFlashError}/>
+                        <UnitButton size={recruitBoxSize} n={10} unit={Units.LaserDrone} clickHandler={() => {handleFlashRecruit(Units.LaserDrone, 10)}} flashError={recruitFlashError}/>
+                    </div>
+                    {/*Spells*/}
+                    <div className="flex flex-col text-6xl items-start justify-start space-y-2">
+                        <span className="text-2xl">Buy Spells</span>
+                        {player.popUpCastle && player.popUpCastle.availableSpells.map((spell: SpellPack, index: number) => (
+                            <UnitButton size={spellBoxSize} key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]}/>
+                        ))}
+                    </div>
+                </div>
+                {/*Garrison*/}
+                <div className="flex flex-col items-start justify-start space-y-2 px-4">
+                    <span className="text-2xl">Garrison</span>
+                    <div className="flex flex-row gap-3 py-2 select-none">
+                        <div className="flex flex-col px-2 gap-1 items-center justify-around">
+                            <span>Town</span>
+                            <span>Player</span>
+                        </div>
+                        {Array.from({length: maxUnitBoxes}).map((_, index) => (
+                            <div key={index} className="flex flex-col gap-2 items-start justify-start">
+                                {/* Town UnitButton (or empty if no unit exists at this index) */}
+                                <UnitButton
+                                    size={garrisonBoxSize}
+                                    n={townDrones[index]?.count || 0}
+                                    unit={townDrones[index]?.unit || null}
+                                    clickHandler={() => {
+                                        isBringing.current = true;
+                                        handleOpenMovePopup(townDrones[index]?.unit, townDrones[index]?.count);
+                                    }}
+                                />
+                                {/* Player UnitButton (or empty if no unit exists at this index) */}
+                                <UnitButton
+                                    size={garrisonBoxSize}
+                                    n={playerDrones[index]?.count || 0}
+                                    unit={playerDrones[index]?.unit || null}
+                                    clickHandler={() => {
+                                        isBringing.current = false;
+                                        handleOpenMovePopup(playerDrones[index]?.unit, playerDrones[index]?.count);
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
-            {/*Purchasing*/}
-            <div className="flex flex-row justify-around px-2">
-                <div className="flex flex-col text-2xl items-end justify-start gap-y-2">
-                    <span className="text-2xl">Recruit</span>
-                    <UnitButton n={1} unit={Units.LaserDrone} clickHandler={()=>{handleFlashRecruit(Units.LaserDrone, 1)}} flashError={recruitFlashError} />
-                    <UnitButton n={10} unit={Units.LaserDrone} clickHandler={()=>{handleFlashRecruit(Units.LaserDrone, 10)}} flashError={recruitFlashError} />
-                </div>
-                {/*Spells*/}
-                <div className="flex flex-col text-6xl items-start justify-start space-y-2">
-                    <span className="text-2xl">Buy Spells</span>
-                    {player.popUpCastle && player.popUpCastle.availableSpells.map((spell: SpellPack, index: number) => (
-                        <UnitButton key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]} />
-                    ))}
-                </div>
-            </div>
-            {/*Garrison*/}
-            <div className="flex flex-row gap-3 py-2">
-                <div className="flex flex-col px-2 gap-2 items-center justify-around">
-                    <span>Town</span>
-                    <span>Player</span>
-                </div>
-                <div className="flex flex-col px-2 gap-2 items-start justify-start">
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                </div>
-                <div className="flex flex-col px-2 gap-2 items-start justify-start">
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                </div>
-                <div className="flex flex-col px-2 gap-2 items-start justify-start">
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                    <UnitButton n={0} unit={null} clickHandler={() => {}}/>
-                </div>
+            <div style={style}>
+                <MovePopup
+                    isVisible={moveGarrisonPopUpVisible} unit={moveUnit}
+                    max={maxMoveUnits}
+                    doneCallback={(unit, n)=>handleMoveGarrison(unit, n)} />
             </div>
         </div>
     );

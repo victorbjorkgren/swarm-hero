@@ -52,7 +52,7 @@ export class Castle implements Entity {
     }
 
     checkPlayers() {
-        this.nearbyPlayers = [];
+        this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
         for (const player of this.team.players) {
             if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {
                 this.nearbyPlayers.push(player);

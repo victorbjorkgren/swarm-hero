@@ -62,8 +62,9 @@ export class UnitManager {
         return {unit: element, count: n};
     }
 
-    getUnitCounts(owner: Entity): Set<UnitCount> {
+    getUnitCounts(owner: Entity | null): Set<UnitCount> {
         const out = new Set<UnitCount>();
+        if (!owner) return out;
         const units = this.getOwnerUnits(owner);
         units.forEach((set, key) => {
             out.add({unit: key, count: set.size})

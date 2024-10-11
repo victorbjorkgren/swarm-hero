@@ -43,7 +43,7 @@ export class Player implements Entity {
     private maxMana: number = 100;
     public mana: number = this.maxMana;
 
-    private particleSystem: ParticleSystem | undefined;
+    particleSystem: ParticleSystem | undefined;
 
     public myCastles: Castle[] = [];
     public targetedBy: Entity[] = [];
@@ -201,9 +201,11 @@ export class Player implements Entity {
         if (droneSet === null) return false;
         if (droneSet.size < n) return false;
 
+        let movedDrones = 0;
         for (const drone of droneSet) {
             uMgr.switchOwner(drone, castle)
             drone.setLeaderPosition(castle.pos);
+            if (++movedDrones >= n) break;
         }
         return true;
     }
@@ -219,9 +221,11 @@ export class Player implements Entity {
         if (droneSet === null) return false;
         if (droneSet.size < n) return false;
 
+        let movedDrones = 0;
         for (const drone of droneSet) {
             uMgr.switchOwner(drone, this)
             drone.setLeaderPosition(this.pos);
+            if (++movedDrones >= n) break;
         }
         return true;
     }

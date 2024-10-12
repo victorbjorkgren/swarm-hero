@@ -1,6 +1,6 @@
 import React, {useEffect} from 'react';
 import './App.css';
-import MainGame from './UI-Comps/MainGame';
+import {Main} from "./UI-Comps/Main";
 
 const App: React.FC = () => {
   // const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -19,7 +19,7 @@ const App: React.FC = () => {
     // };
   }, []);
 
-  return <MainGame />;
+  return <Main />;
 };
 
 export default App;

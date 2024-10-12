@@ -12,6 +12,7 @@ import {AnimatedSprite, Assets, Container, Graphics, Spritesheet} from "pixi.js"
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 import {SpellPack} from "../types/spellTypes";
 import {UnitPacks, Units} from "../types/unitTypes";
+import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 
 export class Player implements Entity {
     public availableSpells: SpellPack[] = [];
@@ -54,6 +55,7 @@ export class Player implements Entity {
     constructor(
         public team: Team,
         private scene: HeroGameLoop,
+        private character: Character
     ) {
         this.pos = team.playerCentroid;
         this.team.players.push(this);

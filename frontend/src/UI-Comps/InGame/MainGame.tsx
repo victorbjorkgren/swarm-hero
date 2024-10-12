@@ -1,17 +1,23 @@
 import React, {useEffect, useRef, useState} from 'react';
-import HeroGameLoop from "../GameComps/HeroGameLoop";
+import HeroGameLoop from "../../GameComps/HeroGameLoop";
 import {CityPopup} from "./CityPopup";
-import {Player} from "../GameComps/Player";
-import {popUpEvent} from "../types/types";
+import {Player} from "../../GameComps/Player";
+import {popUpEvent} from "../../types/types";
 import {Application} from "pixi.js";
-import {Keyboard} from "../GameComps/Keyboard";
-import {Vector2D} from "../GameComps/Utility";
+import {Keyboard} from "../../GameComps/Keyboard";
+import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
-import {Units} from "../types/unitTypes";
+import {Units} from "../../types/unitTypes";
+import {Character} from "../CharacterCreation/MainCharacterCreation";
 
 
-const MainGame: React.FC = () => {
+interface Props {
+    character: Character | null;
+    doneCallback: ()=>void;
+}
+
+const MainGame: React.FC<Props> = ({character, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
     const playersRef = useRef<Player[]>([]);
     const gameSceneRef = useRef<HeroGameLoop | null>(null);
@@ -52,6 +58,7 @@ const MainGame: React.FC = () => {
     // window.addEventListener('resize', resizeApp);
     const initGame = async () => {
         if (pixiRef.current !== null) return;
+        if (character === null) return;
 
         Keyboard.initialize();
         const screenVector = resizeApp();
@@ -77,6 +84,7 @@ const MainGame: React.FC = () => {
             setPlayerPopUpEvent,
             playersRef,
             setDayTime,
+            character,
         );
 
         gameSceneRef.current.start();
@@ -88,7 +96,7 @@ const MainGame: React.FC = () => {
         return () => {
             cleanUpGame();
         };
-    }, []);
+    }, [character]);
 
     const cleanUpGame = () => {
         if (gameSceneRef.current) {
@@ -108,7 +116,7 @@ const MainGame: React.FC = () => {
 
     const handleRematch = () => {
         cleanUpGame();
-        initGame();
+        doneCallback();
     };
 
     const handleRecruit = (unit: Units, n: number): boolean => {
@@ -146,8 +154,6 @@ const MainGame: React.FC = () => {
                         anchorPoint={playerPopUpEvent?.castle.pos}
                         player={gameSceneRef.current?.localPlayer}
                         recruitFunc={handleRecruit}
-                        garrisonFunc={handleGarrisonDrone}
-                        bringFunc={handleBringDrone}
                     />
                     {winner === undefined &&
                         <PlayerBar

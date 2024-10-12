@@ -1,6 +1,6 @@
 import {SpellIcons} from "./SpellPicker";
 import React from "react";
-import {SpellPack} from "../types/spellTypes";
+import {SpellPack} from "../../types/spellTypes";
 
 interface Props {
     spell: SpellPack

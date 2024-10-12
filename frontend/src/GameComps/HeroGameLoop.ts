@@ -17,13 +17,16 @@ import {
     Assets,
     Graphics,
     Sprite,
-    Spritesheet, SpritesheetData,
+    Spritesheet,
     Texture
 } from "pixi.js";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
 import {NavMesh} from "./NavMesh";
 import DebugDrawer from "../DebugTools/DebugDrawer";
+import {setupBackground} from "./Graphics/TileBackground";
+import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -67,6 +70,7 @@ export default class HeroGameLoop {
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
         private playersRef: React.MutableRefObject<Player[]>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
+        private character: Character,
     ) {
         this.sceneWidth = pixiRef.canvas.width;
         this.sceneHeight = pixiRef.canvas.height;
@@ -109,7 +113,6 @@ export default class HeroGameLoop {
         this.castles = [];
         this.colliders = [];
 
-        const backgroundSheetTexture:Promise<Texture> = Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
         const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
         const explosion = Assets.load('/sprites/explosion_toon.json');
 
@@ -119,7 +122,7 @@ export default class HeroGameLoop {
 
         // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
 
-        const backgroundReady = this.setupBackground(backgroundSheetTexture);
+        const backgroundReady = setupBackground(this.pixiRef, this.sceneWidth, this.sceneHeight);
         const blockersReady = this.setupBlockers(walls);
         const explosionReady = this.setupExplosion(explosion)
 
@@ -156,51 +159,6 @@ export default class HeroGameLoop {
         explosion.onComplete = () => {
             this.pixiRef.stage.removeChild(explosion);
             explosion.destroy();
-        }
-    }
-
-    async setupBackground(texture_: Promise<Texture>) {
-        const texture = await texture_;
-
-        const tileSize: number = 64;
-        const columns = Math.floor(texture.width / tileSize);
-        const rows = Math.floor(texture.height / tileSize);
-        const screenCols = Math.ceil(this.sceneWidth / tileSize);
-        const screenRows = Math.ceil(this.sceneHeight / tileSize);
-
-        const atlasData: SpritesheetData = {
-            frames: {},
-            meta: {
-                scale: 1,
-            }
-        };
-
-        // const frameNames: string[] = [];
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < columns; x++) {
-                const frameName = `tile_${x}_${y}`;
-                // frameNames.push(frameName);
-                atlasData.frames[frameName] = {
-                    frame: { x: x * tileSize, y: y * tileSize, w: tileSize, h: tileSize }
-                };
-            }
-        }
-
-        const spritesheet = new Spritesheet(texture, atlasData);
-
-        await spritesheet.parse();
-
-        for (let y = 0; y < screenRows; y++) {
-            for (let x = 0; x < screenCols; x++) {
-                const tX = Math.floor(Math.random() * columns);
-                const tY = Math.floor(Math.random() * rows);
-                const frameName = `tile_${tX}_${tY}`
-                const sprite = new Sprite(spritesheet.textures[frameName]);
-                sprite.x = x * tileSize;
-                sprite.y = y * tileSize;
-                sprite.zIndex = HeroGameLoop.zIndex.environment
-                this.pixiRef.stage.addChild(sprite);
-            }
         }
     }
 
@@ -271,9 +229,14 @@ export default class HeroGameLoop {
                 castles: []
             }
         ]
+        const aiCharacter = {
+            playerName: "Kitty",
+            faction: Factions.Wild,
+            stats: {health: 3, speed: 3, magicPower: 3, magicStamina: 3}
+        }
 
-        this.players.push(new Player(this.teams[0], this));
-        this.players.push(new Player(this.teams[1], this));
+        this.players.push(new Player(this.teams[0], this, this.character));
+        this.players.push(new Player(this.teams[1], this, aiCharacter));
         this.castles.push(new Castle(this.teams[0], this));
         this.castles.push(new Castle(this.teams[1], this))
         this.players[0].gainCastleControl(this.castles[0]);

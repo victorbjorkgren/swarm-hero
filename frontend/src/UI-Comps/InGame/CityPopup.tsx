@@ -1,22 +1,20 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Vector2D} from "../GameComps/Utility";
+import {Vector2D} from "../../GameComps/Utility";
 import {UnitButton} from "./UnitButton";
-import {Player} from "../GameComps/Player";
+import {Player} from "../../GameComps/Player";
 
-import {SpellPack} from "../types/spellTypes";
-import {Units} from "../types/unitTypes";
-import {MovePopup} from "../GameComps/MovePopup";
+import {SpellPack} from "../../types/spellTypes";
+import {Units} from "../../types/unitTypes";
+import {MovePopup} from "./MovePopup";
 
 
 interface CityPopupProps {
     anchorPoint: Vector2D | undefined;
     player: Player | null | undefined;
     recruitFunc: (unit: Units, n: number)=>boolean;
-    garrisonFunc: (unit: Units, n: number)=>boolean;
-    bringFunc: (unit: Units, n: number)=>boolean;
 }
 
-export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc, garrisonFunc, bringFunc}) => {
+export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recruitFunc}) => {
     const divRef = useRef<HTMLDivElement | null>(null);
     const isBringing = useRef<boolean>(false);
 

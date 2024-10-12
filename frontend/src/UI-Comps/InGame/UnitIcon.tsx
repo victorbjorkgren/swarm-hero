@@ -1,5 +1,5 @@
 import React from "react";
-import {UnitPack, Units} from "../types/unitTypes";
+import {UnitPack, Units} from "../../types/unitTypes";
 import {GiLaserBurst} from "react-icons/gi";
 import {LiaTimesSolid} from "react-icons/lia";
 

@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import {SpellICon} from "./SpellICon";
-import {SpellPack} from "../types/spellTypes";
+import {SpellPack} from "../../types/spellTypes";
 
 interface Props {
     spell: SpellPack;

@@ -1,7 +1,7 @@
 import React from "react";
 import {GiCornerExplosion, GiLaserBurst} from "react-icons/gi";
 import {SpellCastIcon} from "./SpellCastIcon";
-import {Spells, SpellPack} from "../types/spellTypes";
+import {Spells, SpellPack} from "../../types/spellTypes";
 
 export const SpellIcons = {
     [Spells.Explosion]: <GiCornerExplosion />,

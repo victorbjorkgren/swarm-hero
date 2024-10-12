@@ -1,6 +1,6 @@
 import React, {useState} from "react";
-import {Units} from "../types/unitTypes";
-import {UnitButton} from "../UI-Comps/UnitButton";
+import {Units} from "../../types/unitTypes";
+import {UnitButton} from "./UnitButton";
 
 interface Props {
     isVisible: boolean;

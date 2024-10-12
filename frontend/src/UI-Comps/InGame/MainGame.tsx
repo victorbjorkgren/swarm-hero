@@ -125,18 +125,6 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
         return gameSceneRef.current.localPlayer.buyDrone(unit, n);
     }
 
-    const handleGarrisonDrone = (unit: Units, n: number): boolean => {
-        if (gameSceneRef.current === null) return false
-        if (gameSceneRef.current.localPlayer === null) return false
-        return gameSceneRef.current.localPlayer.garrisonDrones(unit, n);
-    }
-
-    const handleBringDrone = (unit: Units, n: number): boolean => {
-        if (gameSceneRef.current === null) return false
-        if (gameSceneRef.current.localPlayer === null) return false
-        return gameSceneRef.current.localPlayer.bringGarrisonDrone(unit, n);
-    }
-
     return (
         <>
             <div className="relative w-screen h-screen bg-green-950 flex items-center justify-center overflow-visible">

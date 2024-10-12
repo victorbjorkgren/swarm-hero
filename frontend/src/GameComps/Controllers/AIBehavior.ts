@@ -4,7 +4,6 @@ import {Castle} from "../Castle";
 import {Entity} from "../../types/types";
 import HeroGameLoop from "../HeroGameLoop";
 import {NavMesh} from "../NavMesh";
-import DebugDrawer from "../../DebugTools/DebugDrawer";
 import {UnitManager} from "../UnitManager";
 
 enum State {

@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from "react";
 import {LiaCogsSolid} from "react-icons/lia";
-import {GiLoveHowl, GiMagicSwirl} from "react-icons/gi";
+import {GiBestialFangs, GiFangs, GiLoveHowl, GiMagicSwirl} from "react-icons/gi";
 import {PiGhostThin} from "react-icons/pi";
+import {FaCat} from "react-icons/fa";
 
 export enum Factions {
     Mech,
@@ -67,7 +68,7 @@ export const FactionSelection: React.FC<Props> = ({doneCallback}) => {
                             : "bg-opacity-0 hover:bg-opacity-50 active:bg-opacity-70"}`}
                     onClick={()=>setFaction(Factions.Wild)}
                 >
-                    <GiLoveHowl className={`text-6xl`}/>
+                    <FaCat className={`text-6xl`}/>
                     <span className={`select-none text-xs text-center`}>WILD PACK</span>
                 </button>
                 <button
@@ -80,7 +81,7 @@ export const FactionSelection: React.FC<Props> = ({doneCallback}) => {
                     onClick={()=>setFaction(Factions.Mage)}
                 >
                     <GiMagicSwirl className={`text-6xl`}/>
-                    <span className={`select-none text-xs text-center`}>LONELY MAGE</span>
+                    <span className={`select-none text-xs text-center`}>THE ARCANE</span>
                 </button>
                 <button
                     className={

@@ -118,8 +118,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     const maxUnitBoxes = Math.max(playerDrones.length, townDrones.length) + 1;
 
     const spellBoxSize = 30;
-    const recruitBoxSize = 16;
-    const garrisonBoxSize = 16;
+    const recruitBoxSize = 20;
+    const garrisonBoxSize = 20;
 
     return (
         <div ref={divRef}>
@@ -140,7 +140,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                 {/*Purchasing*/}
                 <div className="flex flex-row justify-around px-4 gap-x-14">
                     <div className="flex flex-col text-2xl items-end justify-start gap-y-2">
-                        <span className="text-2xl">Recruit</span>
+                        <span className="text-2xl">Units</span>
                         <UnitButton size={recruitBoxSize} n={1} unit={Units.LaserDrone} clickHandler={() => {
                             handleFlashRecruit(Units.LaserDrone, 1)
                         }} flashError={recruitFlashError}/>
@@ -148,7 +148,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                     </div>
                     {/*Spells*/}
                     <div className="flex flex-col text-6xl items-start justify-start space-y-2">
-                        <span className="text-2xl">Buy Spells</span>
+                        <span className="text-2xl">Spells</span>
                         {player.popUpCastle && player.popUpCastle.availableSpells.map((spell: SpellPack, index: number) => (
                             <UnitButton size={spellBoxSize} key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]}/>
                         ))}

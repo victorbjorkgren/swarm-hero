@@ -80,8 +80,8 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback}) => {
     }
 
     return (
-        <div className={`bg-black`}>
-            <div ref={sceneContainerRef} className={`absolute saturate-50 opacity-100 bg-transparent`} />
+        <div className={`w-screen h-screen bg-green-950`}>
+            <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`}></div>
             <div className={`absolute flex flex-col w-full h-full text-white`}>
                 {currentStep === Steps.Faction && <FactionSelection doneCallback={factionDone} />}
                 {currentStep === Steps.Stats && <StatSelection doneCallback={statsDone} /> }

@@ -26,7 +26,6 @@ export class Castle implements Entity {
 
     public availableSpells: SpellPack[] = [
         SpellPacks[Spells.Explosion],
-        SpellPacks[Spells.LaserBurst]
     ];
 
     constructor(

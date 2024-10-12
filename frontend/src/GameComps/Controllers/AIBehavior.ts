@@ -52,7 +52,7 @@ export class AIBehavior {
     }
 
     update() {
-        DebugDrawer.addPath(this.targetPath, 0xFF0000)
+        // DebugDrawer.addPath(this.targetPath, 0xFF0000)
         if (this.frameCounter % this.framesBetweenConditionCalls === 0) {
             this.setState()
         }

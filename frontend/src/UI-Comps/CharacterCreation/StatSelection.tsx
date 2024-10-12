@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {StatSlider} from "./StatSlider";
+import {BackButton} from "./BackButton";
 
 export interface CharacterStats {
     health: number,
@@ -10,9 +11,10 @@ export interface CharacterStats {
 
 interface Props {
     doneCallback: (stats: CharacterStats)=>void;
+    handleBack: ()=>void;
 }
 
-export const StatSelection: React.FC<Props> = ({doneCallback}) => {
+export const StatSelection: React.FC<Props> = ({doneCallback, handleBack}) => {
     const MAX_POINTS = 12;
 
     const [health, setHealth] = useState<number>(0);
@@ -66,17 +68,20 @@ export const StatSelection: React.FC<Props> = ({doneCallback}) => {
     }
 
     return (
-        <div className={`flex flex-col gap-10 items-center justify-center w-screen h-screen`}>
-            <StatSlider label={"Health"} value={health} setValue={handleNewHealth} />
-            <StatSlider label={"Speed"} value={speed} setValue={handleNewSpeed} />
-            <StatSlider label={"Wisdom"} value={magicPower} setValue={handleNewPower} />
-            <StatSlider label={"Grit"} value={magicStamina} setValue={handleNewStamina} />
-            <span className={`text-xl`}>Points Left: {pointsLeft}</span>
-            <button
-                className={`bg-white text-white text-2xl bg-opacity-10 w-44 h-12 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
-                onClick={() => doneCallback({health: health, speed: speed, magicPower: magicPower, magicStamina: magicStamina})}>
-                Done
-            </button>
-        </div>
+        <>
+            <BackButton handleBack={handleBack}/>
+            <div className={`flex flex-col gap-10 items-center justify-center w-screen h-screen`}>
+                <StatSlider label={"Health"} value={health} setValue={handleNewHealth} />
+                <StatSlider label={"Speed"} value={speed} setValue={handleNewSpeed} />
+                <StatSlider label={"Wisdom"} value={magicPower} setValue={handleNewPower} />
+                <StatSlider label={"Grit"} value={magicStamina} setValue={handleNewStamina} />
+                <span className={`text-xl`}>Points Left: {pointsLeft}</span>
+                <button
+                    className={`bg-white text-white text-2xl bg-opacity-10 w-44 h-12 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
+                    onClick={() => doneCallback({health: health, speed: speed, magicPower: magicPower, magicStamina: magicStamina})}>
+                    Done
+                </button>
+            </div>
+        </>
     );
 };

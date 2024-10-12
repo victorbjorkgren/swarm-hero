@@ -3,8 +3,10 @@ import React, {useEffect, useRef, useState} from "react";
 import {CharacterStats, StatSelection} from "./StatSelection";
 import {Application} from "pixi.js";
 import {setupBackground} from "../../GameComps/Graphics/TileBackground";
+import {TitleScreen} from "./TitleScreen";
 
 enum Steps {
+    TitleScreen,
     Faction,
     Stats
 }
@@ -20,7 +22,7 @@ interface Props {
 }
 
 export const MainCharacterCreation: React.FC<Props> = ({doneCallback}) => {
-    const [currentStep, setCurrentStep] = useState<Steps>(Steps.Faction);
+    const [currentStep, setCurrentStep] = useState<Steps>(Steps.TitleScreen);
     const [name, setName] = useState<string>('');
     const [faction, setFaction] = useState<Factions | null>(null);
     // const [stats, setStats] = useState<CharacterStats | null>(null);
@@ -79,12 +81,21 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback}) => {
         doneCallback(character);
     }
 
+    const handleNewGame = () => {
+        setCurrentStep(Steps.Faction);
+    }
+
+    const handleBackToMain = () => {
+        setCurrentStep(Steps.TitleScreen)
+    }
+
     return (
         <div className={`w-screen h-screen bg-green-950`}>
             <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`}></div>
             <div className={`absolute flex flex-col w-full h-full text-white`}>
-                {currentStep === Steps.Faction && <FactionSelection doneCallback={factionDone} />}
-                {currentStep === Steps.Stats && <StatSelection doneCallback={statsDone} /> }
+                {currentStep === Steps.TitleScreen && <TitleScreen newGameCallback={handleNewGame}/>}
+                {currentStep === Steps.Faction && <FactionSelection doneCallback={factionDone} handleBack={handleBackToMain}/>}
+                {currentStep === Steps.Stats && <StatSelection doneCallback={statsDone} handleBack={handleBackToMain}/> }
             </div>
         </div>
     );

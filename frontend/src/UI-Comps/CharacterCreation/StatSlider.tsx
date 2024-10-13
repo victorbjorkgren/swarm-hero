@@ -10,7 +10,7 @@ interface Props {
 export const StatSlider: React.FC<Props> = ({label, value, setValue}) => {
 
     return (
-        <div className={`flex flex-col gap-0 items-center`}>
+        <div className={`flex flex-col gap-0 items-center select-none`}>
             <span className="text-white text-lg select-none">{label}</span>
             <div className={`flex flex-row items-center gap-3`}>
                 <div

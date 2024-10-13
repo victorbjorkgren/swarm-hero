@@ -92,7 +92,7 @@ export class Particle implements Entity {
         if (this.isAlive()) {
             this.renderSelf();
             this.renderAttack();
-            this.renderHealthBar();
+            this.renderStatsBar();
         } else {
             this.killSprites();
         }
@@ -141,7 +141,7 @@ export class Particle implements Entity {
         }
     }
 
-    renderHealthBar(): void {
+    renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
             this.healthSprite.zIndex = HeroGameLoop.zIndex.flyers;

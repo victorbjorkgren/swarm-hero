@@ -1,16 +1,28 @@
 import {useRef, useState} from "react";
 import {Character, MainCharacterCreation} from "./CharacterCreation/MainCharacterCreation";
 import MainGame from "./InGame/MainGame";
+import {Factions} from "./CharacterCreation/FactionSelection";
 
 enum Scenes {
     CharacterCreation,
     MainGame
 }
 
+const devCharacter: Character = {
+    playerName: "MasterDev!",
+    faction: Factions.Wild,
+    stats: {
+        health: 3,
+        speed: 3,
+        magicPower: 3,
+        magicStamina: 3
+    }
+}
+
 export const Main = () => {
     const [currentScene, setCurrentScene] = useState<Scenes>(Scenes.CharacterCreation)
 
-    const characterRef = useRef<Character | null>(null);
+    const characterRef = useRef<Character | null>(devCharacter);
 
 
     const characterCreationDone = (newCharacter: Character) => {
@@ -24,8 +36,10 @@ export const Main = () => {
 
     return (
         <>
-            {currentScene === Scenes.CharacterCreation && <MainCharacterCreation doneCallback={characterCreationDone} />}
-            {currentScene === Scenes.MainGame && <MainGame character={characterRef.current} doneCallback={gameDone}/>}
+            {currentScene === Scenes.CharacterCreation
+                && <MainCharacterCreation doneCallback={characterCreationDone} defaultCharacter={characterRef.current}/>}
+            {currentScene === Scenes.MainGame
+                && <MainGame character={characterRef.current} doneCallback={gameDone}/>}
         </>
     );
 };

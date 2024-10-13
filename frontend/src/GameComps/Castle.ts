@@ -17,7 +17,7 @@ export class Castle implements Entity {
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
 
-    public sqActivationDist: number = 70 ** 2;
+    public sqActivationDist: number = 70 * 70;
     public nearbyPlayers: Player[] = [];
     private pixiRef: Application;
     private texture: TexturePack
@@ -51,10 +51,17 @@ export class Castle implements Entity {
     }
 
     checkPlayers() {
-        this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
+        this.nearbyPlayers = this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
         for (const player of this.team.players) {
             if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {
+                if (!player.isLocal) {
+                    player.popUpCastle = this;
+                }
                 this.nearbyPlayers.push(player);
+            } else {
+                if (!player.isLocal) {
+                    player.popUpCastle = null;
+                }
             }
         }
         return this.nearbyPlayers.length > 0;
@@ -63,7 +70,7 @@ export class Castle implements Entity {
     render() {
         this.renderSelf();
         this.renderAttack();
-        this.renderHealthBar();
+        this.renderStatsBar();
     }
 
     renderSelf(): void {
@@ -88,7 +95,7 @@ export class Castle implements Entity {
         }
     }
 
-    renderHealthBar(): void {
+    renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
             this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;

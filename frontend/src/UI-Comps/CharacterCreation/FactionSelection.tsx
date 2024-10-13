@@ -15,11 +15,13 @@ export enum Factions {
 interface Props {
     doneCallback: (name: string, faction: Factions)=>void;
     handleBack: () =>void;
+    defaultName: string;
+    defaultFaction: Factions | null;
 }
 
-export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack}) => {
-    const [playerName, setPlayerName] = useState<string>('');
-    const [faction, setFaction] = useState<Factions | null>(null);
+export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack, defaultName, defaultFaction}) => {
+    const [playerName, setPlayerName] = useState<string>(defaultName);
+    const [faction, setFaction] = useState<Factions | null>(defaultFaction);
     const [ready, setReady] = useState<boolean>(false);
 
     useEffect(() => {
@@ -57,8 +59,8 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack}) =>
                         border border-white rounded-xl bg-white transform duration-500 
                         ${faction === Factions.Mech ? 
                             "bg-opacity-100 text-black shadow-white-shadow" 
-                            : "bg-opacity-0 hover:bg-opacity-50 active:bg-opacity-70"}`}
-                        onClick={()=>setFaction(Factions.Mech)}
+                            : "bg-opacity-0 opacity-30"}`}
+                        onClick={()=>{}}
                     >
                         <LiaCogsSolid className={`text-6xl`}/>
                         <span className={`select-none text-xs text-center`}>AUTOMATON</span>
@@ -81,8 +83,8 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack}) =>
                         border border-white rounded-xl bg-white transform duration-500 
                         ${faction === Factions.Mage ?
                                 "bg-opacity-100 text-black shadow-white-shadow"
-                                : "bg-opacity-0 hover:bg-opacity-50 active:bg-opacity-70"}`}
-                        onClick={()=>setFaction(Factions.Mage)}
+                                : "bg-opacity-0 opacity-30"}`}
+                        onClick={()=>{}}
                     >
                         <GiMagicSwirl className={`text-6xl`}/>
                         <span className={`select-none text-xs text-center`}>THE ARCANE</span>
@@ -93,8 +95,8 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack}) =>
                         border border-white rounded-xl bg-white transform duration-500 
                         ${faction === Factions.Spirit ?
                                 "bg-opacity-100 text-black shadow-white-shadow"
-                                : "bg-opacity-0 hover:bg-opacity-50 active:bg-opacity-70"}`}
-                        onClick={()=>setFaction(Factions.Spirit)}
+                                : "bg-opacity-0 opacity-30"}`}
+                        onClick={()=>{}}
                     >
                         <PiGhostThin className={`text-6xl`}/>
                         <span className={`select-none text-xs text-center`}>SPIRIT</span>

@@ -27,7 +27,7 @@ export interface Entity {
 
     renderSelf(): void;
     renderAttack(): void;
-    renderHealthBar(): void;
+    renderStatsBar(): void;
 }
 
 export interface PolygonalCollider {

@@ -12,15 +12,16 @@ export interface CharacterStats {
 interface Props {
     doneCallback: (stats: CharacterStats)=>void;
     handleBack: ()=>void;
+    defaultStats: CharacterStats | null;
 }
 
-export const StatSelection: React.FC<Props> = ({doneCallback, handleBack}) => {
+export const StatSelection: React.FC<Props> = ({doneCallback, handleBack, defaultStats}) => {
     const MAX_POINTS = 12;
 
-    const [health, setHealth] = useState<number>(0);
-    const [speed, setSpeed] = useState<number>(0);
-    const [magicPower, setMagicPower] = useState<number>(0);
-    const [magicStamina, setMagicStamina] = useState<number>(0);
+    const [health, setHealth] = useState<number>(defaultStats?.health || 0);
+    const [speed, setSpeed] = useState<number>(defaultStats?.speed || 0);
+    const [magicPower, setMagicPower] = useState<number>(defaultStats?.magicPower || 0);
+    const [magicStamina, setMagicStamina] = useState<number>(defaultStats?.magicStamina || 0);
 
     const [pointsLeft, setPointsLeft] = useState<number>(MAX_POINTS);
     const [ready, setReady] = useState<boolean>(false);
@@ -75,7 +76,7 @@ export const StatSelection: React.FC<Props> = ({doneCallback, handleBack}) => {
                 <StatSlider label={"Speed"} value={speed} setValue={handleNewSpeed} />
                 <StatSlider label={"Wisdom"} value={magicPower} setValue={handleNewPower} />
                 <StatSlider label={"Grit"} value={magicStamina} setValue={handleNewStamina} />
-                <span className={`text-xl`}>Points Left: {pointsLeft}</span>
+                <span className={`text-xl select-none`}>Points Left: {pointsLeft}</span>
                 <button
                     className={`bg-white text-white text-2xl bg-opacity-10 w-44 h-12 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
                     onClick={() => doneCallback({health: health, speed: speed, magicPower: magicPower, magicStamina: magicStamina})}>

@@ -1,18 +1,20 @@
 import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "./Utility";
 import {ParticleSystem} from "./ParticleSystem";
-import {
-    AABBCollider, CollisionResult,
-    DirectionalSpriteSheet,
-    Entity,
-    Team
-} from "../types/types";
+import {AABBCollider, CollisionResult, DirectionalSpriteSheet, Entity, Team} from "../types/types";
 import {Castle} from "./Castle";
 import HeroGameLoop from "./HeroGameLoop";
-import {AnimatedSprite, Assets, Container, Graphics, Spritesheet} from "pixi.js";
+import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 import {SpellPack} from "../types/spellTypes";
 import {UnitPacks, Units} from "../types/unitTypes";
 import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {
+    healthConversion,
+    manaConversion,
+    powerConversion,
+    speedConversion
+} from "../UI-Comps/CharacterCreation/StatConversion";
+import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 
 export class Player implements Entity {
     public availableSpells: SpellPack[] = [];
@@ -28,20 +30,25 @@ export class Player implements Entity {
     public maxVel: number = 1.0;
     public gold: number = 10000;
     public givesIncome: number = 0;
+
     public name: string = "Unnamed Player"
+    private maxHealth: number = 0;
+    private powerMultiplier: number = 0;
+    private maxMana: number = 100;
+    private faction: Factions = Factions.Wild;
 
     private playerSpritePack: DirectionalSpriteSheet | null = null;
     private currentAnimation: AnimatedSprite | null = null;
     private healthSprite: Graphics | null = null;
+    private manaSprite: Graphics | null = null;
     private rangeSprite: Graphics | null = null;
     private spellCursorSprite: Container | null = null;
+    private nameSprite: Text | null = null;
 
     private isCasting: boolean = false;
     private currentSpellRangeSpell: SpellPack | null = null;
 
-    private maxHealth: number = 1000;
     private _health: number = this.maxHealth;
-    private maxMana: number = 100;
     public mana: number = this.maxMana;
 
     particleSystem: ParticleSystem | undefined;
@@ -52,21 +59,44 @@ export class Player implements Entity {
     private activeSpell: SpellPack | null = null;
     private castingDoneCallback: (didCast: boolean) => void = () => {};
 
+
     constructor(
         public team: Team,
         private scene: HeroGameLoop,
-        private character: Character
+        character: Character
     ) {
         this.pos = team.playerCentroid;
         this.team.players.push(this);
+        this.parseCharacter(character)
 
         this.scene.pixiRef.stage.on('pointermove', (event) => {
             const mousePosition = event.global;
-            this.spellCursorSprite?.position.set(mousePosition.x, mousePosition.y);
+            const worldPosition = this.scene.pixiRef.stage.toLocal(mousePosition);
+            const x = worldPosition.x
+            const y = worldPosition.y
+            this.spellCursorSprite?.position.set(x, y);
         });
         this.scene.pixiRef.stage.on('click', () => {this.castSpell()})
+    }
 
-        this.getCat().catch(e => console.error(e));
+    parseCharacter(character: Character) {
+        this.name = character.playerName;
+
+        this.maxHealth = healthConversion(character.stats.health);
+        this.maxVel *= speedConversion(character.stats.speed);
+        this.maxAcc *= speedConversion(character.stats.speed);
+        this.powerMultiplier = powerConversion(character.stats.magicPower);
+        this.maxMana = manaConversion(character.stats.magicStamina);
+
+        this.faction = character.faction;
+
+        this._health = this.maxHealth;
+        this.mana = this.maxMana;
+        if (this.faction === Factions.Wild) {
+            this.getCat().catch(e => console.error(e));
+        } else {
+            throw new Error(`Faction not implemented`);
+        }
     }
 
     set health(value: number) {
@@ -284,11 +314,11 @@ export class Player implements Entity {
         const catSpriteSheet: Spritesheet = await Assets.cache.get('/sprites/black_cat_run.json');
         const animations = catSpriteSheet.data.animations!;
         this.playerSpritePack =  {
-            'u': AnimatedSprite.fromFrames(animations["u/black_0"]),
+            'd': AnimatedSprite.fromFrames(animations["u/black_0"]),
             'ur': AnimatedSprite.fromFrames(animations["ur/black_0"]),
             'r': AnimatedSprite.fromFrames(animations["r/black_0"]),
             'dr': AnimatedSprite.fromFrames(animations["dr/black_0"]),
-            'd': AnimatedSprite.fromFrames(animations["d/black_0"]),
+            'u': AnimatedSprite.fromFrames(animations["d/black_0"]),
             'dl': AnimatedSprite.fromFrames(animations["dl/black_0"]),
             'l': AnimatedSprite.fromFrames(animations["l/black_0"]),
             'ul': AnimatedSprite.fromFrames(animations["ul/black_0"]),
@@ -337,6 +367,7 @@ export class Player implements Entity {
     }
 
     prepareSpell(spell: SpellPack, castingDoneCallback: (didCast: boolean) => void) {
+        if (spell.castCost > this.mana) return;
         if (this.activeSpell === spell) return this.cancelSpell();
         this.isCasting = true;
         this.activeSpell = spell;
@@ -347,6 +378,7 @@ export class Player implements Entity {
         if (!this.isCasting) return
         if (this.activeSpell === null) return
         if (this.spellCursorSprite === null) return
+        if (this.activeSpell.castCost > this.mana) return;
 
         const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
         const sqCastRange = this.activeSpell.castRange * this.activeSpell.castRange;
@@ -354,8 +386,9 @@ export class Player implements Entity {
         if (Vector2D.sqDist(effectPos, this.pos) > sqCastRange)
             return this.cancelSpell();
 
+        this.mana -= this.activeSpell.castCost;
         const sqEffectRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
-        this.scene.areaDamage(effectPos, sqEffectRange, this.activeSpell.effectAmount);
+        this.scene.areaDamage(effectPos, sqEffectRange, this.activeSpell.effectAmount * this.powerMultiplier);
         this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
 
         // Reset casting preparation
@@ -394,10 +427,12 @@ export class Player implements Entity {
     }
 
     renderHUD(): void {
-        this.renderHealthBar();
+        this.renderStatsBar();
         if (this.isLocal) {
             this.renderSpellRange();
             this.renderCursor();
+        } else {
+            this.renderName();
         }
     }
 
@@ -415,16 +450,43 @@ export class Player implements Entity {
         }
     }
 
-    renderHealthBar(): void {
+    renderName() {
+        if (this.nameSprite === null) {
+            this.nameSprite = new Text(this.name, {
+                fill: {color: this.team.color, alpha: 0.7},
+                fontSize: 13,
+                letterSpacing: -0.6
+            });
+            this.nameSprite.zIndex = HeroGameLoop.zIndex.ground;
+            // this.nameSprite.pivot.set(0.5);
+            this.scene.pixiRef.stage.addChild(this.nameSprite);
+        }
+        let midX: number;
+        if (this.currentAnimation !== null) {
+            midX = this.currentAnimation.x + this.currentAnimation.width / 2 - this.nameSprite.width / 2;
+        } else {
+            midX = this.pos.x;
+        }
+        this.nameSprite.position.set(midX, this.pos.y + 25);
+    }
+
+    renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
             this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
+        if (this.manaSprite === null) {
+            this.manaSprite = new Graphics();
+            this.manaSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.scene.pixiRef.stage.addChild(this.manaSprite);
+        }
         this.healthSprite.clear();
+        this.manaSprite.clear()
         if (!this.isAlive()) return;
 
         const healthRatio = this._health / this.maxHealth;
+        const manaRatio = this.mana / this.maxMana;
         let midX;
         const lx = 40;
         if (this.currentAnimation !== null) {
@@ -433,11 +495,19 @@ export class Player implements Entity {
             midX = this.pos.x;
         }
         this.healthSprite
-            .moveTo(midX - (lx / 2), this.pos.y - 5)
-            .lineTo((midX - (lx / 2)) + (lx * healthRatio), this.pos.y - 5)
+            .moveTo(midX - (lx / 2), this.pos.y - 8)
+            .lineTo((midX - (lx / 2)) + (lx * healthRatio), this.pos.y - 8)
             .stroke({
-                color: this.team.color,
-                alpha: .8,
+                color: 0xFF0000,
+                alpha: .3,
+                width: 2
+            })
+        this.manaSprite
+            .moveTo(midX - (lx / 2), this.pos.y - 5)
+            .lineTo((midX - (lx / 2)) + (lx * manaRatio), this.pos.y - 5)
+            .stroke({
+                color: 0x0000FF,
+                alpha: .3,
                 width: 2
             })
     }

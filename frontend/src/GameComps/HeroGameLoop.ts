@@ -51,7 +51,7 @@ export default class HeroGameLoop {
     public startTime: number | undefined
     private controllers: Controller[] = [];
     public navMesh: NavMesh;
-
+    private cameraPivot: Vector2D = Vector2D.zeros();
 
     public castleTexturePack: TexturePack | null = null;
     private explosionSprite: AnimatedSpriteFrames | null = null;
@@ -96,6 +96,7 @@ export default class HeroGameLoop {
     setLocalPlayer(player: Player) {
         this.localPlayer = player;
         player.isLocal = true;
+        this.cameraPivot = player.pos.copy();
     }
 
     start() {
@@ -290,6 +291,23 @@ export default class HeroGameLoop {
         })
     }
 
+    updateCamera() {
+        if (this.localPlayer) {
+            const alpha = 0.05;
+            const margin = .35;
+            this.cameraPivot.x = alpha * this.localPlayer.pos.x + (1-alpha) * this.cameraPivot.x
+            this.cameraPivot.y = alpha * this.localPlayer.pos.y + (1-alpha) * this.cameraPivot.y
+            this.cameraPivot.x = Math.max(this.cameraPivot.x, this.sceneWidth * margin)
+            this.cameraPivot.x = Math.min(this.cameraPivot.x, this.sceneWidth * (1 - margin))
+            this.cameraPivot.y = Math.max(this.cameraPivot.y, this.sceneHeight * margin)
+            this.cameraPivot.y = Math.min(this.cameraPivot.y, this.sceneHeight * (1 - margin))
+            this.pixiRef.stage.pivot.x = this.cameraPivot.x;
+            this.pixiRef.stage.pivot.y = this.cameraPivot.y;
+            this.pixiRef.stage.position.x = this.sceneWidth / 2;
+            this.pixiRef.stage.position.y = this.sceneHeight / 2;
+        }
+    }
+
     update() {
         DebugDrawer.reset();
         if (!this.gameOn) return
@@ -312,6 +330,8 @@ export default class HeroGameLoop {
             castle.render();
         })
         this.particleSystem.render();
+
+        this.updateCamera();
     };
 }
 

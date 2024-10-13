@@ -18,14 +18,14 @@ export interface Character {
 }
 
 interface Props {
-    doneCallback: (charactor: Character) => void
+    doneCallback: (charactor: Character) => void;
+    defaultCharacter: Character | null;
 }
 
-export const MainCharacterCreation: React.FC<Props> = ({doneCallback}) => {
+export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCharacter}) => {
     const [currentStep, setCurrentStep] = useState<Steps>(Steps.TitleScreen);
-    const [name, setName] = useState<string>('');
-    const [faction, setFaction] = useState<Factions | null>(null);
-    // const [stats, setStats] = useState<CharacterStats | null>(null);
+    const [name, setName] = useState<string>(defaultCharacter?.playerName || "");
+    const [faction, setFaction] = useState<Factions | null>(defaultCharacter?.faction || null);
 
     const pixiRef = useRef<Application | null>(null);
     const sceneContainerRef = useRef<HTMLDivElement | null>(null);
@@ -93,9 +93,22 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback}) => {
         <div className={`w-screen h-screen bg-green-950`}>
             <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`}></div>
             <div className={`absolute flex flex-col w-full h-full text-white`}>
-                {currentStep === Steps.TitleScreen && <TitleScreen newGameCallback={handleNewGame}/>}
-                {currentStep === Steps.Faction && <FactionSelection doneCallback={factionDone} handleBack={handleBackToMain}/>}
-                {currentStep === Steps.Stats && <StatSelection doneCallback={statsDone} handleBack={handleBackToMain}/> }
+                {currentStep === Steps.TitleScreen &&
+                    <TitleScreen
+                        newGameCallback={handleNewGame}/>}
+                {currentStep === Steps.Faction &&
+                    <FactionSelection
+                        doneCallback={factionDone}
+                        handleBack={handleBackToMain}
+                        defaultName={name}
+                        defaultFaction={faction}
+                    />}
+                {currentStep === Steps.Stats &&
+                    <StatSelection
+                        doneCallback={statsDone}
+                        handleBack={handleBackToMain}
+                        defaultStats={defaultCharacter?.stats || null}
+                    /> }
             </div>
         </div>
     );

@@ -25,6 +25,11 @@ export const gameConfig = {
     playerSelfIncome: 0,
 
     dayLength: 20,
+
+    healthLevels: [250, 600, 1000, 1500, 2000],
+    speedLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
+    powerLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
+    manaLevels: [10, 30, 60, 100, 150, 200],
 } as const
 
 export const SpellPacks = {

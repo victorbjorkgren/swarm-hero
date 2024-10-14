@@ -3,13 +3,14 @@ import HeroGameLoop from "../../GameComps/HeroGameLoop";
 import {CityPopup} from "./CityPopup";
 import {Player} from "../../GameComps/Player";
 import {popUpEvent} from "../../types/types";
-import {Application} from "pixi.js";
+import {Application, Rectangle} from "pixi.js";
 import {Keyboard} from "../../GameComps/Keyboard";
 import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
 import {Character} from "../CharacterCreation/MainCharacterCreation";
+import {gameConfig} from "../../config";
 
 
 interface Props {
@@ -46,19 +47,24 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             newWidth = containerWidth;
             newHeight = newWidth / ASPECT_RATIO;
         }
+        newWidth = Math.floor(newWidth);
+        newHeight = Math.floor(newHeight);
 
         setGameContainerStyle({
             width: `${newWidth}px`,
             height: `${newHeight}px`,
         })
+        if (pixiRef.current) {
+            pixiRef.current.renderer.resize(newWidth, newHeight);
+        }
         return new Vector2D(newWidth, newHeight);
-
     }
 
     // window.addEventListener('resize', resizeApp);
     const initGame = async () => {
         if (pixiRef.current !== null) return;
         if (character === null) return;
+        if (gameContainerRef.current === null) return;
 
         Keyboard.initialize();
         const screenVector = resizeApp();
@@ -75,8 +81,14 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             gameContainerRef.current.appendChild(pixiRef.current.canvas);
         }
 
+        const debouncedResizePixiApp = debounce(resizeApp, 100);
+        window.addEventListener('resize', debouncedResizePixiApp);
+
+
         pixiRef.current.stage.eventMode = 'static';
-        pixiRef.current.stage.hitArea = pixiRef.current.screen;
+        pixiRef.current.stage.hitArea = pixiRef.current.stage.hitArea = new Rectangle(
+            0, 0, gameConfig.mapWidth, gameConfig.mapHeight
+        );
 
         gameSceneRef.current = new HeroGameLoop(
             pixiRef.current,
@@ -97,6 +109,14 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             cleanUpGame();
         };
     }, [character]);
+
+    const debounce = (func: (...args: any[]) => void, delay: number): (...args: any[]) => void => {
+        let timeout: NodeJS.Timeout;
+        return (...args: any[]) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), delay);
+        };
+    };
 
     const cleanUpGame = () => {
         if (gameSceneRef.current) {

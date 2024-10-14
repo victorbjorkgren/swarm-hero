@@ -27,6 +27,7 @@ import DebugDrawer from "../DebugTools/DebugDrawer";
 import {setupBackground} from "./Graphics/TileBackground";
 import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
+import {gameConfig} from "../config";
 
 export interface ReactVars {
     setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>;
@@ -56,13 +57,14 @@ export default class HeroGameLoop {
     public castleTexturePack: TexturePack | null = null;
     private explosionSprite: AnimatedSpriteFrames | null = null;
 
-    private dayLength: number = 10; // seconds
+    private dayLength: number = gameConfig.dayLength; // seconds
 
     private gameOn: boolean = true;
     public readonly sceneWidth: number;
     public readonly sceneHeight: number;
     colliders: AABBCollider[] = [];
     public defaultCursorTexture: Texture | null = null;
+    public renderScale: number = 1;
 
     constructor(
         public pixiRef: Application,
@@ -72,8 +74,8 @@ export default class HeroGameLoop {
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
         private character: Character,
     ) {
-        this.sceneWidth = pixiRef.canvas.width;
-        this.sceneHeight = pixiRef.canvas.height;
+        this.sceneWidth = gameConfig.mapWidth;
+        this.sceneHeight = gameConfig.mapHeight;
         this.navMesh = new NavMesh(this);
     }
 
@@ -97,6 +99,14 @@ export default class HeroGameLoop {
         this.localPlayer = player;
         player.isLocal = true;
         this.cameraPivot = player.pos.copy();
+
+        this.pixiRef.stage.on('pointermove', (event) => {
+            const mousePosition = event.global;
+            const worldPosition = this.pixiRef.stage.toLocal(mousePosition);
+            player.aimPos.x = worldPosition.x / this.renderScale;
+            player.aimPos.y = worldPosition.y / this.renderScale;
+        });
+        this.pixiRef.stage.on('click', () => {player.castSpell()})
     }
 
     start() {
@@ -151,9 +161,9 @@ export default class HeroGameLoop {
         explosion.loop = false;
         explosion.animationSpeed = .5;
         explosion.anchor.set(0.5);
-        explosion.scale = .15 * radius / 100;
-        explosion.x = position.x;
-        explosion.y = position.y;
+        explosion.scale = this.renderScale * .15 * radius / 100;
+        explosion.x = position.x * this.renderScale;
+        explosion.y = position.y * this.renderScale;
         explosion.visible = true;
         this.pixiRef.stage.addChild(explosion);
         explosion.gotoAndPlay(0);
@@ -206,6 +216,7 @@ export default class HeroGameLoop {
             maxY: this.sceneHeight,
             inverted: true,
         }
+
         this.colliders.push(boundaryCollider);
 
         this.teams = [
@@ -213,8 +224,8 @@ export default class HeroGameLoop {
                 id: 0,
                 name: 'Yellow',
                 color: 0xffff00,
-                playerCentroid: new Vector2D(.25 * this.sceneWidth, .5 * this.sceneHeight),
-                castleCentroid: new Vector2D(this.sceneWidth/8, this.sceneHeight/2),
+                playerCentroid: Vector2D.add(gameConfig.castlePositions[0], gameConfig.playerStartOffset),
+                castleCentroid: gameConfig.castlePositions[0],
                 controllerMapping: player1Keys,
                 players: [],
                 castles: []
@@ -223,13 +234,14 @@ export default class HeroGameLoop {
                 id: 1,
                 name: 'White',
                 color: 0xffffff,
-                playerCentroid: new Vector2D(.75 * this.sceneWidth, .5 * this.sceneHeight),
-                castleCentroid: new Vector2D(this.sceneWidth*7/8, this.sceneHeight/2),
+                playerCentroid: Vector2D.add(gameConfig.castlePositions[1], gameConfig.playerStartOffset),
+                castleCentroid: gameConfig.castlePositions[1],
                 controllerMapping: null,
                 players: [],
                 castles: []
             }
         ]
+        console.log('castleCentroid', this.teams[0].castleCentroid);
         const aiCharacter = {
             playerName: "Kitty",
             faction: Factions.Wild,
@@ -246,7 +258,7 @@ export default class HeroGameLoop {
         this.controllers.push(new LocalPlayerController(this.players[0], player1Keys));
         this.controllers.push(new AIController(this.players[1], this.players[0], this));
 
-        this.particleSystem = new ParticleSystem(10, this.teams, this);
+        this.particleSystem = new ParticleSystem(this.teams, this);
         for (const player of this.players) {
             player.setParticleSystem(this.particleSystem);
         }
@@ -293,18 +305,18 @@ export default class HeroGameLoop {
 
     updateCamera() {
         if (this.localPlayer) {
-            const alpha = 0.05;
-            const margin = .35;
-            this.cameraPivot.x = alpha * this.localPlayer.pos.x + (1-alpha) * this.cameraPivot.x
-            this.cameraPivot.y = alpha * this.localPlayer.pos.y + (1-alpha) * this.cameraPivot.y
+            const alpha = gameConfig.cameraElasticAlpha;
+            const margin = gameConfig.cameraElasticMargin;
+            this.cameraPivot.x = alpha * this.localPlayer.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
+            this.cameraPivot.y = alpha * this.localPlayer.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
             this.cameraPivot.x = Math.max(this.cameraPivot.x, this.sceneWidth * margin)
             this.cameraPivot.x = Math.min(this.cameraPivot.x, this.sceneWidth * (1 - margin))
             this.cameraPivot.y = Math.max(this.cameraPivot.y, this.sceneHeight * margin)
             this.cameraPivot.y = Math.min(this.cameraPivot.y, this.sceneHeight * (1 - margin))
             this.pixiRef.stage.pivot.x = this.cameraPivot.x;
             this.pixiRef.stage.pivot.y = this.cameraPivot.y;
-            this.pixiRef.stage.position.x = this.sceneWidth / 2;
-            this.pixiRef.stage.position.y = this.sceneHeight / 2;
+            this.pixiRef.stage.position.x = this.pixiRef.canvas.width / 2;
+            this.pixiRef.stage.position.y = this.pixiRef.canvas.height / 2;
         }
     }
 
@@ -312,6 +324,8 @@ export default class HeroGameLoop {
         DebugDrawer.reset();
         if (!this.gameOn) return
         if (this.particleSystem === undefined) return
+
+        this.renderScale = this.pixiRef.renderer.width / gameConfig.baseRenderScale;
 
         this.updateDayTime();
 

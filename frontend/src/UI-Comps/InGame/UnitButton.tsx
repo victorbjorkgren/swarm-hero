@@ -1,8 +1,9 @@
 import React from "react";
 import {SpellICon} from "./SpellICon";
-import {Spells, SpellPack, SpellPacks} from "../../types/spellTypes";
-import {UnitPacks, Units} from "../../types/unitTypes";
+import {Spells, SpellPack} from "../../types/spellTypes";
+import {Units} from "../../types/unitTypes";
 import {UnitIcon} from "./UnitIcon";
+import {SpellPacks, UnitPacks} from "../../config";
 
 interface UnitButtonProps {
     n: number;

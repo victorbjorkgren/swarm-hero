@@ -3,21 +3,22 @@ import {Player} from "./Player";
 import {Entity, Team, TexturePack} from "../types/types";
 import HeroGameLoop from "./HeroGameLoop";
 import {Application, Graphics, Sprite} from "pixi.js";
-import {Spells, SpellPack, SpellPacks} from "../types/spellTypes";
+import {Spells, SpellPack} from "../types/spellTypes";
+import {gameConfig, SpellPacks} from "../config";
 
 export class Castle implements Entity {
     public pos: Vector2D;
-    public mass: number = 100000;
-    public radius: number = 20;
+    public mass: number = Infinity;
+    public radius: number = 20; // Collider - not used
     public vel: Vector2D = Vector2D.zeros();
-    public givesIncome: number = 1000;
-    private maxHealth: number = 400;
+    public givesIncome: number = gameConfig.castleIncome;
+    private maxHealth: number = gameConfig.castleHealth;
     public health: number = this.maxHealth;
 
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
 
-    public sqActivationDist: number = 70 * 70;
+    public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
     public nearbyPlayers: Player[] = [];
     private pixiRef: Application;
     private texture: TexturePack
@@ -77,12 +78,13 @@ export class Castle implements Entity {
         if (this.isAlive()) {
             if (!this.castleSprite) {
                 this.castleSprite = new Sprite(this.texture.normal);
-                this.castleSprite.scale = .1;
+                this.castleSprite.anchor.set(0.5);
                 this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
                 this.pixiRef.stage.addChild(this.castleSprite);
             }
-            this.castleSprite.x = this.pos.x;
-            this.castleSprite.y = this.pos.y;
+            this.castleSprite.x = this.pos.x * this.scene.renderScale;
+            this.castleSprite.y = this.pos.y * this.scene.renderScale;
+            this.castleSprite.scale.set(.1 * this.scene.renderScale);
             if (this.checkPlayers()) {
                 this.castleSprite.texture = this.texture.highlight;
             } else {
@@ -103,7 +105,7 @@ export class Castle implements Entity {
         }
         if (!this.castleSprite) {
             this.castleSprite = new Sprite(this.texture.normal);
-            this.castleSprite.scale = .1;
+            this.castleSprite.anchor.set(0.5);
             this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
             this.pixiRef.stage.addChild(this.castleSprite);
         }
@@ -113,8 +115,8 @@ export class Castle implements Entity {
         const healthRatio = this.health / this.maxHealth;
 
         this.healthSprite
-            .moveTo(this.pos.x, this.pos.y - 5)
-            .lineTo(this.pos.x + (this.castleSprite.width * healthRatio), this.pos.y - 5)
+            .moveTo(this.pos.x * this.scene.renderScale - this.castleSprite.width / 2, this.pos.y * this.scene.renderScale  - this.castleSprite.height / 2 - 5)
+            .lineTo(this.pos.x * this.scene.renderScale - this.castleSprite.width / 2 + (this.castleSprite.width * healthRatio), this.pos.y * this.scene.renderScale - this.castleSprite.height / 2 - 5)
             .stroke({
                 color: this.team.color,
                 alpha: .8,

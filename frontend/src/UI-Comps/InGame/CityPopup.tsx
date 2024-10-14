@@ -124,10 +124,10 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
     return (
         <div ref={divRef}>
             <div
-                style={style}
+                // style={style}
                 className={`
-                flex flex-col gap-2 rounded-xl justify-between transform -translate-y-1/2 
-                bg-white bg-opacity-30 text-white select-none border border-white backdrop-blur-sm
+                absolute top-1/2 left-1/2 flex flex-col gap-2 rounded-xl justify-between transform -translate-y-1/2 -translate-x-1/2
+                items-center bg-white bg-opacity-30 text-white select-none border border-white backdrop-blur-sm
                 origin-center transition-transform duration-300 ease-out 
                 ${isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"} 
                 ${isVisible && moveGarrisonPopUpVisible ? "blur-sm opacity-70": ""} 

@@ -106,20 +106,9 @@ export class Particle implements Entity {
             this.particleSprite.zIndex = HeroGameLoop.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.particleSprite);
         }
-        this.particleSprite.x = this.pos.x;
-        this.particleSprite.y = this.pos.y;
-    }
-    debugLine(origin: Vector2D, destination: Vector2D, color: number): void {
-        if (this.debugSprite === null) {
-            this.debugSprite = new Graphics();
-            this.scene.pixiRef.stage.addChild(this.debugSprite);
-        }
-        this.debugSprite
-            .moveTo(origin.x, origin.y)
-            .lineTo(destination.x, destination.y)
-            .stroke({
-                color: color,
-                width: 1});
+        this.particleSprite.x = this.pos.x * this.scene.renderScale;
+        this.particleSprite.y = this.pos.y * this.scene.renderScale;
+        this.particleSprite.scale.set(this.scene.renderScale);
     }
 
     renderAttack() {
@@ -131,8 +120,8 @@ export class Particle implements Entity {
         for (const foePack of this.firingLaserAt) {
             if (foePack.target.isAlive()) {
                 this.attackSprite
-                    .moveTo(this.pos.x, this.pos.y)
-                    .lineTo(foePack.firingPos.x, foePack.firingPos.y)
+                    .moveTo(this.pos.x * this.scene.renderScale, this.pos.y * this.scene.renderScale)
+                    .lineTo(foePack.firingPos.x * this.scene.renderScale, foePack.firingPos.y * this.scene.renderScale)
                     .stroke({
                         color: 0xFFFFFF,
                         alpha: foePack.intensity,
@@ -150,12 +139,12 @@ export class Particle implements Entity {
         this.healthSprite.clear();
         if (!this.isAlive()) return;
 
-        const pxZero = this.pos.x - this.radius - 3;
+        const pxZero = this.pos.x * this.scene.renderScale - this.radius - 3;
         const lenX = 2 * this.radius + 6
         const healthRatio = this._health / this.maxHealth;
         this.healthSprite
-            .moveTo(pxZero, this.pos.y - this.radius - 2)
-            .lineTo(pxZero + lenX * healthRatio, this.pos.y - this.radius - 2)
+            .moveTo(pxZero, this.pos.y * this.scene.renderScale - this.radius - 2)
+            .lineTo(pxZero + lenX * healthRatio, this.pos.y * this.scene.renderScale - this.radius - 2)
             .stroke({
                 color: this.color,
                 alpha: .8,

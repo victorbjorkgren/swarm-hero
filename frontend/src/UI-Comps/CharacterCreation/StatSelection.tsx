@@ -71,14 +71,14 @@ export const StatSelection: React.FC<Props> = ({doneCallback, handleBack, defaul
     return (
         <>
             <BackButton handleBack={handleBack}/>
-            <div className={`flex flex-col gap-10 items-center justify-center w-screen h-screen`}>
+            <div className={`flex flex-col gap-2 sm:gap-2 lg:gap-10 items-center justify-center w-screen h-screen max-w-full max-h-full`}>
                 <StatSlider label={"Health"} value={health} setValue={handleNewHealth} />
                 <StatSlider label={"Speed"} value={speed} setValue={handleNewSpeed} />
                 <StatSlider label={"Wisdom"} value={magicPower} setValue={handleNewPower} />
                 <StatSlider label={"Grit"} value={magicStamina} setValue={handleNewStamina} />
-                <span className={`text-xl select-none`}>Points Left: {pointsLeft}</span>
+                <span className={`lg:text-xl sm:text-lg text-sm select-none`}>Points Left: {pointsLeft}</span>
                 <button
-                    className={`bg-white text-white text-2xl bg-opacity-10 w-44 h-12 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
+                    className={`bg-white text-white lg:text-2xl sm:text-xl text-xs bg-opacity-10 lg:w-44 sm:w-36 w-24 lg:h-12 sm:h-8 h-6 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
                     onClick={() => doneCallback({health: health, speed: speed, magicPower: magicPower, magicStamina: magicStamina})}>
                     Done
                 </button>

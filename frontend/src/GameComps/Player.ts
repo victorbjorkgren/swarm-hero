@@ -6,7 +6,7 @@ import HeroGameLoop from "./HeroGameLoop";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
 import {SpellPack} from "../types/spellTypes";
-import {UnitPacks, Units} from "../types/unitTypes";
+import {Units} from "../types/unitTypes";
 import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {
     healthConversion,
@@ -15,6 +15,7 @@ import {
     speedConversion
 } from "../UI-Comps/CharacterCreation/StatConversion";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
+import {gameConfig, UnitPacks} from "../config";
 
 export class Player implements Entity {
     public availableSpells: SpellPack[] = [];
@@ -23,18 +24,19 @@ export class Player implements Entity {
     public pos: Vector2D;
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
-    public radius: number = 20;
-    public mass: number = 50**3;
+    public aimPos: Vector2D = Vector2D.zeros();
+    public radius: number = 20; // for collider - unused
+    public mass: number = 50**3; // for collision - unused
     public popUpCastle: Castle | null = null;
-    public maxAcc: number = 0.1;
+    public maxAcc: number = gameConfig.playerMaxAcc;
     public maxVel: number = 1.0;
-    public gold: number = 10000;
-    public givesIncome: number = 0;
+    public gold: number = gameConfig.playerStartGold;
+    public givesIncome: number = gameConfig.playerSelfIncome;
 
     public name: string = "Unnamed Player"
     private maxHealth: number = 0;
     private powerMultiplier: number = 0;
-    private maxMana: number = 100;
+    private maxMana: number = 0;
     private faction: Factions = Factions.Wild;
 
     private playerSpritePack: DirectionalSpriteSheet | null = null;
@@ -68,15 +70,6 @@ export class Player implements Entity {
         this.pos = team.playerCentroid;
         this.team.players.push(this);
         this.parseCharacter(character)
-
-        this.scene.pixiRef.stage.on('pointermove', (event) => {
-            const mousePosition = event.global;
-            const worldPosition = this.scene.pixiRef.stage.toLocal(mousePosition);
-            const x = worldPosition.x
-            const y = worldPosition.y
-            this.spellCursorSprite?.position.set(x, y);
-        });
-        this.scene.pixiRef.stage.on('click', () => {this.castSpell()})
     }
 
     parseCharacter(character: Character) {
@@ -301,8 +294,8 @@ export class Player implements Entity {
     getFiringPos(from: Vector2D): Vector2D {
         if (this.currentAnimation !== null) {
             return new Vector2D(
-                this.pos.x + this.currentAnimation.width / 2,
-                this.pos.y + this.currentAnimation.height / 2,
+                this.pos.x,
+                this.pos.y,
             )
         } else {
             return this.pos.copy();
@@ -315,19 +308,20 @@ export class Player implements Entity {
         const animations = catSpriteSheet.data.animations!;
         this.playerSpritePack =  {
             'd': AnimatedSprite.fromFrames(animations["u/black_0"]),
-            'ur': AnimatedSprite.fromFrames(animations["ur/black_0"]),
+            'dr': AnimatedSprite.fromFrames(animations["ur/black_0"]),
             'r': AnimatedSprite.fromFrames(animations["r/black_0"]),
-            'dr': AnimatedSprite.fromFrames(animations["dr/black_0"]),
+            'ur': AnimatedSprite.fromFrames(animations["dr/black_0"]),
             'u': AnimatedSprite.fromFrames(animations["d/black_0"]),
-            'dl': AnimatedSprite.fromFrames(animations["dl/black_0"]),
+            'ul': AnimatedSprite.fromFrames(animations["dl/black_0"]),
             'l': AnimatedSprite.fromFrames(animations["l/black_0"]),
-            'ul': AnimatedSprite.fromFrames(animations["ul/black_0"]),
+            'dl': AnimatedSprite.fromFrames(animations["ul/black_0"]),
         };
         Object.keys(this.playerSpritePack).forEach(key => {
             if (this.playerSpritePack) {
                 const animation = this.playerSpritePack[key as keyof DirectionalSpriteSheet];
                 animation.loop = true;
                 animation.visible = false;
+                animation.anchor.set(.5);
                 animation.zIndex = HeroGameLoop.zIndex.ground;
                 this.scene.pixiRef.stage.addChild(animation);
             }
@@ -380,16 +374,16 @@ export class Player implements Entity {
         if (this.spellCursorSprite === null) return
         if (this.activeSpell.castCost > this.mana) return;
 
-        const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
+        // const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
         const sqCastRange = this.activeSpell.castRange * this.activeSpell.castRange;
 
-        if (Vector2D.sqDist(effectPos, this.pos) > sqCastRange)
+        if (Vector2D.sqDist(this.aimPos, this.pos) > sqCastRange)
             return this.cancelSpell();
 
         this.mana -= this.activeSpell.castCost;
         const sqEffectRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
-        this.scene.areaDamage(effectPos, sqEffectRange, this.activeSpell.effectAmount * this.powerMultiplier);
-        this.scene.renderExplosion(effectPos, this.activeSpell.effectRange);
+        this.scene.areaDamage(this.aimPos, sqEffectRange, this.activeSpell.effectAmount * this.powerMultiplier);
+        this.scene.renderExplosion(this.aimPos, this.activeSpell.effectRange);
 
         // Reset casting preparation
         this.castingDoneCallback(true);
@@ -416,9 +410,10 @@ export class Player implements Entity {
     renderSelf() {
         this.setAnimation();
         if (this.currentAnimation !== null) {
-            this.currentAnimation.x = this.pos.x
-            this.currentAnimation.y = this.pos.y
+            this.currentAnimation.x = this.pos.x * this.scene.renderScale;
+            this.currentAnimation.y = this.pos.y * this.scene.renderScale;
             this.currentAnimation.animationSpeed = (this.vel.magnitude() / this.maxVel) / 7 ;
+            this.currentAnimation.scale = this.scene.renderScale;
         }
     }
 
@@ -440,9 +435,12 @@ export class Player implements Entity {
         if (this.spellCursorSprite === null) {
             this.spellCursorSprite = renderArcaneWheel(this.scene.pixiRef);
         }
-        const cursor = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y)
-        if (this.activeSpell !== null && (Vector2D.sqDist(cursor, this.pos) < (this.activeSpell.castRange ** 2))) {
+        // const cursor = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y)
+        if (this.activeSpell !== null && (Vector2D.sqDist(this.aimPos, this.pos) < (this.activeSpell.castRange ** 2))) {
             this.spellCursorSprite.visible = true;
+            this.spellCursorSprite.position.x = this.aimPos.x * this.scene.renderScale;
+            this.spellCursorSprite.position.y = this.aimPos.y * this.scene.renderScale;
+            this.spellCursorSprite.scale.set(this.scene.renderScale);
             this.scene.pixiRef.stage.cursor = "none";
         } else {
             this.spellCursorSprite.visible = false;
@@ -458,16 +456,9 @@ export class Player implements Entity {
                 letterSpacing: -0.6
             });
             this.nameSprite.zIndex = HeroGameLoop.zIndex.ground;
-            // this.nameSprite.pivot.set(0.5);
             this.scene.pixiRef.stage.addChild(this.nameSprite);
         }
-        let midX: number;
-        if (this.currentAnimation !== null) {
-            midX = this.currentAnimation.x + this.currentAnimation.width / 2 - this.nameSprite.width / 2;
-        } else {
-            midX = this.pos.x;
-        }
-        this.nameSprite.position.set(midX, this.pos.y + 25);
+        this.nameSprite.position.set(this.pos.x * this.scene.renderScale, this.pos.y * this.scene.renderScale + 25);
     }
 
     renderStatsBar(): void {
@@ -483,28 +474,24 @@ export class Player implements Entity {
         }
         this.healthSprite.clear();
         this.manaSprite.clear()
+
         if (!this.isAlive()) return;
+        if (this.currentAnimation === null) return;
 
         const healthRatio = this._health / this.maxHealth;
         const manaRatio = this.mana / this.maxMana;
-        let midX;
         const lx = 40;
-        if (this.currentAnimation !== null) {
-            midX = this.currentAnimation.x + this.currentAnimation.width / 2;
-        } else {
-            midX = this.pos.x;
-        }
         this.healthSprite
-            .moveTo(midX - (lx / 2), this.pos.y - 8)
-            .lineTo((midX - (lx / 2)) + (lx * healthRatio), this.pos.y - 8)
+            .moveTo(this.pos.x * this.scene.renderScale - (lx / 2), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 8)
+            .lineTo((this.pos.x * this.scene.renderScale - (lx / 2)) + (lx * healthRatio), this.pos.y * this.scene.renderScale  - this.currentAnimation.height / 2 - 8)
             .stroke({
                 color: 0xFF0000,
                 alpha: .3,
                 width: 2
             })
         this.manaSprite
-            .moveTo(midX - (lx / 2), this.pos.y - 5)
-            .lineTo((midX - (lx / 2)) + (lx * manaRatio), this.pos.y - 5)
+            .moveTo(this.pos.x * this.scene.renderScale - (lx / 2), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 5)
+            .lineTo((this.pos.x * this.scene.renderScale - (lx / 2)) + (lx * healthRatio), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 5)
             .stroke({
                 color: 0x0000FF,
                 alpha: .3,
@@ -539,9 +526,9 @@ export class Player implements Entity {
             this.rangeSprite.stroke({color: 0xffffff, alpha: 0.1, width: 5});
         }
 
-        this.rangeSprite.x = this.pos.x;
-        this.rangeSprite.y = this.pos.y;
+        this.rangeSprite.x = this.pos.x * this.scene.renderScale;
+        this.rangeSprite.y = this.pos.y * this.scene.renderScale;
+        this.rangeSprite.scale.set(this.scene.renderScale);
         this.rangeSprite.rotation += .004;
     }
-
 }

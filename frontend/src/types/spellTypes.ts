@@ -1,4 +1,4 @@
-enum SpellEffects {
+export enum SpellEffects {
     Damage,
     Morale,
     Speed,
@@ -21,25 +21,3 @@ export interface SpellPack {
     coolDown: number;
 }
 
-export const SpellPacks = {
-    [Spells.Explosion]: {
-        element: Spells.Explosion,
-        castCost: 10,
-        buyCost: 1000,
-        castRange: 400,
-        effectRange: 100,
-        effectType: SpellEffects.Damage,
-        effectAmount: 90,
-        coolDown: 5,
-    },
-    [Spells.LaserBurst]: {
-        element: Spells.LaserBurst,
-        castCost: 10,
-        buyCost: 1000,
-        castRange: 400,
-        effectRange: 100,
-        effectType: SpellEffects.Damage,
-        effectAmount: 50,
-        coolDown: 5,
-    }
-}

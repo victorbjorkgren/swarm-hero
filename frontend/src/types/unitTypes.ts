@@ -8,10 +8,3 @@ export interface UnitPack {
     buyCost: number;
 }
 
-export const UnitPacks = {
-    [Units.LaserDrone]: {
-        element: Units.LaserDrone,
-        buyCost: 100,
-    }
-}
-

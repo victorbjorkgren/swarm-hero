@@ -20,7 +20,6 @@ export class ParticleSystem {
     private unitManager: UnitManager;
 
     constructor(
-        private particleN: number,
         private teams: Team[],
         private scene: HeroGameLoop,
         private polygonColliderEntities: PolygonalCollider[] = [])

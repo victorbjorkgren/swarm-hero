@@ -1,6 +1,8 @@
 import {SpellEffects, Spells} from "./types/spellTypes";
 import {Units} from "./types/unitTypes";
 import {Vector2D} from "./GameComps/Utility";
+import {Factions} from "./UI-Comps/CharacterCreation/FactionSelection";
+import {ControllerMapping} from "./types/types";
 
 export const gameConfig = {
     mapWidth: 8000,
@@ -30,7 +32,32 @@ export const gameConfig = {
     speedLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
     powerLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
     manaLevels: [10, 30, 60, 100, 150, 200],
+
+    factionInit: {
+        [Factions.Mech]: {
+            gold: 1000,
+        },
+        [Factions.Wild]: {
+            gold: 1000,
+        },
+        [Factions.Mage]: {
+            gold: 1000,
+        },
+        [Factions.Spirit]: {
+            gold: 1000,
+        }
+    }
 } as const
+
+export const player1Keys: ControllerMapping = {
+    up: "KeyW",
+    left: "KeyA",
+    down: "KeyS",
+    right: "KeyD",
+    buy: "KeyE",
+    special: "KeyO",
+    cancel: "Escape"
+};
 
 export const SpellPacks = {
     [Spells.Explosion]: {

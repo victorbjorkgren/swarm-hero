@@ -1,13 +1,13 @@
-import {Vector2D} from "./Utility";
-import {Player} from "./Player";
-import {Entity, Team, TexturePack} from "../types/types";
-import HeroGameLoop from "./HeroGameLoop";
+import {Vector2D} from "../Utility";
+import {PlayerServer} from "./PlayerServer";
+import {Entity, Team, TexturePack} from "../../types/types";
+import HeroGameLoopServer, {CastleID, ClientID, EntityID} from "../HeroGameLoopServer";
 import {Application, Graphics, Sprite} from "pixi.js";
-import {Spells, SpellPack} from "../types/spellTypes";
-import {gameConfig, SpellPacks} from "../config";
+import {Spells, SpellPack} from "../../types/spellTypes";
+import {gameConfig, SpellPacks} from "../../config";
 
-export class Castle implements Entity {
-    public pos: Vector2D;
+export class CastleServer implements Entity {
+    // public pos: Vector2D;
     public mass: number = Infinity;
     public radius: number = 20; // Collider - not used
     public vel: Vector2D = Vector2D.zeros();
@@ -15,28 +15,33 @@ export class Castle implements Entity {
     private maxHealth: number = gameConfig.castleHealth;
     public health: number = this.maxHealth;
 
+    public owner: ClientID | null = null;
+
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
 
     public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
-    public nearbyPlayers: Player[] = [];
-    private pixiRef: Application;
-    private texture: TexturePack
+    public nearbyPlayers: PlayerServer[] = [];
+    // private pixiRef: Application;
+    // private texture: TexturePack
 
-    public targetedBy: Entity[] = [];
+    public targetedBy: EntityID[] = [];
 
     public availableSpells: SpellPack[] = [
         SpellPacks[Spells.Explosion],
     ];
 
     constructor(
+        public id: CastleID,
         public team: Team,
-        private scene: HeroGameLoop,
+        public pos: Vector2D,
+        private scene: HeroGameLoopServer,
     ) {
-        this.pos = team.castleCentroid;
-        this.team.castles.push(this);
-        this.pixiRef = scene.pixiRef;
-        this.texture = scene.castleTexturePack!;
+        this.team.castleIds.push(id);
+        // this.pos = team.castleCentroid;
+        // this.team.castles.push(this);
+        // this.pixiRef = scene.pixiRef;
+        // this.texture = scene.castleTexturePack!;
     }
 
     receiveDamage(damage: number): void {
@@ -53,7 +58,7 @@ export class Castle implements Entity {
 
     checkPlayers() {
         this.nearbyPlayers = this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
-        for (const player of this.team.players) {
+        for (const playerIds of this.team.playerIds) {
             if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {
                 if (!player.isLocal) {
                     player.popUpCastle = this;
@@ -79,7 +84,7 @@ export class Castle implements Entity {
             if (!this.castleSprite) {
                 this.castleSprite = new Sprite(this.texture.normal);
                 this.castleSprite.anchor.set(0.5);
-                this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
+                this.castleSprite.zIndex = HeroGameLoopServer.zIndex.ground;
                 this.pixiRef.stage.addChild(this.castleSprite);
             }
             this.castleSprite.x = this.pos.x * this.scene.renderScale;
@@ -100,13 +105,13 @@ export class Castle implements Entity {
     renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.healthSprite.zIndex = HeroGameLoopServer.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         if (!this.castleSprite) {
             this.castleSprite = new Sprite(this.texture.normal);
             this.castleSprite.anchor.set(0.5);
-            this.castleSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.castleSprite.zIndex = HeroGameLoopServer.zIndex.ground;
             this.pixiRef.stage.addChild(this.castleSprite);
         }
         this.healthSprite.clear();
@@ -127,4 +132,6 @@ export class Castle implements Entity {
     renderAttack() {
 
     }
+
+    team: Team;
 }

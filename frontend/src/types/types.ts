@@ -1,7 +1,8 @@
-import {Player} from "../GameComps/Player";
-import {Castle} from "../GameComps/Castle";
+import {PlayerServer} from "../GameComps/Entities/PlayerServer";
+import {CastleServer} from "../GameComps/Entities/CastleServer";
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
+import {CastleID, ClientID, EntityID} from "../GameComps/HeroGameLoopServer";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -10,6 +11,7 @@ export interface Polygon {
 }
 
 export interface Entity {
+    id: EntityID;
     pos: Vector2D;
     vel: Vector2D;
     radius: number;
@@ -18,13 +20,15 @@ export interface Entity {
     givesIncome: number;
     team: Team;
 
-    targetedBy: Entity[];
+    targetedBy: EntityID[];
 
     isAlive(): boolean;
     receiveDamage(damage: number): void
 
     getFiringPos(from: Vector2D): Vector2D;
+}
 
+export interface EntityClient extends Entity {
     renderSelf(): void;
     renderAttack(): void;
     renderStatsBar(): void;
@@ -47,11 +51,11 @@ export interface Team {
     color: number,
     id: number,
     name: string,
-    playerCentroid: Vector2D,
-    castleCentroid: Vector2D,
-    controllerMapping: ControllerMapping | null,
-    players: Player[],
-    castles: Castle[]
+    // playerCentroid: Vector2D,
+    // castleCentroid: Vector2D,
+    // controllerMapping: ControllerMapping | null,
+    playerIds: ClientID[],
+    castleIds: CastleID[]
 }
 
 export interface TexturePack {
@@ -59,19 +63,29 @@ export interface TexturePack {
     highlight: Texture;
 }
 
+export enum Controls {
+    up='up',
+    down='down',
+    left='left',
+    right='right',
+    buy='buy',
+    special='special',
+    cancel='cancel',
+}
+
 export interface ControllerMapping {
-    'up': string;
-    'down': string;
-    'left': string;
-    'right': string;
-    'buy': string;
-    'special': string;
-    'cancel': string;
+    [Controls.up]: string;
+    [Controls.down]: string;
+    [Controls.left]: string;
+    [Controls.right]: string;
+    [Controls.buy]: string;
+    [Controls.special]: string;
+    [Controls.cancel]: string;
 }
 
 export interface popUpEvent{
     playerID: number;
-    castle: Castle;
+    castle: CastleServer;
 }
 
 export interface DirectionalSpriteSheet {
@@ -90,6 +104,8 @@ export interface Controller {
     buy(): void;
     special(): void;
     cleanup(): void;
+    remoteKeyDown(key: Controls): void
+    remoteKeyUp(key: Controls): void
 }
 
 export interface CollisionResult {

@@ -1,8 +1,8 @@
-import {Player} from "../Player";
+import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
-import {Castle} from "../Castle";
+import {CastleServer} from "../Entities/CastleServer";
 import {Entity} from "../../types/types";
-import HeroGameLoop from "../HeroGameLoop";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {NavMesh} from "../NavMesh";
 import {UnitManager} from "../UnitManager";
 
@@ -34,7 +34,7 @@ export class AIBehavior {
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
-    constructor(private player: Player, private otherPlayer: Player, private scene: HeroGameLoop) {
+    constructor(private player: PlayerServer, private otherPlayer: PlayerServer, private scene: HeroGameLoopServer) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
         this.pathTarget = player.pos.copy();
@@ -215,7 +215,7 @@ export class AIBehavior {
         let minVul = 1;
         for (const castle of castles) {
             for (const foe of this.nearbyFoes(this.visibleDistance)) {
-                const vulnerability = this.reinforcedStrength(castle, this.player.team.players, foe);
+                const vulnerability = this.reinforcedStrength(castle, this.player.team.playerIds, foe);
                 if (vulnerability < minVul) {
                     minVul = vulnerability;
                     this.engaging = castle;
@@ -243,14 +243,14 @@ export class AIBehavior {
         return foeDrones / attackerDrones;
     }
 
-    nearbyFoes(dist: number): Player[] {
+    nearbyFoes(dist: number): PlayerServer[] {
         const nearbyPlayers = [];
         const sqDist = Vector2D.subtract(this.player.pos, this.otherPlayer.pos).sqMagnitude();
         if (sqDist <= (dist*dist)) nearbyPlayers.push(this.otherPlayer);
         return nearbyPlayers;
     }
 
-    nearbyFoeCastles(dist: number): Castle[] {
+    nearbyFoeCastles(dist: number): CastleServer[] {
         const nearbyFoeCastles = [];
         for (const castle of this.otherPlayer.team.castles) {
             if (castle && castle.isAlive()) {
@@ -271,9 +271,9 @@ export class AIBehavior {
         return difficulty;
     }
 
-    nearestFriendlyCastle(): Castle | null {
+    nearestFriendlyCastle(): CastleServer | null {
         if (this.player.team.castles.length === 0) return null;
-        let nearestFriendlyCastle: Castle | null = null;
+        let nearestFriendlyCastle: CastleServer | null = null;
         let minSqD: number = 1000000000;
         for (const castle of this.player.team.castles) {
             const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();

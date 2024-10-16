@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
-import HeroGameLoop from "../../GameComps/HeroGameLoop";
+import HeroGameLoopServer from "../../GameComps/HeroGameLoopServer";
 import {CityPopup} from "./CityPopup";
-import {Player} from "../../GameComps/Player";
+import {PlayerServer} from "../../GameComps/Entities/PlayerServer";
 import {popUpEvent} from "../../types/types";
 import {Application, Rectangle} from "pixi.js";
 import {Keyboard} from "../../GameComps/Keyboard";
@@ -20,8 +20,8 @@ interface Props {
 
 const MainGame: React.FC<Props> = ({character, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
-    const playersRef = useRef<Player[]>([]);
-    const gameSceneRef = useRef<HeroGameLoop | null>(null);
+    const playersRef = useRef<PlayerServer[]>([]);
+    const gameSceneRef = useRef<HeroGameLoopServer | null>(null);
     const pixiRef = useRef<Application | null>(null);
 
     const [gameContainerStyle, setGameContainerStyle] = useState<React.CSSProperties>({});
@@ -90,7 +90,7 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             0, 0, gameConfig.mapWidth, gameConfig.mapHeight
         );
 
-        gameSceneRef.current = new HeroGameLoop(
+        gameSceneRef.current = new HeroGameLoopServer(
             pixiRef.current,
             setWinner,
             setPlayerPopUpEvent,

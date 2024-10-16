@@ -1,9 +1,9 @@
-import {massToRadius, randomUnitVector, Vector2D} from "./Utility";
-import {Entity, Team} from "../types/types";
+import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
+import {Entity, Team} from "../../types/types";
 import {Graphics} from "pixi.js";
-import HeroGameLoop from "./HeroGameLoop";
-import {UnitPack} from "../types/unitTypes";
-import {UnitManager} from "./UnitManager";
+import HeroGameLoopServer from "../HeroGameLoopServer";
+import {UnitPack} from "../../types/unitTypes";
+import {UnitManager} from "../UnitManager";
 
 export class Particle implements Entity {
     vel: Vector2D;
@@ -41,7 +41,7 @@ export class Particle implements Entity {
         public team: Team,
         public maxVel: number = 1,
         public color: number,
-        private scene: HeroGameLoop,
+        private scene: HeroGameLoopServer,
         public groupID: number,
         public unitInfo: UnitPack,
         public owner: Entity,
@@ -103,7 +103,7 @@ export class Particle implements Entity {
             this.particleSprite = new Graphics()
                 .circle(0, 0, this.radius)
                 .fill({color: this.color, alpha: 1});
-            this.particleSprite.zIndex = HeroGameLoop.zIndex.flyers;
+            this.particleSprite.zIndex = HeroGameLoopServer.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.particleSprite);
         }
         this.particleSprite.x = this.pos.x * this.scene.renderScale;
@@ -133,7 +133,7 @@ export class Particle implements Entity {
     renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoop.zIndex.flyers;
+            this.healthSprite.zIndex = HeroGameLoopServer.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         this.healthSprite.clear();

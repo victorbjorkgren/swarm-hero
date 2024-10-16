@@ -1,4 +1,4 @@
-import HeroGameLoop from "./HeroGameLoop";
+import HeroGameLoopServer from "./HeroGameLoopServer";
 import {AABBCollider} from "../types/types";
 import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
@@ -30,7 +30,7 @@ export  class NavMesh {
         new Vector2D(-1, -1), new Vector2D(1, -1), new Vector2D(-1, 1), new Vector2D(1, 1)
     ];
 
-    constructor(private scene: HeroGameLoop) {}
+    constructor(private scene: HeroGameLoopServer) {}
 
     updateNavMesh(colliders: AABBCollider[]): void {
         const rows = Math.ceil(this.scene.sceneHeight / NavMesh.scale);

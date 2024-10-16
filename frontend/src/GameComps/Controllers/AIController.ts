@@ -1,21 +1,21 @@
 import {Controller} from "../../types/types";
-import {Player} from "../Player";
+import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
 import {AIBehavior} from "./AIBehavior";
-import HeroGameLoop from "../HeroGameLoop";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {Units} from "../../types/unitTypes";
-import {Castle} from "../Castle";
+import {CastleServer} from "../Entities/CastleServer";
 
 export class AIController implements Controller {
     private target: Vector2D
     private behavior: AIBehavior
     private behaviorCallCooldown: number = 0;
-    private activeCastle: Castle | null = null;
+    private activeCastle: CastleServer | null = null;
 
     constructor(
-        private player: Player,
-        otherPlayer: Player,
-        scene: HeroGameLoop,
+        private player: PlayerServer,
+        otherPlayer: PlayerServer,
+        scene: HeroGameLoopServer,
         )
     {
         this.behavior = new AIBehavior(player, otherPlayer, scene);

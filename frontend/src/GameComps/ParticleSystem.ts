@@ -3,11 +3,11 @@ import {
     isInsidePolygon,
     Vector2D
 } from "./Utility";
-import {Particle} from "./Particle";
-import {Player} from "./Player";
-import {Castle} from "./Castle";
+import {Particle} from "./Entities/Particle";
+import {PlayerServer} from "./Entities/PlayerServer";
+import {CastleServer} from "./Entities/CastleServer";
 import {Entity, PolygonalCollider, Team} from "../types/types";
-import HeroGameLoop from "./HeroGameLoop";
+import HeroGameLoopServer from "./HeroGameLoopServer";
 import {UnitPack} from "../types/unitTypes";
 import {UnitManager} from "./UnitManager";
 
@@ -21,7 +21,7 @@ export class ParticleSystem {
 
     constructor(
         private teams: Team[],
-        private scene: HeroGameLoop,
+        private scene: HeroGameLoopServer,
         private polygonColliderEntities: PolygonalCollider[] = [])
     {
         this.unitManager = new UnitManager();
@@ -85,7 +85,7 @@ export class ParticleSystem {
         // }
     }
 
-    getNewParticle(player: Player, castle: Castle, groupID: number, unitInfo: UnitPack, owner: Entity): Particle {
+    getNewParticle(player: PlayerServer, castle: CastleServer, groupID: number, unitInfo: UnitPack, owner: Entity): Particle {
         return this.createParticle(
             new Vector2D(castle.pos.x + (Math.random()-.5)*30, castle.pos.y + (Math.random()-.5)*30),
             10,
@@ -126,7 +126,7 @@ export class ParticleSystem {
             if (me.engaging.length >= me.maxTargets) return;
             for (const team of this.teams) {
                 if (team === me.team) continue
-                for (const player of team.players) {
+                for (const player of team.playerIds) {
                     this.engageIfClose(me, player)
                     if (me.engaging.length >= me.maxTargets) return;
                     this.unitManager.ownerForEach(player, (other) => {

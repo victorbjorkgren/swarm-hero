@@ -1,4 +1,4 @@
-import {Particle} from "./Particle";
+import {Particle} from "./Entities/Particle";
 import {Entity} from "../types/types";
 import {Units} from "../types/unitTypes";
 

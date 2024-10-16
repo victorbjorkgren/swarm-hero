@@ -1,6 +1,6 @@
 import {Application, Graphics, Sprite} from "pixi.js";
 import {Vector2D} from "../GameComps/Utility";
-import HeroGameLoop from "../GameComps/HeroGameLoop";
+import HeroGameLoopServer from "../GameComps/HeroGameLoopServer";
 
 export default class DebugDrawer {
     private static lines: Graphics[] = [];
@@ -27,7 +27,7 @@ export default class DebugDrawer {
             .moveTo(origin.x, origin.y)
             .lineTo(destination.x, destination.y)
             .stroke({color: color, width: 2});
-        line.zIndex = HeroGameLoop.zIndex.hud;
+        line.zIndex = HeroGameLoopServer.zIndex.hud;
         DebugDrawer.pixi?.stage.addChild(line);
         DebugDrawer.lines.push(line);
     }
@@ -36,7 +36,7 @@ export default class DebugDrawer {
         const dot = new Graphics()
             .circle(origin.x, origin.y, 2)
             .fill({color: color});
-        dot.zIndex = HeroGameLoop.zIndex.hud;
+        dot.zIndex = HeroGameLoopServer.zIndex.hud;
         DebugDrawer.pixi?.stage.addChild(dot);
         DebugDrawer.dots.push(dot);
     }

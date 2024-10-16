@@ -1,33 +1,34 @@
-import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "./Utility";
-import {ParticleSystem} from "./ParticleSystem";
-import {AABBCollider, CollisionResult, DirectionalSpriteSheet, Entity, Team} from "../types/types";
-import {Castle} from "./Castle";
-import HeroGameLoop from "./HeroGameLoop";
+import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "../Utility";
+import {ParticleSystem} from "../ParticleSystem";
+import {AABBCollider, CollisionResult, Controller, DirectionalSpriteSheet, Entity, Team} from "../../types/types";
+import {CastleServer} from "./CastleServer";
+import HeroGameLoopServer, {Client} from "../HeroGameLoopServer";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
-import {renderArcaneWheel} from "./Graphics/ExplosionMarker";
-import {SpellPack} from "../types/spellTypes";
-import {Units} from "../types/unitTypes";
-import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
+import {SpellPack} from "../../types/spellTypes";
+import {Units} from "../../types/unitTypes";
+import {Character} from "../../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {
     healthConversion,
     manaConversion,
     powerConversion,
     speedConversion
-} from "../UI-Comps/CharacterCreation/StatConversion";
-import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
-import {gameConfig, UnitPacks} from "../config";
+} from "../../UI-Comps/CharacterCreation/StatConversion";
+import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
+import {gameConfig, UnitPacks} from "../../config";
+import {NetworkController} from "../Controllers/NetworkController";
+import {AIController} from "../Controllers/AIController";
 
-export class Player implements Entity {
+export class PlayerServer implements Entity {
     public availableSpells: SpellPack[] = [];
     public isLocal: boolean = false;
 
-    public pos: Vector2D;
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
     public aimPos: Vector2D = Vector2D.zeros();
     public radius: number = 20; // for collider - unused
     public mass: number = 50**3; // for collision - unused
-    public popUpCastle: Castle | null = null;
+    public popUpCastle: CastleServer | null = null;
     public maxAcc: number = gameConfig.playerMaxAcc;
     public maxVel: number = 1.0;
     public gold: number = gameConfig.playerStartGold;
@@ -55,21 +56,24 @@ export class Player implements Entity {
 
     particleSystem: ParticleSystem | undefined;
 
-    public myCastles: Castle[] = [];
+    public myCastles: CastleServer[] = [];
     public targetedBy: Entity[] = [];
 
     private activeSpell: SpellPack | null = null;
     private castingDoneCallback: (didCast: boolean) => void = () => {};
-
+    public controller: Controller;
 
     constructor(
+        public pos: Vector2D,
         public team: Team,
-        private scene: HeroGameLoop,
-        character: Character
+        private client: Client,
+        private scene: HeroGameLoopServer,
     ) {
-        this.pos = team.playerCentroid;
-        this.team.players.push(this);
-        this.parseCharacter(character)
+        if (!client.character) throw new Error("Could not find a character on client");
+
+        this.team.playerIds.push(client.id);
+        this.parseCharacter(client.character)
+        this.controller = new NetworkController(this);
     }
 
     parseCharacter(character: Character) {
@@ -124,8 +128,9 @@ export class Player implements Entity {
         this.scene.onDeath(w.toString());
     }
 
-    gainCastleControl(castle: Castle) {
+    gainCastleControl(castle: CastleServer) {
         this.myCastles.push(castle);
+        castle.owner = this.client.id;
     }
 
     newDay() {
@@ -177,7 +182,7 @@ export class Player implements Entity {
         this.particleSystem = particleSystem;
     }
 
-    findNearbyCastle(): Castle | null {
+    findNearbyCastle(): CastleServer | null {
         for (const castle of this.team.castles) {
             if (castle.nearbyPlayers.find(player => player === this))
                 return castle;
@@ -322,7 +327,7 @@ export class Player implements Entity {
                 animation.loop = true;
                 animation.visible = false;
                 animation.anchor.set(.5);
-                animation.zIndex = HeroGameLoop.zIndex.ground;
+                animation.zIndex = HeroGameLoopServer.zIndex.ground;
                 this.scene.pixiRef.stage.addChild(animation);
             }
         });
@@ -368,28 +373,30 @@ export class Player implements Entity {
         this.castingDoneCallback = castingDoneCallback;
     }
 
-    castSpell() {
-        if (!this.isCasting) return
-        if (this.activeSpell === null) return
-        if (this.spellCursorSprite === null) return
-        if (this.activeSpell.castCost > this.mana) return;
+    castSpell(): boolean {
+        if (!this.isCasting) return false;
+        if (this.activeSpell === null) return false;
+        if (this.spellCursorSprite === null) return false;
+        if (this.activeSpell.castCost > this.mana) return false;
 
         // const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
         const sqCastRange = this.activeSpell.castRange * this.activeSpell.castRange;
 
         if (Vector2D.sqDist(this.aimPos, this.pos) > sqCastRange)
-            return this.cancelSpell();
+            return false;
 
         this.mana -= this.activeSpell.castCost;
         const sqEffectRange = this.activeSpell.effectRange * this.activeSpell.effectRange;
         this.scene.areaDamage(this.aimPos, sqEffectRange, this.activeSpell.effectAmount * this.powerMultiplier);
-        this.scene.renderExplosion(this.aimPos, this.activeSpell.effectRange);
+        // this.scene.renderExplosion(this.aimPos, this.activeSpell.effectRange);
 
         // Reset casting preparation
-        this.castingDoneCallback(true);
-        this.castingDoneCallback = ()=>{};
+        // this.castingDoneCallback(true);
+        // this.castingDoneCallback = ()=>{};
         this.isCasting = false;
         this.activeSpell = null;
+
+        return true;
     }
 
     cancelSpell() {
@@ -455,7 +462,7 @@ export class Player implements Entity {
                 fontSize: 13,
                 letterSpacing: -0.6
             });
-            this.nameSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.nameSprite.zIndex = HeroGameLoopServer.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.nameSprite);
         }
         this.nameSprite.position.set(this.pos.x * this.scene.renderScale, this.pos.y * this.scene.renderScale + 25);
@@ -464,12 +471,12 @@ export class Player implements Entity {
     renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.healthSprite.zIndex = HeroGameLoopServer.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         if (this.manaSprite === null) {
             this.manaSprite = new Graphics();
-            this.manaSprite.zIndex = HeroGameLoop.zIndex.ground;
+            this.manaSprite.zIndex = HeroGameLoopServer.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.manaSprite);
         }
         this.healthSprite.clear();
@@ -502,7 +509,7 @@ export class Player implements Entity {
     renderSpellRange(): void {
         if (this.rangeSprite === null) {
             this.rangeSprite = new Graphics();
-            this.rangeSprite.zIndex = HeroGameLoop.zIndex.hud;
+            this.rangeSprite.zIndex = HeroGameLoopServer.zIndex.hud;
             this.scene.pixiRef.stage.addChild(this.rangeSprite);
         }
         if (!this.isCasting || this.activeSpell === null) {

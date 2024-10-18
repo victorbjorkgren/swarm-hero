@@ -1,15 +1,15 @@
-import {Particle} from "./Entities/Particle";
+import {ParticleBase} from "./Entities/ParticleBase";
 import {Entity} from "../types/types";
 import {Units} from "../types/unitTypes";
 
-export type UnitMap = Map<Units, Set<Particle>>;
+export type UnitMap = Map<Units, Set<ParticleBase>>;
 export type EntityUnitMap = Map<Entity, UnitMap>;
 export type UnitCount = {unit: Units, count: number};
 
 export class UnitManager {
     private unitMap: EntityUnitMap = new Map();
 
-    add(obj: Particle) {
+    add(obj: ParticleBase) {
         if (!obj.isAlive()) return;
 
         const element: Units = obj.unitInfo.element;
@@ -17,20 +17,20 @@ export class UnitManager {
 
         let ownerParticles = this.unitMap.get(owner);
         if (!ownerParticles) {
-            ownerParticles = new Map<Units, Set<Particle>>();
+            ownerParticles = new Map<Units, Set<ParticleBase>>();
             this.unitMap.set(owner, ownerParticles);
         }
 
         let elementSet = ownerParticles.get(element);
         if (!elementSet) {
-            elementSet = new Set<Particle>();
+            elementSet = new Set<ParticleBase>();
             ownerParticles.set(element, elementSet);
         }
 
         elementSet.add(obj);
     }
 
-    remove(obj: Particle) {
+    remove(obj: ParticleBase) {
         const element: Units = obj.unitInfo.element;
         const owner: Entity = obj.owner;
 
@@ -81,7 +81,7 @@ export class UnitManager {
         return n;
     }
 
-    getUnits(owner: Entity, element: Units): Set<Particle> | null {
+    getUnits(owner: Entity, element: Units): Set<ParticleBase> | null {
         return this.unitMap.get(owner)?.get(element) || null;
     }
 
@@ -89,7 +89,7 @@ export class UnitManager {
         return this.unitMap.get(owner) || new Map();
     }
 
-    ownerForEach(owner: Entity, callback: (particle: Particle) => void): void {
+    ownerForEach(owner: Entity, callback: (particle: ParticleBase) => void): void {
         const m = this.unitMap.get(owner)
         if (m) {
             m.forEach((set) => {
@@ -99,7 +99,7 @@ export class UnitManager {
 
     }
 
-    deepForEach(callback: (particle: Particle)=>void): void {
+    deepForEach(callback: (particle: ParticleBase)=>void): void {
         this.unitMap.forEach((unitMap) => {
             unitMap.forEach((set)=>{
                 set.forEach(callback)
@@ -107,7 +107,7 @@ export class UnitManager {
         })
     }
 
-    switchOwner(particle: Particle, newOwner: Entity) {
+    switchOwner(particle: ParticleBase, newOwner: Entity) {
         this.remove(particle);
         particle.owner = newOwner;
         this.add(particle);

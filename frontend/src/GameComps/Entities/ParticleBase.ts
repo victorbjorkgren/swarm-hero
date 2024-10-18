@@ -1,11 +1,12 @@
 import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
-import {Entity, Team} from "../../types/types";
+import {EntityBase, Team} from "../../types/types";
 import {Graphics} from "pixi.js";
-import HeroGameLoopServer from "../HeroGameLoopServer";
+import HeroGameLoopServer, {EntityID, ParticleID} from "../HeroGameLoopServer";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
+import {HeroGameLoopBase} from "../HeroGameLoopBase";
 
-export class Particle implements Entity {
+export class ParticleBase implements EntityBase {
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
     leaderPosition: Vector2D | undefined;
@@ -15,7 +16,7 @@ export class Particle implements Entity {
     sqFireRadius: number = 50 ** 2;
     sqEngageRadius: number = 100 ** 2;
     maxTargets: number = 1;
-    engaging: Entity[] = [];
+    engaging: EntityBase[] = [];
     firingLaserAt: FiringLaserAt[] = [];
     desiredPos: Vector2D | undefined = undefined;
     desiredSpeed: number = .75;
@@ -23,15 +24,15 @@ export class Particle implements Entity {
     maxAcc: number = .05;
     givesIncome: number = 0;
 
-    targetedBy: Entity[] = [];
+    targetedBy: EntityID[] = [];
 
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
     healthSprite: Graphics | null = null;
     debugSprite: Graphics | null = null;
 
-    private maxHealth: number = 100;
-    private _health: number = this.maxHealth;
+    protected maxHealth: number = 100;
+    protected _health: number = this.maxHealth;
 
     static price: number = 100;
 
@@ -41,11 +42,12 @@ export class Particle implements Entity {
         public team: Team,
         public maxVel: number = 1,
         public color: number,
-        private scene: HeroGameLoopServer,
+        protected scene: HeroGameLoopBase,
         public groupID: number,
         public unitInfo: UnitPack,
-        public owner: Entity,
-        private unitManager: UnitManager,
+        public owner: EntityBase,
+        protected unitManager: UnitManager,
+        public id: ParticleID,
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
@@ -73,88 +75,9 @@ export class Particle implements Entity {
         this.groupID = groupID;
     }
 
-    killSprites() {
-        if (this.particleSprite) {
-            this.scene.pixiRef.stage.removeChild(this.particleSprite);
-            this.particleSprite.destroy();
-        }
-        if (this.attackSprite) {
-            this.scene.pixiRef.stage.removeChild(this.attackSprite);
-            this.attackSprite.destroy();
-        }
-        if (this.healthSprite) {
-            this.scene.pixiRef.stage.removeChild(this.healthSprite);
-            this.healthSprite.destroy();
-        }
-    }
-
-    render() {
-        if (this.isAlive()) {
-            this.renderSelf();
-            this.renderAttack();
-            this.renderStatsBar();
-        } else {
-            this.killSprites();
-        }
-    }
-
-    renderSelf() {
-        if (this.particleSprite === null) {
-            this.particleSprite = new Graphics()
-                .circle(0, 0, this.radius)
-                .fill({color: this.color, alpha: 1});
-            this.particleSprite.zIndex = HeroGameLoopServer.zIndex.flyers;
-            this.scene.pixiRef.stage.addChild(this.particleSprite);
-        }
-        this.particleSprite.x = this.pos.x * this.scene.renderScale;
-        this.particleSprite.y = this.pos.y * this.scene.renderScale;
-        this.particleSprite.scale.set(this.scene.renderScale);
-    }
-
-    renderAttack() {
-        if (this.attackSprite === null) {
-            this.attackSprite = new Graphics();
-            this.scene.pixiRef.stage.addChild(this.attackSprite);
-        }
-        this.attackSprite.clear();
-        for (const foePack of this.firingLaserAt) {
-            if (foePack.target.isAlive()) {
-                this.attackSprite
-                    .moveTo(this.pos.x * this.scene.renderScale, this.pos.y * this.scene.renderScale)
-                    .lineTo(foePack.firingPos.x * this.scene.renderScale, foePack.firingPos.y * this.scene.renderScale)
-                    .stroke({
-                        color: 0xFFFFFF,
-                        alpha: foePack.intensity,
-                        width: 1});
-            }
-        }
-    }
-
-    renderStatsBar(): void {
-        if (this.healthSprite === null) {
-            this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoopServer.zIndex.flyers;
-            this.scene.pixiRef.stage.addChild(this.healthSprite);
-        }
-        this.healthSprite.clear();
-        if (!this.isAlive()) return;
-
-        const pxZero = this.pos.x * this.scene.renderScale - this.radius - 3;
-        const lenX = 2 * this.radius + 6
-        const healthRatio = this._health / this.maxHealth;
-        this.healthSprite
-            .moveTo(pxZero, this.pos.y * this.scene.renderScale - this.radius - 2)
-            .lineTo(pxZero + lenX * healthRatio, this.pos.y * this.scene.renderScale - this.radius - 2)
-            .stroke({
-                color: this.color,
-                alpha: .8,
-                width: 1
-            })
-    }
 
     onDeath() {
         this.unitManager.remove(this);
-        this.killSprites();
     }
 
     setLeaderPosition(position: Vector2D) {
@@ -226,7 +149,7 @@ export class Particle implements Entity {
 }
 
 interface FiringLaserAt {
-    target: Entity;
+    target: EntityBase;
     intensity: number;
     firingPos: Vector2D;
 }

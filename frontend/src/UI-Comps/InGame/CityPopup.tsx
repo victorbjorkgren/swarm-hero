@@ -1,16 +1,16 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Vector2D} from "../../GameComps/Utility";
 import {UnitButton} from "./UnitButton";
-import {PlayerServer} from "../../GameComps/Entities/PlayerServer";
 
 import {SpellPack} from "../../types/spellTypes";
 import {Units} from "../../types/unitTypes";
 import {MovePopup} from "./MovePopup";
+import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 
 
 interface CityPopupProps {
     anchorPoint: Vector2D | undefined;
-    player: PlayerServer | null | undefined;
+    player: PlayerClient | null | undefined;
     recruitFunc: (unit: Units, n: number)=>boolean;
 }
 

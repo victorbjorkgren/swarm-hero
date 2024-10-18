@@ -1,11 +1,11 @@
 import React from "react";
 import {SpellPicker} from "./SpellPicker";
-import {PlayerServer} from "../../GameComps/Entities/PlayerServer";
 import {SpellPack} from "../../types/spellTypes";
+import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 
 interface SpellPickerProps {
     pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
-    player: PlayerServer | null;
+    player: PlayerClient | null;
 }
 
 export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, player}) => {

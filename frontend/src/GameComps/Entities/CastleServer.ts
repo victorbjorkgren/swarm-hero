@@ -1,20 +1,13 @@
 import {Vector2D} from "../Utility";
 import {PlayerServer} from "./PlayerServer";
-import {Entity, Team, TexturePack} from "../../types/types";
+import {Team, TexturePack} from "../../types/types";
 import HeroGameLoopServer, {CastleID, ClientID, EntityID} from "../HeroGameLoopServer";
 import {Application, Graphics, Sprite} from "pixi.js";
 import {Spells, SpellPack} from "../../types/spellTypes";
 import {gameConfig, SpellPacks} from "../../config";
+import {CastleBase} from "./CastleBase";
 
-export class CastleServer implements Entity {
-    // public pos: Vector2D;
-    public mass: number = Infinity;
-    public radius: number = 20; // Collider - not used
-    public vel: Vector2D = Vector2D.zeros();
-    public givesIncome: number = gameConfig.castleIncome;
-    private maxHealth: number = gameConfig.castleHealth;
-    public health: number = this.maxHealth;
-
+export class CastleServer extends CastleBase {
     public owner: ClientID | null = null;
 
     private castleSprite: Sprite | null = null;
@@ -27,16 +20,13 @@ export class CastleServer implements Entity {
 
     public targetedBy: EntityID[] = [];
 
-    public availableSpells: SpellPack[] = [
-        SpellPacks[Spells.Explosion],
-    ];
-
     constructor(
         public id: CastleID,
         public team: Team,
         public pos: Vector2D,
         private scene: HeroGameLoopServer,
     ) {
+        super();
         this.team.castleIds.push(id);
         // this.pos = team.castleCentroid;
         // this.team.castles.push(this);
@@ -132,6 +122,4 @@ export class CastleServer implements Entity {
     renderAttack() {
 
     }
-
-    team: Team;
 }

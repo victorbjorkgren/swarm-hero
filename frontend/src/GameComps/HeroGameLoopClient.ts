@@ -16,26 +16,27 @@ import {AABBCollider, Controller, ControllerMapping, popUpEvent, Team, TexturePa
 import {CastleServer} from "./Entities/CastleServer";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
-import {gameConfig, player1Keys} from "../config";
+import {gameConfig, player1Keys, UnitPacks} from "../config";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {AIController} from "./Controllers/AIController";
-import {ParticleSystem} from "./ParticleSystem";
+import {ParticleSystemBase} from "./ParticleSystemBase";
 import {
     InitialDataMessage,
     ClientMessageType,
     ServerMessageType,
-    AreaDamageMessage,
-    GameUpdateMessage, PlayerUpdateData, ClientMessage, ServerMessage
+    SpellCastMessage,
+    GameUpdateMessage, PlayerUpdateData, ClientMessage, ServerMessage, DroneBoughtMessage
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
 import {CastleClient} from "./Entities/CastleClient";
 import {ParticleSystemClient} from "./ParticleSystemClient";
 import {SpellPack} from "../types/spellTypes";
 import {CastleID, ClientID} from "./HeroGameLoopServer";
+import {HeroGameLoopBase} from "./HeroGameLoopBase";
 
 
-export class HeroGameLoopClient {
+export class HeroGameLoopClient extends HeroGameLoopBase {
     static zIndex = {
         'environment': 0,
         'ground': 1,
@@ -44,7 +45,7 @@ export class HeroGameLoopClient {
     }
     private gameOn: boolean = true;
 
-    private players: Map<ClientID, PlayerClient> = new Map();
+    public players: Map<ClientID, PlayerClient> = new Map();
     private teams: Team[] = [];
     public castles: Map<CastleID, CastleClient> = new Map();
     public colliders: AABBCollider[] = [];
@@ -62,7 +63,7 @@ export class HeroGameLoopClient {
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
     private localPlayer: PlayerClient | null = null;
     private localId: ClientID | null = null;
-    private particleSystem: ParticleSystemClient | null = null;
+    public particleSystem: ParticleSystemClient | null = null;
     private startTime: number | null = null;
 
     constructor(
@@ -73,6 +74,7 @@ export class HeroGameLoopClient {
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
         public socket: WebSocket,
     ) {
+        super();
         this.socket.on('message', (message: string)=>{
             const parsedMessage = JSON.parse(message);
             this.handleServerMessage(parsedMessage)
@@ -90,12 +92,29 @@ export class HeroGameLoopClient {
             case ServerMessageType.GameUpdate:
                 this.handleGameUpdate(message.payload as GameUpdateMessage);
                 break;
-            // case ServerMessageType.PLAYER_JOINED:
-            //     this.handlePlayerJoined(message.payload);
-            //     break;
+            case ServerMessageType.SpellCast:
+                this.handleSpellCast(message.payload as SpellCastMessage);
+                break;
+            case ServerMessageType.DroneBought:
+                this.handleDroneBought(message.payload as DroneBoughtMessage);
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
+    }
+
+    handleDroneBought(message: DroneBoughtMessage) {
+        const player = this.players.get(message.buyer);
+        const castle = this.castles.get(message.castleId);
+        if (!player || !castle) return;
+        for (let i = 0; i < message.n; i++) {
+            this.particleSystem?.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId)
+        }
+    }
+
+    handleSpellCast(message: SpellCastMessage) {
+        const instigator = this.players.get(message.instigator)
+        instigator?.resolveSpell(message)
     }
 
     handleGameUpdate(data: GameUpdateMessage) {
@@ -257,16 +276,19 @@ export class HeroGameLoopClient {
 
         this.teams = initData.package.teams;
 
-        const pInit = initData.package.players;
-        for (let i = 0; i < pInit.length; i++) {
-            const team = this.teams[pInit[i].teamIdx];
-            const character = pInit[i].character;
-            const player = new PlayerClient(pInit[i].id, team, this, character);
-            this.players.set(pInit[i].id, player);
-        }
+        initData.package.players.forEach(pInit => {
+            this.players.set(
+                pInit.id,
+                new PlayerClient(pInit.id, pInit.pos, this.teams[pInit.teamIdx], pInit.character, this));
+        });
+        initData.package.castles.forEach(cInit => {
+            const castle = new CastleClient(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
+            this.castles.set(cInit.id, castle)
+            const owner = this.players.get(cInit.owner);
+            owner?.gainCastleControl(castle);
+        })
 
         this.setLocalPlayer(initData.yourId);
-
 
         this.particleSystem = new ParticleSystemClient(this.teams, this);
         this.playersRef.current = this.players;

@@ -1,18 +1,17 @@
 import {WebSocket, WebSocketServer} from 'ws';
 import {v4 as uuidv4} from 'uuid';
 
-import {ParticleSystem} from "./ParticleSystem";
+import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {CastleServer} from "./Entities/CastleServer";
 import {AABBCollider, Controls, Team} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import {NavMesh} from "./NavMesh";
-import DebugDrawer from "../DebugTools/DebugDrawer";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 import {gameConfig} from "../config";
 import {
-    AreaDamageMessage,
+    SpellCastMessage, CastleInitData,
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
@@ -24,6 +23,7 @@ import {
     ServerPayloads
 } from "@shared/commTypes";
 import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {HeroGameLoopBase} from "./HeroGameLoopBase";
 
 export type EntityID = string;
 export type ClientID = EntityID;
@@ -34,11 +34,10 @@ export interface Client {
     id: ClientID;
     ws: WebSocket;
     character?: Character;
-    // Other client-specific data (e.g., player name, score, etc.)
 }
 
 
-export default class HeroGameLoopServer {
+export default class HeroGameLoopServer extends HeroGameLoopBase{
     // static zIndex = {
     //     'environment': 0,
     //     'ground': 1,
@@ -50,8 +49,8 @@ export default class HeroGameLoopServer {
     public teams: Team[] = [];
     public castles: Map<string, CastleServer> = new Map();
     // public graphics:  Graphics | undefined
-    public particleSystem: ParticleSystem | undefined = undefined;
-    public startTime: number | undefined
+    public particleSystem: ParticleSystemBase | null = null;
+    public startTime: number | null = null;
     private dayTime: number = 0;
     // private controllers:  Map<string, Controller> = new Map();
     public navMesh: NavMesh;
@@ -86,6 +85,7 @@ export default class HeroGameLoopServer {
         // private setDayTime: React.Dispatch<React.SetStateAction<number>>,
         // private character: Character,
     ) {
+        super();
         this.sceneWidth = gameConfig.mapWidth;
         this.sceneHeight = gameConfig.mapHeight;
         this.navMesh = new NavMesh(this);
@@ -125,8 +125,8 @@ export default class HeroGameLoopServer {
             case ClientMessageType.ReadyToJoin:
                 this.handleInitialDataRequest(clientId, message.payload);
                 break;
-            case ClientMessageType.RequestAreaDamage:
-                this.handleAreaDamageRequest(clientId, message.payload);
+            case ClientMessageType.RequestSpellCast:
+                this.handleSpellCastRequest(clientId, message.payload);
                 break;
             case ClientMessageType.KeyDown:
                 this.handleKey(clientId, message.payload, true);
@@ -152,7 +152,10 @@ export default class HeroGameLoopServer {
         }
     }
 
-    handleAreaDamageRequest(clientId: string, payload: AreaDamageMessage) {
+    handleSpellCastRequest(clientId: string, castData: SpellCastMessage) {
+        const instigator = this.players.get(clientId);
+        if (!instigator) return;
+        const success = instigator.castSpell(castData.position, castData.spell);
 
     }
 
@@ -346,6 +349,7 @@ export default class HeroGameLoopServer {
         }
 
         const playerInitData: PlayerInitData[] = []
+        const castleInitData: CastleInitData[] = []
 
         this.readyForCreation.forEach((client, index) => {
             if (!client.character) throw new Error(`Client ${client.id} has no character at creation`);
@@ -359,42 +363,22 @@ export default class HeroGameLoopServer {
             this.players.set(client.id, newPlayer);
             this.castles.set(castleId, newCastle);
 
-            playerInitData.push({id: client.id, character: client.character, teamIdx: teamIdx})
+            playerInitData.push({id: client.id, pos: playerSpawn, character: client.character, teamIdx: teamIdx})
+            castleInitData.push({id: castleId, pos: castleSpawn, owner: client.id, teamIdx: teamIdx})
         })
 
-        this.initialData = {teams: this.teams, players: playerInitData};
+        this.initialData = {teams: this.teams, players: playerInitData, castles: castleInitData};
         this.sendInitialData();
 
-        this.particleSystem = new ParticleSystem(this.teams, this);
+        this.particleSystem = new ParticleSystemBase(this.teams, this);
         // for (const player of this.players) {
         //     player.setParticleSystem(this.particleSystem);
         // }
         // this.playersRef.current = this.players;
     };
 
-    areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
-        this.broadcast(ServerMessageType.ExplosionNotice, {position: position, radius: Math.sqrt(sqRange)})
-        for (const [playerId, player] of this.players) {
-            if (safeTeam.includes(player.team)) continue;
-            if (Vector2D.sqDist(position, player.pos) > sqRange) continue;
-            player.receiveDamage(damage);
-        }
-        for (const [castleId, castle] of this.castles) {
-            if (safeTeam.includes(castle.team)) continue;
-            if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
-            castle.receiveDamage(damage);
-        }
-        if (this.particleSystem) {
-            this.particleSystem.getParticles().deepForEach((particle) => {
-                if (safeTeam.includes(particle.team)) return;
-                if (Vector2D.sqDist(position, particle.pos) > sqRange) return;
-                particle.receiveDamage(damage);
-            })
-        }
-    }
-
     updateDayTime() {
-        if (this.startTime === undefined)
+        if (this.startTime === null)
             this.startTime = Date.now();
         const elapsedTime = (Date.now() - this.startTime) / 1000;
         if (elapsedTime > this.dayLength) {
@@ -429,18 +413,17 @@ export default class HeroGameLoopServer {
     // }
 
     update() {
-        DebugDrawer.reset();
         if (!this.gameOn) return
         if (this.particleSystem === undefined) return
 
         this.updateDayTime();
 
         // Updates
-        this.particleSystem.update();
+        this.particleSystem?.update();
         this.players.forEach(player => {
             player.controller.movement();
             player.updateMovement();
-            player.render();
+            // player.render();
         })
     };
 }

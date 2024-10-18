@@ -3,6 +3,7 @@ import {CastleServer} from "../GameComps/Entities/CastleServer";
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleID, ClientID, EntityID} from "../GameComps/HeroGameLoopServer";
+import {CastleClient} from "../GameComps/Entities/CastleClient";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -10,7 +11,11 @@ export interface Polygon {
     isInside: boolean;
 }
 
-export interface Entity {
+export interface EntityServer extends EntityBase {
+
+}
+
+export interface EntityBase {
     id: EntityID;
     pos: Vector2D;
     vel: Vector2D;
@@ -28,7 +33,7 @@ export interface Entity {
     getFiringPos(from: Vector2D): Vector2D;
 }
 
-export interface EntityClient extends Entity {
+export interface EntityClient extends EntityBase {
     renderSelf(): void;
     renderAttack(): void;
     renderStatsBar(): void;
@@ -85,7 +90,7 @@ export interface ControllerMapping {
 
 export interface popUpEvent{
     playerID: number;
-    castle: CastleServer;
+    castle: CastleClient;
 }
 
 export interface DirectionalSpriteSheet {

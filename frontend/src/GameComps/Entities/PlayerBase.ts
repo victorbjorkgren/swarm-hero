@@ -1,5 +1,5 @@
-import {CollisionResult, EntityBase, Team} from "../../types/types";
-import {Vector2D} from "../Utility";
+import {AABBCollider, CollisionResult, EntityBase, Team} from "../../types/types";
+import {checkAABBCollision, Vector2D} from "../Utility";
 import {EntityID} from "../HeroGameLoopServer";
 import {gameConfig} from "../../config";
 import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
@@ -7,11 +7,13 @@ import {SpellPack} from "../../types/spellTypes";
 import {ParticleSystemBase} from "../ParticleSystemBase";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
 import {CastleBase} from "./CastleBase";
+import {ParticleBase} from "./ParticleBase";
+import {CastleServer} from "./CastleServer";
 
 export abstract class PlayerBase implements EntityBase {
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
-    public targetedBy: string[] = [];
+    public targetedBy: ParticleBase[] = [];
     public availableSpells: SpellPack[] = [];
 
     public maxVel: number = 1.0;
@@ -40,9 +42,6 @@ export abstract class PlayerBase implements EntityBase {
 
     abstract scene: HeroGameLoopBase;
 
-    abstract getFiringPos(from: Vector2D): Vector2D;
-    abstract checkCollisions(): CollisionResult;
-    abstract onDeath(): void;
 
     isAlive(): boolean {
         return this.health > 0;
@@ -55,6 +54,14 @@ export abstract class PlayerBase implements EntityBase {
         }
     }
 
+    checkCollisions(): CollisionResult {
+        const myCollider = this.collider;
+        for (const collider of this.scene.colliders) {
+            const collisionTest = checkAABBCollision(myCollider, collider);
+            if (collisionTest.collides) return collisionTest;
+        }
+        return {collides: false};
+    }
 
     updateMovement() {
         if (this.acc.isZero()) {
@@ -87,5 +94,48 @@ export abstract class PlayerBase implements EntityBase {
         this.particleSystem?.getParticles().ownerForEach(this, (drone) => {
             this.gold += drone.givesIncome;
         })
+    }
+
+    onDeath(): void {
+        let w: string;
+        if (this.team.id === 0)
+            w = this.scene.teams[1].name;
+        else
+            w = this.scene.teams[0].name;
+        this.scene.onDeath(w.toString());
+    }
+
+    get collider(): AABBCollider {
+        // if (this.currentAnimation !== null) {
+        //     return spriteToAABBCollider(this.currentAnimation);
+        // } else {
+        return {
+            minX: this.pos.x - 20,
+            maxX: this.pos.x + 20,
+            minY: this.pos.y - 20,
+            maxY: this.pos.y + 20,
+            inverted: false
+        };
+        // }
+    }
+
+    findNearbyCastle(): CastleServer | null {
+        for (const castle of this.myCastles) {
+            if (castle.nearbyPlayers.find(player => player === this))
+                return castle;
+        }
+        return null
+    }
+
+    getFiringPos(from: Vector2D): Vector2D {
+        // if (this.currentAnimation !== null) {
+        //     return new Vector2D(
+        //         this.pos.x,
+        //         this.pos.y,
+        //     )
+        // } else {
+        return this.pos.copy();
+        // }
+        // return closestPointOnPolygon(this.collider.verts, from);
     }
  }

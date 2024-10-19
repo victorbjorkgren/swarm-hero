@@ -1,10 +1,12 @@
-import {Controller} from "../../types/types";
+import {Controller, Controls} from "../../types/types";
 import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
 import {AIBehavior} from "./AIBehavior";
 import HeroGameLoopServer from "../HeroGameLoopServer";
 import {Units} from "../../types/unitTypes";
 import {CastleServer} from "../Entities/CastleServer";
+import {PlayerClient} from "../Entities/PlayerClient";
+import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 export class AIController implements Controller {
     private target: Vector2D
@@ -13,9 +15,9 @@ export class AIController implements Controller {
     private activeCastle: CastleServer | null = null;
 
     constructor(
-        private player: PlayerServer,
-        otherPlayer: PlayerServer,
-        scene: HeroGameLoopServer,
+        private player: PlayerClient,
+        otherPlayer: PlayerClient,
+        scene: HeroGameLoopClient,
         )
     {
         this.behavior = new AIBehavior(player, otherPlayer, scene);
@@ -36,13 +38,20 @@ export class AIController implements Controller {
         }
     }
     buy(): void {
-        this.player.popUpCastle = this.player.findNearbyCastle();
-        this.player.buyDrone(Units.LaserDrone, 1);
+        // this.player.popUpCastle = this.player.findNearbyCastle();
+        // this.player.buyDrone(Units.LaserDrone, 1);
+        this.player
     }
     special(): void {
         throw new Error("Method not implemented.");
     }
     cleanup(): void {
 
+    }
+
+    remoteKeyDown(key: Controls): void {
+    }
+
+    remoteKeyUp(key: Controls): void {
     }
 }

@@ -47,11 +47,11 @@ export const SpellCastIcon: React.FC<Props> = ({spell, slot, pickerCallback}) =>
     }, [handleClick, slot, spell]);
 
     useEffect(() => {
-        let interval: NodeJS.Timer;
+        let interval: number;
 
         if (isCoolingDown) {
             setIsActive(false);
-            interval = setInterval(() => {
+            interval = window.setInterval(() => {
                 setCoolDownProgress((prevProgress: number) => {
                     const newProgress = prevProgress - 100 / (spell.coolDown * 60); // Decrease based on FPS (60)
                     if (newProgress <= 0) {

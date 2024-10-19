@@ -1,15 +1,37 @@
 import {Vector2D} from "./Utility";
-import {Team} from "../types/types";
+import {AABBCollider, Team} from "../types/types";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {PlayerBase} from "./Entities/PlayerBase";
 import {ParticleSystemBase} from "./ParticleSystemBase";
 import {CastleBase} from "./Entities/CastleBase";
 import {CastleID, ClientID} from "./HeroGameLoopServer";
+import {gameConfig} from "../config";
+import {CastleServer} from "./Entities/CastleServer";
+import {ServerMessageType} from "@shared/commTypes";
 
 export abstract class HeroGameLoopBase {
-    abstract players: Map<ClientID, PlayerBase>;
-    abstract castles: Map<CastleID, CastleBase>;
-    abstract particleSystem: ParticleSystemBase | null;
+    public players: Map<string, PlayerBase> = new Map();
+    public teams: Team[] = [];
+    public castles: Map<string, CastleBase> = new Map();
+    public particleSystem: ParticleSystemBase | null = null;
+
+    public startTime: number | null = null;
+    protected dayTime: number = 0;
+    protected dayLength: number = gameConfig.dayLength; // seconds
+
+    protected gameOn: boolean = true;
+    public readonly sceneWidth: number = gameConfig.mapWidth;
+    public readonly sceneHeight: number = gameConfig.mapHeight;
+    colliders: AABBCollider[] = [];
+
+    abstract stopGame(): void;
+    abstract resumeGame(): void;
+    abstract start(): void;
+    abstract create(): void;
+    abstract preload(): void;
+    abstract update(): void;
+    abstract onDeath(winner: string): void;
+
 
     areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
         for (const [playerId, player] of this.players) {
@@ -29,5 +51,23 @@ export abstract class HeroGameLoopBase {
                 particle.receiveDamage(damage);
             })
         }
+    }
+
+    updateDayTime() {
+        if (this.startTime === null)
+            this.startTime = Date.now();
+        const elapsedTime = (Date.now() - this.startTime) / 1000;
+        if (elapsedTime > gameConfig.dayLength) {
+            this.startTime = Date.now();
+            this.triggerNewDay()
+        }
+        this.dayTime = elapsedTime / this.dayLength;
+
+    }
+
+    triggerNewDay() {
+        this.players.forEach(player => {
+            player.newDay();
+        })
     }
  }

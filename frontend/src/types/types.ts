@@ -4,11 +4,18 @@ import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleID, ClientID, EntityID} from "../GameComps/HeroGameLoopServer";
 import {CastleClient} from "../GameComps/Entities/CastleClient";
+import {ParticleBase} from "../GameComps/Entities/ParticleBase";
 
 export interface Polygon {
     verts: Vector2D[];
     attackable: boolean;
     isInside: boolean;
+}
+
+export enum EntityTypes {
+    Player,
+    Castle,
+    Particle,
 }
 
 export interface EntityServer extends EntityBase {
@@ -25,7 +32,7 @@ export interface EntityBase {
     givesIncome: number;
     team: Team;
 
-    targetedBy: EntityID[];
+    targetedBy: ParticleBase[];
 
     isAlive(): boolean;
     receiveDamage(damage: number): void

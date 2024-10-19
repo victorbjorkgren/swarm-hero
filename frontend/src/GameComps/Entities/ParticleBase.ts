@@ -24,7 +24,7 @@ export class ParticleBase implements EntityBase {
     maxAcc: number = .05;
     givesIncome: number = 0;
 
-    targetedBy: EntityID[] = [];
+    targetedBy: ParticleBase[] = [];
 
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
@@ -46,7 +46,7 @@ export class ParticleBase implements EntityBase {
         public groupID: number,
         public unitInfo: UnitPack,
         public owner: EntityBase,
-        protected unitManager: UnitManager,
+        protected unitManager: UnitManager<ParticleBase>,
         public id: ParticleID,
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);

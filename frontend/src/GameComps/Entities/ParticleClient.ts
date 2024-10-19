@@ -19,7 +19,7 @@ export class ParticleClient extends ParticleBase implements EntityClient {
         public groupID: number,
         public unitInfo: UnitPack,
         public owner: EntityBase,
-        protected unitManager: UnitManager,
+        protected override unitManager: UnitManager<ParticleClient>,
         public id: ParticleID,
     ) {
         super(pos,mass,team,maxVel,color,scene,groupID,unitInfo,owner,unitManager,id)

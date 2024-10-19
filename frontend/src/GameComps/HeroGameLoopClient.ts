@@ -43,10 +43,9 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         'flyers': 2,
         'hud': 3,
     }
-    private gameOn: boolean = true;
 
     public players: Map<ClientID, PlayerClient> = new Map();
-    private teams: Team[] = [];
+    public teams: Team[] = [];
     public castles: Map<CastleID, CastleClient> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
@@ -56,15 +55,13 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     explosionSprite: AnimatedSpriteFrames | null = null;
 
     public renderScale: number = 1
-    private readonly sceneWidth: number = gameConfig.mapWidth;
-    private readonly sceneHeight: number = gameConfig.mapHeight;
 
     private resolveInitialData: (data: any)=>void = ()=>{};
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
-    private localPlayer: PlayerClient | null = null;
+    public localPlayer: PlayerClient | null = null;
     private localId: ClientID | null = null;
     public particleSystem: ParticleSystemClient | null = null;
-    private startTime: number | null = null;
+    public startTime: number | null = null;
 
     constructor(
         public pixiRef: Application,
@@ -72,10 +69,10 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
         private playersRef: React.MutableRefObject<Map<ClientID, PlayerClient>>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
-        public socket: WebSocket,
+        public socket: WebSocket | null,
     ) {
         super();
-        this.socket.on('message', (message: string)=>{
+        this.socket?.on('message', (message: string)=>{
             const parsedMessage = JSON.parse(message);
             this.handleServerMessage(parsedMessage)
         })
@@ -140,7 +137,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     requestInitialData(): Promise<InitialDataMessage> {
         if (!this.localPlayer) throw new Error("No local player!");
         const message: ClientMessage<ClientMessageType.ReadyToJoin> = { type: ClientMessageType.ReadyToJoin, payload: this.localPlayer.character }
-        this.socket.send(JSON.stringify(message));
+        this.socket?.send(JSON.stringify(message));
         return new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
                 () => reject('Timeout waiting for initial data'),
@@ -181,7 +178,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.localPlayer = player;
         player.isLocal = true;
         this.cameraPivot = player.pos.copy();
-        this.localcontroller = new LocalPlayerController(player, player1Keys, this.socket);
+        // this.localcontroller = new LocalPlayerController(player, player1Keys, this.socket);
 
         this.pixiRef.stage.on('pointermove', (event) => {
             const mousePosition = event.global;
@@ -316,6 +313,9 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.particleSystem?.render();
 
         this.updateCamera();
+
+        if (this.setDayTime !== undefined)
+            this.setDayTime(this.dayTime / gameConfig.dayLength);
     };
 
     updateCamera() {
@@ -335,15 +335,5 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.pixiRef.stage.position.y = this.pixiRef.canvas.height / 2;
     }
 
-    updateDayTime() {
-        // TODO: Sync with server?
-        if (this.startTime === null)
-            this.startTime = Date.now();
-        const elapsedTime = (Date.now() - this.startTime) / 1000;
-        if (elapsedTime > gameConfig.dayLength) {
-            this.startTime = Date.now();
-        }
-        if (this.setDayTime !== undefined)
-            this.setDayTime(elapsedTime / gameConfig.dayLength);
-    }
+
 }

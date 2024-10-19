@@ -11,7 +11,8 @@ import {NavMesh} from "./NavMesh";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 import {gameConfig} from "../config";
 import {
-    SpellCastMessage, CastleInitData,
+    BuyDroneMessage,
+    CastleInitData,
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
@@ -20,10 +21,12 @@ import {
     PlayerInitData,
     ServerMessage,
     ServerMessageType,
-    ServerPayloads
+    ServerPayloads,
+    SpellCastMessage
 } from "@shared/commTypes";
 import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
+import {PlayerBase} from "./Entities/PlayerBase";
 
 export type EntityID = string;
 export type ClientID = EntityID;
@@ -38,35 +41,8 @@ export interface Client {
 
 
 export default class HeroGameLoopServer extends HeroGameLoopBase{
-    // static zIndex = {
-    //     'environment': 0,
-    //     'ground': 1,
-    //     'flyers': 2,
-    //     'hud': 3,
-    // }
-    public players: Map<string, PlayerServer> = new Map();
-    // public localPlayer: PlayerServer | null = null;
-    public teams: Team[] = [];
-    public castles: Map<string, CastleServer> = new Map();
-    // public graphics:  Graphics | undefined
-    public particleSystem: ParticleSystemBase | null = null;
-    public startTime: number | null = null;
-    private dayTime: number = 0;
-    // private controllers:  Map<string, Controller> = new Map();
-    public navMesh: NavMesh;
-    // private cameraPivot: Vector2D = Vector2D.zeros();
-
-    // public castleTexturePack: TexturePack | null = null;
-    // private explosionSprite: AnimatedSpriteFrames | null = null;
-
-    private dayLength: number = gameConfig.dayLength; // seconds
-
-    private gameOn: boolean = true;
-    public readonly sceneWidth: number;
-    public readonly sceneHeight: number;
-    colliders: AABBCollider[] = [];
-    // public defaultCursorTexture: Texture | null = null;
-    // public renderScale: number = 1;
+    public override players: Map<string, PlayerServer> = new Map();
+    // public navMesh: NavMesh;
 
     private initialData: InitialDataPackage | null = null;
     private readyForCreation: Client[] = [];
@@ -86,9 +62,8 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         // private character: Character,
     ) {
         super();
-        this.sceneWidth = gameConfig.mapWidth;
-        this.sceneHeight = gameConfig.mapHeight;
-        this.navMesh = new NavMesh(this);
+
+        // this.navMesh = new NavMesh(this);
 
         this.wss.on('connection', (ws: WebSocket) => {
             const clientId = uuidv4();
@@ -120,7 +95,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         });
     }
 
-    handleClientMessage(clientId: string, message: ClientMessage<any>) {
+    handleClientMessage(clientId: ClientID, message: ClientMessage<any>) {
         switch (message.type) {
             case ClientMessageType.ReadyToJoin:
                 this.handleInitialDataRequest(clientId, message.payload);
@@ -129,17 +104,20 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
                 this.handleSpellCastRequest(clientId, message.payload);
                 break;
             case ClientMessageType.KeyDown:
-                this.handleKey(clientId, message.payload, true);
+                this.handleKeyboardPress(clientId, message.payload, true);
                 break;
             case ClientMessageType.KeyUp:
-                this.handleKey(clientId, message.payload, false);
+                this.handleKeyboardPress(clientId, message.payload, false);
+                break;
+            case ClientMessageType.RequestBuyDrone:
+                this.handleBuyDroneRequest(clientId, message.payload);
                 break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
     }
 
-    handleKey(clientId: string, key: Controls, down: boolean) {
+    handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
         const controller = this.players.get(clientId)?.controller;
         if (!controller) {
             console.error(`Client ${clientId} has no controller`);
@@ -152,14 +130,16 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         }
     }
 
-    handleSpellCastRequest(clientId: string, castData: SpellCastMessage) {
+    handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
         const instigator = this.players.get(clientId);
         if (!instigator) return;
         const success = instigator.castSpell(castData.position, castData.spell);
-
+        if (success) {
+            this.broadcast(ServerMessageType.SpellCast, castData)
+        }
     }
 
-    handleInitialDataRequest(clientId: string, character: Character) {
+    handleInitialDataRequest(clientId: ClientID, character: Character) {
         const client = this.clients.get(clientId);
         if (!client) {
             console.error(`Client ${clientId} not found`);
@@ -168,6 +148,12 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         client.character = character;
         this.readyForCreation.push(client);
         console.log(`Client ${clientId} is waiting for initial data`);
+    }
+
+    handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {
+        const buyer = this.players.get(message.buyer);
+        if (!buyer) return;
+
     }
 
     sendInitialData() {
@@ -195,20 +181,6 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         this.broadcast(ServerMessageType.Winner, id)
         this.stopGame();
     }
-
-    // setLocalPlayer(player: Player) {
-    //     this.localPlayer = player;
-    //     player.isLocal = true;
-        // this.cameraPivot = player.pos.copy();
-        //
-        // this.pixiRef.stage.on('pointermove', (event) => {
-        //     const mousePosition = event.global;
-        //     const worldPosition = this.pixiRef.stage.toLocal(mousePosition);
-        //     player.aimPos.x = worldPosition.x / this.renderScale;
-        //     player.aimPos.y = worldPosition.y / this.renderScale;
-        // });
-        // this.pixiRef.stage.on('click', () => {player.castSpell()})
-    // }
 
     tickerUp() {
         if (this.updateInterval === null)
@@ -260,31 +232,6 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         // await backgroundReady;
         // await blockersReady;
     };
-
-    // async setupExplosion(explosionSheet: Promise<Spritesheet>) {
-    //     const sheet = await explosionSheet;
-    //     await sheet.parse();
-    //     this.explosionSprite = sheet.animations.animation0;
-    // }
-
-    // renderExplosion(position: Vector2D, radius: number) {
-    //     if (this.explosionSprite === null) return
-    //     const explosion = new AnimatedSprite(this.explosionSprite);
-    //     explosion.zIndex = HeroGameLoopServer.zIndex.hud;
-    //     explosion.loop = false;
-    //     explosion.animationSpeed = .5;
-    //     explosion.anchor.set(0.5);
-    //     explosion.scale = this.renderScale * .15 * radius / 100;
-    //     explosion.x = position.x * this.renderScale;
-    //     explosion.y = position.y * this.renderScale;
-    //     explosion.visible = true;
-    //     this.pixiRef.stage.addChild(explosion);
-    //     explosion.gotoAndPlay(0);
-    //     explosion.onComplete = () => {
-    //         this.pixiRef.stage.removeChild(explosion);
-    //         explosion.destroy();
-    //     }
-    // }
 
     async setupBlockers(wallSpriteSheet: Promise<Spritesheet>) {
         const sheet = await wallSpriteSheet;
@@ -357,7 +304,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
             const castleId = uuidv4();
             const castleSpawn = gameConfig.castlePositions[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
-            const newCastle = new CastleServer(castleId, this.teams[teamIdx], castleSpawn, this);
+            const newCastle = new CastleServer(castleId, this.teams[teamIdx], castleSpawn, client.id, this);
             const newPlayer = new PlayerServer(playerSpawn, this.teams[teamIdx], client, this);
             newPlayer.gainCastleControl(newCastle);
             this.players.set(client.id, newPlayer);
@@ -387,30 +334,6 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         }
         this.dayTime = elapsedTime / this.dayLength;
     }
-
-    triggerNewDay() {
-        this.broadcast(ServerMessageType.TriggerNewDay, null);
-        this.players.forEach(player => {
-            player.newDay();
-        })
-    }
-
-    // updateCamera() {
-    //     if (this.localPlayer) {
-    //         const alpha = gameConfig.cameraElasticAlpha;
-    //         const margin = gameConfig.cameraElasticMargin;
-    //         this.cameraPivot.x = alpha * this.localPlayer.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
-    //         this.cameraPivot.y = alpha * this.localPlayer.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
-    //         this.cameraPivot.x = Math.max(this.cameraPivot.x, this.sceneWidth * margin)
-    //         this.cameraPivot.x = Math.min(this.cameraPivot.x, this.sceneWidth * (1 - margin))
-    //         this.cameraPivot.y = Math.max(this.cameraPivot.y, this.sceneHeight * margin)
-    //         this.cameraPivot.y = Math.min(this.cameraPivot.y, this.sceneHeight * (1 - margin))
-    //         this.pixiRef.stage.pivot.x = this.cameraPivot.x;
-    //         this.pixiRef.stage.pivot.y = this.cameraPivot.y;
-    //         this.pixiRef.stage.position.x = this.pixiRef.canvas.width / 2;
-    //         this.pixiRef.stage.position.y = this.pixiRef.canvas.height / 2;
-    //     }
-    // }
 
     update() {
         if (!this.gameOn) return

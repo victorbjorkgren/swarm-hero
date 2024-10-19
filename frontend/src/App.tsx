@@ -6,6 +6,7 @@ const App: React.FC = () => {
   // const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
+    const signalingServer = new WebSocket('ws://localhost:8080');
     // const ws = new WebSocket('ws://localhost:8080');
     // setSocket(ws);
     //

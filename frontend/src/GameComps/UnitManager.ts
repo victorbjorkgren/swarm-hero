@@ -1,38 +1,39 @@
 import {ParticleBase} from "./Entities/ParticleBase";
-import {Entity} from "../types/types";
+import {EntityBase} from "../types/types";
 import {Units} from "../types/unitTypes";
 
-export type UnitMap = Map<Units, Set<ParticleBase>>;
-export type EntityUnitMap = Map<Entity, UnitMap>;
+
+export type UnitMap<TParticle extends ParticleBase> = Map<Units, Set<TParticle>>;
+export type EntityUnitMap<TParticle extends ParticleBase> = Map<EntityBase, UnitMap<TParticle>>;
 export type UnitCount = {unit: Units, count: number};
 
-export class UnitManager {
-    private unitMap: EntityUnitMap = new Map();
+export class UnitManager<TParticle extends ParticleBase> {
+    private unitMap: EntityUnitMap<TParticle> = new Map();
 
-    add(obj: ParticleBase) {
+    add(obj: TParticle) {
         if (!obj.isAlive()) return;
 
         const element: Units = obj.unitInfo.element;
-        const owner: Entity = obj.owner;
+        const owner: EntityBase = obj.owner;
 
         let ownerParticles = this.unitMap.get(owner);
         if (!ownerParticles) {
-            ownerParticles = new Map<Units, Set<ParticleBase>>();
+            ownerParticles = new Map<Units, Set<TParticle>>();
             this.unitMap.set(owner, ownerParticles);
         }
 
         let elementSet = ownerParticles.get(element);
         if (!elementSet) {
-            elementSet = new Set<ParticleBase>();
+            elementSet = new Set<TParticle>();
             ownerParticles.set(element, elementSet);
         }
 
         elementSet.add(obj);
     }
 
-    remove(obj: ParticleBase) {
+    remove(obj: TParticle) {
         const element: Units = obj.unitInfo.element;
-        const owner: Entity = obj.owner;
+        const owner: EntityBase = obj.owner;
 
         const ownerParticles = this.unitMap.get(owner);
         const elementSet = ownerParticles?.get(element);
@@ -53,16 +54,16 @@ export class UnitManager {
         }
     }
 
-    getMap(): EntityUnitMap {
+    getMap(): EntityUnitMap<TParticle> {
         return this.unitMap;
     }
 
-    getUnitCount(owner: Entity, element: Units): UnitCount {
+    getUnitCount(owner: EntityBase, element: Units): UnitCount {
         const n = this.unitMap.get(owner)?.get(element)?.size || 0
         return {unit: element, count: n};
     }
 
-    getUnitCounts(owner: Entity | null): Set<UnitCount> {
+    getUnitCounts(owner: EntityBase | null): Set<UnitCount> {
         const out = new Set<UnitCount>();
         if (!owner) return out;
         const units = this.getOwnerUnits(owner);
@@ -72,7 +73,7 @@ export class UnitManager {
         return out;
     }
 
-    flatOwnerCount(owner: Entity): number {
+    flatOwnerCount(owner: EntityBase): number {
         let n = 0;
         const units = this.getOwnerUnits(owner);
         units.forEach((set, _) => {
@@ -81,15 +82,15 @@ export class UnitManager {
         return n;
     }
 
-    getUnits(owner: Entity, element: Units): Set<ParticleBase> | null {
+    getUnits(owner: EntityBase, element: Units): Set<TParticle> | null {
         return this.unitMap.get(owner)?.get(element) || null;
     }
 
-    getOwnerUnits(owner: Entity): UnitMap {
+    getOwnerUnits(owner: EntityBase): UnitMap<TParticle> {
         return this.unitMap.get(owner) || new Map();
     }
 
-    ownerForEach(owner: Entity, callback: (particle: ParticleBase) => void): void {
+    ownerForEach(owner: EntityBase, callback: (particle: TParticle) => void): void {
         const m = this.unitMap.get(owner)
         if (m) {
             m.forEach((set) => {
@@ -99,7 +100,7 @@ export class UnitManager {
 
     }
 
-    deepForEach(callback: (particle: ParticleBase)=>void): void {
+    deepForEach(callback: (particle: TParticle)=>void): void {
         this.unitMap.forEach((unitMap) => {
             unitMap.forEach((set)=>{
                 set.forEach(callback)
@@ -107,7 +108,7 @@ export class UnitManager {
         })
     }
 
-    switchOwner(particle: ParticleBase, newOwner: Entity) {
+    switchOwner(particle: TParticle, newOwner: EntityBase) {
         this.remove(particle);
         particle.owner = newOwner;
         this.add(particle);

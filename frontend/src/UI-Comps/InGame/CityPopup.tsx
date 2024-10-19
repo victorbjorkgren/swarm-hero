@@ -84,11 +84,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         console.log('Moving', n, unit);
         setMoveGarrisonPopUpVisible(false);
         if (!unit || !player) return;
-        if (isBringing.current) {
-            player.bringGarrisonDrone(unit, n);
-        } else {
-            player.garrisonDrones(unit, n);
-        }
+        player.requestGarrisonDrone(unit, n, isBringing.current);
     }
 
     const handleBuySpell = (spell: SpellPack, index: number) => {

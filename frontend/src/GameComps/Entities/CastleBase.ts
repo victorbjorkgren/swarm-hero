@@ -2,8 +2,10 @@ import {EntityBase, Team} from "../../types/types";
 import {Vector2D} from "../Utility";
 import {gameConfig, SpellPacks} from "../../config";
 import {PlayerBase} from "./PlayerBase";
-import {ClientID} from "../HeroGameLoopServer";
+import HeroGameLoopServer, {CastleID, ClientID} from "../HeroGameLoopServer";
 import {SpellPack, Spells} from "../../types/spellTypes";
+import {ParticleBase} from "./ParticleBase";
+import {HeroGameLoopBase} from "../HeroGameLoopBase";
 
 export abstract class CastleBase implements EntityBase {
     vel: Vector2D = Vector2D.zeros();
@@ -12,18 +14,62 @@ export abstract class CastleBase implements EntityBase {
     maxHealth: number = gameConfig.castleHealth;
     health: number = gameConfig.castleHealth;
     givesIncome: number = gameConfig.castleIncome;
-    targetedBy: string[] = [];
-    owner: ClientID | null = null;
+    targetedBy: ParticleBase[] = [];
+
+    public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
+    public nearbyPlayers: PlayerBase[] = [];
 
     public availableSpells: SpellPack[] = [
         SpellPacks[Spells.Explosion],
     ];
 
-    abstract nearbyPlayers: PlayerBase[];
-    abstract id: string;
-    abstract pos: Vector2D;
-    abstract team: Team;
-    abstract isAlive(): boolean
-    abstract receiveDamage(damage: number): void
-    abstract getFiringPos(from: Vector2D): Vector2D
+    constructor(
+        public id: CastleID,
+        public team: Team,
+        public pos: Vector2D,
+        public owner: ClientID,
+        protected scene: HeroGameLoopBase,
+    ) {
+        this.team.castleIds.push(id);
+        // this.pos = team.castleCentroid;
+        // this.team.castles.push(this);
+        // this.pixiRef = scene.pixiRef;
+        // this.texture = scene.castleTexturePack!;
+    }
+
+    isAlive(): boolean {
+        return this.health > 0;
+    }
+
+    receiveDamage(damage: number): void {
+        this.health = this.health - damage;
+        if (!this.isAlive()) {
+            this.onDeath();
+        }
+    }
+
+    abstract onDeath(): void;
+
+    getFiringPos(from: Vector2D): Vector2D {
+        return this.pos;
+    }
+
+    checkPlayers() {
+        this.nearbyPlayers = this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
+        for (const playerId of this.team.playerIds) {
+            const player = this.scene.players.get(playerId);
+            if (!player) continue;
+            if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {
+                // if (!player.isLocal) {
+                //     player.popUpCastle = this;
+                // }
+                this.nearbyPlayers.push(player);
+            // } else {
+            //     if (!player.isLocal) {
+            //         player.popUpCastle = null;
+            //     }
+            }
+        }
+        return this.nearbyPlayers.length > 0;
+    }
 }

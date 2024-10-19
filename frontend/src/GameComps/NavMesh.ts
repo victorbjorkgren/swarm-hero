@@ -2,6 +2,7 @@ import HeroGameLoopServer from "./HeroGameLoopServer";
 import {AABBCollider} from "../types/types";
 import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
+import {HeroGameLoopClient} from "./HeroGameLoopClient";
 
 type Grid = boolean[][];
 
@@ -30,7 +31,7 @@ export  class NavMesh {
         new Vector2D(-1, -1), new Vector2D(1, -1), new Vector2D(-1, 1), new Vector2D(1, 1)
     ];
 
-    constructor(private scene: HeroGameLoopServer) {}
+    constructor(private scene: HeroGameLoopClient) {}
 
     updateNavMesh(colliders: AABBCollider[]): void {
         const rows = Math.ceil(this.scene.sceneHeight / NavMesh.scale);

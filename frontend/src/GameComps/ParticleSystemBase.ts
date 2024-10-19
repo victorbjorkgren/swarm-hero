@@ -20,7 +20,7 @@ export class ParticleSystemBase {
     private cohesionFactor: number = .1;
     private separationFactor: number = 2;
     private alignFactor: number = 40;
-    private unitManager: UnitManager;
+    protected unitManager: UnitManager<ParticleBase>;
 
     constructor(
         protected teams: Team[],
@@ -30,19 +30,13 @@ export class ParticleSystemBase {
         this.unitManager = new UnitManager();
     }
 
-    getParticles(): UnitManager {
+    getParticles(): UnitManager<ParticleBase> {
         return this.unitManager;
     }
 
-    render() {
-        this.unitManager.deepForEach((particle: ParticleBase) => {
-            particle.render();
-        });
-    }
-
-    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: EntityBase, droneId: ParticleID): ParticleBase {
+    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: PlayerBase, droneId: ParticleID): ParticleBase {
         const p = new ParticleBase( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner, this.unitManager, droneId);
-        p.setLeaderPosition(team.playerCentroid)
+        p.setLeaderPosition(owner.pos);
         this.unitManager.add(p);
         return p;
     }
@@ -88,7 +82,7 @@ export class ParticleSystemBase {
         // }
     }
 
-    getNewParticle(player: PlayerBase, castle: CastleBase, groupID: number, unitInfo: UnitPack, owner: EntityBase, droneId: ParticleID): ParticleBase {
+    getNewParticle(player: PlayerBase, castle: CastleBase, groupID: number, unitInfo: UnitPack, owner: PlayerBase, droneId: ParticleID): ParticleBase {
         const randomSpawnOffset = new Vector2D((Math.random()-.5)*30, (Math.random()-.5)*30);
         return this.createParticle(
             Vector2D.add(castle.pos, randomSpawnOffset),
@@ -131,7 +125,9 @@ export class ParticleSystemBase {
             if (me.engaging.length >= me.maxTargets) return;
             for (const team of this.teams) {
                 if (team === me.team) continue
-                for (const player of team.playerIds) {
+                for (const playerId of team.playerIds) {
+                    const player = this.scene.players.get(playerId);
+                    if(!player) continue;
                     this.engageIfClose(me, player)
                     if (me.engaging.length >= me.maxTargets) return;
                     this.unitManager.ownerForEach(player, (other) => {
@@ -139,7 +135,9 @@ export class ParticleSystemBase {
                         this.engageIfClose(me, other);
                     })
                 }
-                for (const castle of team.castles) {
+                for (const castleId of team.castleIds) {
+                    const castle = this.scene.castles.get(castleId);
+                    if (!castle) continue;
                     this.engageIfClose(me, castle)
                     if (me.engaging.length >= me.maxTargets) return;
                     this.unitManager.ownerForEach(castle, (other) => {

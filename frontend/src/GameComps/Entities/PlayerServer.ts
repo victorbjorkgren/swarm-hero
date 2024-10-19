@@ -60,28 +60,6 @@ export class PlayerServer extends PlayerBase {
         // }
     }
 
-    get collider(): AABBCollider {
-        // if (this.currentAnimation !== null) {
-        //     return spriteToAABBCollider(this.currentAnimation);
-        // } else {
-        return {
-            minX: this.pos.x - 20,
-            maxX: this.pos.x + 20,
-            minY: this.pos.y - 20,
-            maxY: this.pos.y + 20,
-            inverted: false
-        };
-        // }
-    }
-
-    onDeath(): void {
-        let w: string;
-        if (this.team.id === 0)
-            w = this.scene.teams[1].name;
-        else
-            w = this.scene.teams[0].name;
-        this.scene.onDeath(w.toString());
-    }
 
     gainCastleControl(castle: CastleServer) {
         this.myCastles.push(castle);
@@ -97,41 +75,6 @@ export class PlayerServer extends PlayerBase {
 
     setParticleSystem(particleSystem: ParticleSystemBase): void {
         this.particleSystem = particleSystem;
-    }
-
-    findNearbyCastle(): CastleServer | null {
-        for (const castle of this.myCastles) {
-            if (castle.nearbyPlayers.find(player => player === this))
-                return castle;
-        }
-        return null
-    }
-
-
-    isAlive(): boolean {
-        return this.health > 0;
-    }
-
-    checkCollisions(): CollisionResult {
-        const myCollider = this.collider;
-        for (const collider of this.scene.colliders) {
-            const collisionTest = checkAABBCollision(myCollider, collider);
-            if (collisionTest.collides) return collisionTest;
-        }
-        return {collides: false};
-    }
-
-
-    getFiringPos(from: Vector2D): Vector2D {
-        // if (this.currentAnimation !== null) {
-        //     return new Vector2D(
-        //         this.pos.x,
-        //         this.pos.y,
-        //     )
-        // } else {
-            return this.pos.copy();
-        // }
-        // return closestPointOnPolygon(this.collider.verts, from);
     }
 
     // async getCat() {
@@ -191,13 +134,7 @@ export class PlayerServer extends PlayerBase {
     //     this.currentAnimation.play();
     // }
 
-    // prepareSpell(spell: SpellPack, castingDoneCallback: (didCast: boolean) => void) {
-    //     if (spell.castCost > this.mana) return;
-    //     if (this.activeSpell === spell) return this.cancelSpell();
-    //     this.isCasting = true;
-    //     this.activeSpell = spell;
-    //     this.castingDoneCallback = castingDoneCallback;
-    // }
+
 
     castSpell(pos: Vector2D, spell: SpellPack): boolean {
         // if (!this.isCasting) return false;
@@ -209,11 +146,14 @@ export class PlayerServer extends PlayerBase {
 
         if (Vector2D.sqDist(pos, this.pos) > spell.castRange * spell.castRange) return false;
 
+        this.mana -= spell.castCost;
+        const sqEffectRange = spell.effectRange * spell.effectRange;
+        this.scene.areaDamage(pos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
 
         return true;
     }
 
-    resolveSpell(spell: SpellPack, pos: Vector2D): void {
+    resolveSpell(pos: Vector2D, spell: SpellPack): void {
         this.mana -= spell.castCost;
         const sqEffectRange = spell.effectRange * spell.effectRange;
         this.scene.areaDamage(pos, sqEffectRange, spell.effectAmount * this.powerMultiplier);

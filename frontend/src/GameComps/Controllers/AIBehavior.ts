@@ -1,10 +1,14 @@
 import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
 import {CastleServer} from "../Entities/CastleServer";
-import {Entity} from "../../types/types";
-import HeroGameLoopServer from "../HeroGameLoopServer";
+import {EntityBase, EntityTypes} from "../../types/types";
+import HeroGameLoopServer, {CastleID, ClientID} from "../HeroGameLoopServer";
 import {NavMesh} from "../NavMesh";
 import {UnitManager} from "../UnitManager";
+import {ParticleBase} from "../Entities/ParticleBase";
+import {CastleBase} from "../Entities/CastleBase";
+import {PlayerClient} from "../Entities/PlayerClient";
+import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 enum State {
     Flee,
@@ -22,7 +26,7 @@ export class AIBehavior {
     public readonly framesBetweenBehaviorCalls: number = 10;
     public readonly framesBetweenNavmeshCalls: number = 60;
     private state: State = State.RaiseArmy;
-    private engaging: Entity | null = null;
+    private engaging: EntityBase | null = null;
     private fleeDir: Vector2D;
     private navMesh: NavMesh;
 
@@ -34,7 +38,7 @@ export class AIBehavior {
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
-    constructor(private player: PlayerServer, private otherPlayer: PlayerServer, private scene: HeroGameLoopServer) {
+    constructor(private player: PlayerClient, private otherPlayer: PlayerClient, private scene: HeroGameLoopClient) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
         this.pathTarget = player.pos.copy();
@@ -46,7 +50,7 @@ export class AIBehavior {
         this.navMesh.updateNavMesh(scene.colliders);
     }
 
-    getUnitManager(): UnitManager | undefined {
+    getUnitManager(): UnitManager<ParticleBase> | undefined {
         return this.scene.particleSystem?.getParticles();
     }
 
@@ -144,12 +148,16 @@ export class AIBehavior {
         }
         const foes = this.nearbyFoes(this.safeSeparationDistancePlayer);
         const castles = this.nearbyFoeCastles(this.safeSeparationDistanceCastle);
-        for (const castle of castles) {
+        for (const castleId of castles) {
+            const castle = this.scene.castles.get(castleId);
+            if (!castle) continue;
             const d = this.estimateFoeStrength(castle, this.player);
             dir.add(Vector2D.subtract(castle.pos, this.player.pos).scale(-d));
             difficulty += d;
         }
-        for (const foe of foes) {
+        for (const foeId of foes) {
+            const foe = this.scene.players.get(foeId);
+            if (!foe) continue;
             const d = this.estimateFoeStrength(foe, this.player);
             dir.add(Vector2D.subtract(foe.pos, this.player.pos).scale(-d));
             difficulty += d;
@@ -169,8 +177,10 @@ export class AIBehavior {
         const foes = this.nearbyFoes(this.visibleDistance);
         if (foes.length === 0) return false;
         let minDifficulty = 1;
-        for (const foe of foes) {
-            const difficulty = this.reinforcedStrength(foe, this.nearbyFoeCastles(this.visibleDistance), this.player);
+        for (const foeId of foes) {
+            const foe = this.scene.players.get(foeId);
+            if (!foe) continue;
+            const difficulty = this.reinforcedStrength(foe, this.nearbyFoeCastles(this.visibleDistance), EntityTypes.Castle, this.player);
             if (difficulty < minDifficulty) {
                 this.engaging = foe;
                 minDifficulty = difficulty;
@@ -187,12 +197,14 @@ export class AIBehavior {
     }
 
     fightCastleCondition(): boolean {
-        const castles = this.nearbyFoeCastles(this.visibleDistance);
-        castles.filter(castle => castle && castle.isAlive());
-        if (castles.length === 0) return false;
+        const castleIds = this.nearbyFoeCastles(this.visibleDistance);
+        // castles.filter(castle => castle && castle.isAlive());
+        if (castleIds.length === 0) return false;
         let minDifficulty = 1;
-        for (const castle of castles) {
-            const difficulty = this.reinforcedStrength(castle, this.nearbyFoes(this.visibleDistance), this.player);
+        for (const castleId of castleIds) {
+            const castle = this.scene.castles.get(castleId);
+            if (!castle) continue;
+            const difficulty = this.reinforcedStrength(castle, this.nearbyFoes(this.visibleDistance), EntityTypes.Player, this.player);
             if (difficulty < minDifficulty) {
                 this.engaging = castle;
                 minDifficulty = difficulty;
@@ -210,12 +222,16 @@ export class AIBehavior {
     }
 
     reinforceCastleCondition(): boolean {
-        const castles = this.player.team.castles;
-        if (castles.length === 0) return false;
+        const castleIds = this.player.team.castleIds;
+        if (castleIds.length === 0) return false;
         let minVul = 1;
-        for (const castle of castles) {
-            for (const foe of this.nearbyFoes(this.visibleDistance)) {
-                const vulnerability = this.reinforcedStrength(castle, this.player.team.playerIds, foe);
+        for (const castleId of castleIds) {
+            const castle = this.scene.castles.get(castleId);
+            if (!castle) continue;
+            for (const foeId of this.nearbyFoes(this.visibleDistance)) {
+                const foe = this.scene.players.get(foeId);
+                if (!foe) continue;
+                const vulnerability = this.reinforcedStrength(castle, this.player.team.playerIds, EntityTypes.Player, foe);
                 if (vulnerability < minVul) {
                     minVul = vulnerability;
                     this.engaging = castle;
@@ -236,34 +252,49 @@ export class AIBehavior {
         this.doBuy = true;
     }
 
-    estimateFoeStrength(foe: Entity, attacker: Entity): number {
+    estimateFoeStrength(foe: EntityBase, attacker: EntityBase): number {
         const foeDrones = this.getUnitManager()?.flatOwnerCount(foe) || 0
         const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker) || 0
         if (attackerDrones === 0) return 1000;
         return foeDrones / attackerDrones;
     }
 
-    nearbyFoes(dist: number): PlayerServer[] {
+    nearbyFoes(dist: number): ClientID[] {
         const nearbyPlayers = [];
         const sqDist = Vector2D.subtract(this.player.pos, this.otherPlayer.pos).sqMagnitude();
-        if (sqDist <= (dist*dist)) nearbyPlayers.push(this.otherPlayer);
+        if (sqDist <= (dist*dist)) nearbyPlayers.push(this.otherPlayer.id);
         return nearbyPlayers;
     }
 
-    nearbyFoeCastles(dist: number): CastleServer[] {
+    nearbyFoeCastles(dist: number): CastleID[] {
         const nearbyFoeCastles = [];
-        for (const castle of this.otherPlayer.team.castles) {
+        for (const castleId of this.otherPlayer.team.castleIds) {
+            const castle = this.scene.castles.get(castleId);
             if (castle && castle.isAlive()) {
                 const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
-                if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle);
+                if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle.id);
             }
         }
         return nearbyFoeCastles;
     }
 
-    reinforcedStrength(defendent: Entity, protection: Entity[], attacker: Entity): number {
+    getProtectorMap(type: EntityTypes) {
+        switch (type) {
+            case EntityTypes.Player:
+                return this.scene.players
+            case EntityTypes.Castle:
+                return this.scene.castles
+            default:
+                throw new Error(`Unsupported protector: ${type}`);
+        }
+    }
+
+    reinforcedStrength(defendent: EntityBase, protection: ClientID[], protectionType: EntityTypes, attacker: EntityBase): number {
         let difficulty = this.estimateFoeStrength(defendent, attacker);
-        for (const protector of protection) {
+        const protectorMap = this.getProtectorMap(protectionType);
+        for (const protectorId of protection) {
+            const protector = protectorMap.get(protectorId);
+            if (!protector) continue;
             if (defendent.pos.sqDistanceTo(protector.pos) < defendent.pos.sqDistanceTo(attacker.pos)) {
                 difficulty += this.estimateFoeStrength(protector, attacker);
             }
@@ -271,11 +302,13 @@ export class AIBehavior {
         return difficulty;
     }
 
-    nearestFriendlyCastle(): CastleServer | null {
-        if (this.player.team.castles.length === 0) return null;
+    nearestFriendlyCastle(): CastleBase | null {
+        if (this.player.team.castleIds.length === 0) return null;
         let nearestFriendlyCastle: CastleServer | null = null;
         let minSqD: number = 1000000000;
-        for (const castle of this.player.team.castles) {
+        for (const castleId of this.player.team.castleIds) {
+            const castle = this.scene.castles.get(castleId);
+            if (!castle) continue;
             const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
             if (sqDist <= minSqD) {
                 nearestFriendlyCastle = castle;

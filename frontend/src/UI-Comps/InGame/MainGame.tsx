@@ -11,6 +11,7 @@ import {Character} from "../CharacterCreation/MainCharacterCreation";
 import {gameConfig} from "../../config";
 import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 import {HeroGameLoopClient} from "../../GameComps/HeroGameLoopClient";
+import {ClientID} from "../../GameComps/HeroGameLoopServer";
 
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
 
 const MainGame: React.FC<Props> = ({character, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
-    const playersRef = useRef<PlayerClient[]>([]);
+    const playersRef = useRef<Map<ClientID, PlayerClient>>(new Map());
     const gameSceneRef = useRef<HeroGameLoopClient | null>(null);
     const pixiRef = useRef<Application | null>(null);
 
@@ -90,16 +91,16 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             0, 0, gameConfig.mapWidth, gameConfig.mapHeight
         );
 
-        gameSceneRef.current = new HeroGameLoopClient(
-            pixiRef.current,
-            setWinner,
-            setPlayerPopUpEvent,
-            playersRef,
-            setDayTime,
-            character,
-        );
-
-        gameSceneRef.current.start();
+        // gameSceneRef.current = new HeroGameLoopClient(
+        //     pixiRef.current,
+        //     setWinner,
+        //     setPlayerPopUpEvent,
+        //     playersRef,
+        //     setDayTime,
+        //     null,
+        // );
+        //
+        // gameSceneRef.current.start();
     };
 
     useEffect(() => {
@@ -141,8 +142,8 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
 
     const handleRecruit = (unit: Units, n: number): boolean => {
         if (gameSceneRef.current === null) return false
-        if (gameSceneRef.current.localPlayer === null) return false
-        return gameSceneRef.current.localPlayer.buyDrone(unit, n);
+        if (gameSceneRef.current?.localPlayer === null) return false
+        return gameSceneRef.current?.localPlayer.buyDrone(unit, n);
     }
 
     return (

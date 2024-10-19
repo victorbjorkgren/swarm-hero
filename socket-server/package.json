@@ -13,12 +13,17 @@
   "type": "module",
   "dependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^22.5.4",
+    "@types/node": "^22.7.7",
     "@types/ws": "^8.5.12",
     "express": "^4.19.2",
     "http": "^0.0.1-security",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4",
+    "typescript": "^5.6.3",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "ts-loader": "^9.5.1"
   }
 }

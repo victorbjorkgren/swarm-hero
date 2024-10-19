@@ -13,7 +13,13 @@ import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {SpellPack} from "../../types/spellTypes";
 import {gameConfig, UnitPacks} from "../../config";
-import {SpellCastMessage, ClientMessageType, BuyDroneMessage} from "@shared/commTypes";
+import {
+    SpellCastMessage,
+    ClientMessageType,
+    BuyDroneMessage,
+    BuySpellMessage,
+    GarrisonMessage
+} from "@shared/commTypes";
 import {PlayerBase} from "./PlayerBase";
 import HeroGameLoopServer, {CastleID, Client, ClientID} from "../HeroGameLoopServer";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
@@ -99,14 +105,6 @@ export class PlayerClient extends PlayerBase {
         });
     }
 
-    checkCollisions(): CollisionResult {
-        throw new Error("Method not implemented.");
-    }
-
-    onDeath(): void {
-        throw new Error("Method not implemented.");
-    }
-
     determineDirectionFromAngle(): string {
         const {x, y} = this.vel;
 
@@ -140,13 +138,13 @@ export class PlayerClient extends PlayerBase {
     }
 
     requestSpellCast(position: Vector2D, spell: SpellPack, safeTeam: Team[] = []) {
-        this.scene.socket.send(JSON.stringify({
+        this.scene.socket?.send(JSON.stringify({
             type: ClientMessageType.RequestSpellCast,
             payload: {position, spell, safeTeam} as SpellCastMessage}));
     }
 
     requestBuyDrone(unit: Units, n: number, castleId: CastleID) {
-        this.scene.socket.send(JSON.stringify({
+        this.scene.socket?.send(JSON.stringify({
             type: ClientMessageType.RequestBuyDrone,
             payload: {
                 buyer: this.id,
@@ -154,6 +152,34 @@ export class PlayerClient extends PlayerBase {
                 n: n,
                 castle: castleId
             } as BuyDroneMessage,
+        }))
+    }
+
+    requestBuySpell(spell: SpellPack) {
+        const castleId = this.popUpCastle?.id
+        if (!castleId) return
+        this.scene.socket?.send(JSON.stringify({
+            type: ClientMessageType.RequestBuySpell,
+            payload: {
+                buyer: this.id,
+                spell: spell,
+                castle: castleId
+            } as BuySpellMessage,
+        }))
+    }
+
+    requestGarrisonDrone(unit: Units, n: number, isBringing: boolean) {
+        const castleId = this.popUpCastle?.id
+        if (!castleId) return
+        this.scene.socket?.send(JSON.stringify({
+            type: ClientMessageType.RequestGarrison,
+            payload: {
+                instigator: this.id,
+                isBringing: isBringing,
+                unit: unit,
+                n: n,
+                castle: castleId
+            } as GarrisonMessage,
         }))
     }
 
@@ -212,9 +238,9 @@ export class PlayerClient extends PlayerBase {
         return true;
     }
 
-    garrisonDrones(droneType: Units, n: number, castleId: CastleID): boolean {
-        const castle = this.scene.castles.get(castleId);
-        if (castle === undefined) return false;
+    garrisonDrones(droneType: Units, n: number): boolean {
+        const castle = this.popUpCastle;
+        if (castle === null) return false;
         if (!castle.isAlive()) return false;
         if (castle.owner !== this.id) return false;
 
@@ -316,6 +342,13 @@ export class PlayerClient extends PlayerBase {
         }
     }
 
+    prepareSpell(spell: SpellPack, castingDoneCallback: (didCast: boolean) => void) {
+        if (spell.castCost > this.mana) return;
+        if (this.activeSpell === spell) return this.cancelSpell();
+        this.isCasting = true;
+        this.activeSpell = spell;
+        this.castingDoneCallback = castingDoneCallback;
+    }
 
     cancelSpell() {
         this.castingDoneCallback(false);

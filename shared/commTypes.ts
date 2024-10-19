@@ -1,9 +1,9 @@
-import {Controls, Team} from "../frontend/src/types/types";
+import {Controls, EntityTypes, Team} from "../frontend/src/types/types";
 import {Character} from "../frontend/src/UI-Comps/CharacterCreation/MainCharacterCreation";
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
 import {Keyboard} from "../frontend/src/GameComps/Keyboard";
-import {CastleID, Client, ClientID, ParticleID} from "../frontend/src/GameComps/HeroGameLoopServer";
+import {CastleID, Client, ClientID, EntityID, ParticleID} from "../frontend/src/GameComps/HeroGameLoopServer";
 import {Units} from "../frontend/src/types/unitTypes";
 
 export interface ServerMessage<T extends ServerMessageType> {
@@ -32,7 +32,7 @@ export type ServerPayloads = {
     [ServerMessageType.Resume]: null;
     [ServerMessageType.Winner]: string;
     // [ServerMessageType.ExplosionNotice]: ExplosionNoticeMessage;
-    [ServerMessageType.SpellCast]: null;
+    [ServerMessageType.SpellCast]: SpellCastMessage;
     [ServerMessageType.CastleTakeOver]: null;
     [ServerMessageType.DroneBought]: DroneBoughtMessage;
 }
@@ -70,8 +70,20 @@ export type CastleInitData = {
     owner: ClientID
 }
 
+export type ParticleInitData = {
+    id: ParticleID,
+    teamIdx: number,
+    pos: Vector2D,
+    owner: EntityID
+    ownerType: EntityTypes,
+    leader: EntityID,
+    leaderType: EntityTypes
+}
+
 export type GameUpdateMessage = {
     playerUpdate?: PlayerUpdateData[],
+    castleUpdate?: CastleUpdateData[],
+    particleUpdate?: ParticleUpdateData[],
     dayTime: number
 }
 
@@ -98,12 +110,15 @@ export type CastleUpdateData = {
 
 export type ParticleUpdateData = {
     particleId: ParticleID,
-    pos: Vector2D | null,
-    vel: Vector2D | null,
-    acc: Vector2D | null,
-    health: number | null,
-    mana: number | null,
-    gold: number | null,
+    alive: boolean
+    pos?: Vector2D,
+    vel?: Vector2D,
+    acc?: Vector2D,
+    health?: number,
+    owner?: EntityID
+    ownerType?: EntityTypes,
+    leader?: EntityID,
+    leaderType?: EntityTypes
 }
 
 
@@ -118,6 +133,8 @@ export enum ClientMessageType {
     KeyDown = "KeyDown",
     KeyUp = "KeyUp",
     RequestBuyDrone = "RequestBuyDrone",
+    RequestBuySpell = "RequestBuySpell",
+    RequestGarrison = "RequestGarrison",
 }
 
 export type ClientPayloads = {
@@ -126,10 +143,26 @@ export type ClientPayloads = {
     [ClientMessageType.KeyDown]: Controls;
     [ClientMessageType.KeyUp]: Controls;
     [ClientMessageType.RequestBuyDrone]: BuyDroneMessage;
+    [ClientMessageType.RequestBuySpell]: BuySpellMessage;
+    [ClientMessageType.RequestGarrison]: GarrisonMessage;
 }
 
 export type BuyDroneMessage = {
     buyer: ClientID,
+    unit: Units,
+    n: number,
+    castle: CastleID,
+}
+
+export type BuySpellMessage = {
+    buyer: ClientID,
+    spell: SpellPack,
+    castle: CastleID,
+}
+
+export type GarrisonMessage = {
+    instigator: ClientID,
+    isBringing: boolean,
     unit: Units,
     n: number,
     castle: CastleID,

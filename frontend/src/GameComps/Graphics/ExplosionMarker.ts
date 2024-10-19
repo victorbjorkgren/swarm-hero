@@ -1,6 +1,7 @@
 import {Application, Container, FillGradient, Graphics, GraphicsContext} from "pixi.js";
 import {pol2cart} from "../Utility";
 import HeroGameLoopServer from "../HeroGameLoopServer";
+import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 export const renderArcaneWheel = (pixi: Application): Container => {
     const parent = new Container();
@@ -131,7 +132,7 @@ export const renderArcaneWheel = (pixi: Application): Container => {
         .fill({color: solid, alpha: majorAlpha});
     parent.addChild(midDot);
 
-    parent.zIndex = HeroGameLoopServer.zIndex.hud;
+    parent.zIndex = HeroGameLoopClient.zIndex.hud;
     parent.visible = false;
 
     pixi.stage.addChild(parent);

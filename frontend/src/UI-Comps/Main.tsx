@@ -1,7 +1,8 @@
 import {useRef, useState} from "react";
-import {Character, MainCharacterCreation} from "./CharacterCreation/MainCharacterCreation";
+import {MainCharacterCreation} from "./CharacterCreation/MainCharacterCreation";
 import MainGame from "./InGame/MainGame";
 import {Factions} from "./CharacterCreation/FactionSelection";
+import {Character} from "../types/types";
 
 enum Scenes {
     CharacterCreation,

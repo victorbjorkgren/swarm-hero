@@ -1,10 +1,10 @@
-import {PlayerServer} from "../GameComps/Entities/PlayerServer";
-import {CastleServer} from "../GameComps/Entities/CastleServer";
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
-import {CastleID, ClientID, EntityID} from "../GameComps/HeroGameLoopServer";
 import {CastleClient} from "../GameComps/Entities/CastleClient";
 import {ParticleBase} from "../GameComps/Entities/ParticleBase";
+import {CastleID, ClientID, EntityID} from "@shared/commTypes";
+import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
+import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
 export interface Polygon {
     verts: Vector2D[];
@@ -124,4 +124,10 @@ export interface CollisionResult {
     collides: boolean;
     normal1?: Vector2D;
     normal2?: Vector2D;
+}
+
+export interface Character {
+    playerName: string;
+    faction: Factions;
+    stats: CharacterStats
 }

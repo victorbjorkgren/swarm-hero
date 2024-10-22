@@ -1,10 +1,20 @@
-import {Controls, EntityTypes, Team} from "../frontend/src/types/types";
-import {Character} from "../frontend/src/UI-Comps/CharacterCreation/MainCharacterCreation";
+import {Character, Controls, EntityTypes, Team} from "../frontend/src/types/types";
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
-import {Keyboard} from "../frontend/src/GameComps/Keyboard";
-import {CastleID, Client, ClientID, EntityID, ParticleID} from "../frontend/src/GameComps/HeroGameLoopServer";
 import {Units} from "../frontend/src/types/unitTypes";
+import {WebSocket} from "ws";
+import Peer from "simple-peer";
+
+export type EntityID = string;
+export type ClientID = EntityID;
+export type CastleID = EntityID;
+export type ParticleID = EntityID;
+
+export interface Client {
+    id: ClientID;
+    peer: Peer.Instance;
+    character?: Character;
+}
 
 export interface ServerMessage<T extends ServerMessageType> {
     type: T;
@@ -174,3 +184,8 @@ export type SpellCastMessage = {
     spell: SpellPack,
     safeTeam: Team[],
 }
+
+
+
+// SIGNAL SERVER
+

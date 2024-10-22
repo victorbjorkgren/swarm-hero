@@ -4,9 +4,10 @@ import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
-import HeroGameLoopServer, {ParticleID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {Graphics} from "pixi.js";
+import {ParticleID} from "@shared/commTypes";
 
 export class ParticleClient extends ParticleBase implements EntityClient {
     constructor(

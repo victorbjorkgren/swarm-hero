@@ -2,10 +2,11 @@ import {EntityBase, Team} from "../../types/types";
 import {Vector2D} from "../Utility";
 import {gameConfig, SpellPacks} from "../../config";
 import {PlayerBase} from "./PlayerBase";
-import HeroGameLoopServer, {CastleID, ClientID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {SpellPack, Spells} from "../../types/spellTypes";
 import {ParticleBase} from "./ParticleBase";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
+import {CastleID, ClientID} from "@shared/commTypes";
 
 export abstract class CastleBase implements EntityBase {
     vel: Vector2D = Vector2D.zeros();

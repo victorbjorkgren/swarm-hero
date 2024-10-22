@@ -1,17 +1,17 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {CityPopup} from "./CityPopup";
-import {popUpEvent} from "../../types/types";
+import {Character, popUpEvent} from "../../types/types";
 import {Application, Rectangle} from "pixi.js";
 import {Keyboard} from "../../GameComps/Keyboard";
 import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
-import {Character} from "../CharacterCreation/MainCharacterCreation";
 import {gameConfig} from "../../config";
 import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 import {HeroGameLoopClient} from "../../GameComps/HeroGameLoopClient";
-import {ClientID} from "../../GameComps/HeroGameLoopServer";
+
+import {ClientID} from "@shared/commTypes";
 
 
 interface Props {

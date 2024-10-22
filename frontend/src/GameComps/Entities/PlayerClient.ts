@@ -1,6 +1,5 @@
-import {CollisionResult, DirectionalSpriteSheet, Team} from "../../types/types";
+import {Character, CollisionResult, DirectionalSpriteSheet, Team} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
-import {Character} from "../../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {CastleClient} from "./CastleClient";
 import {pol2cart, Vector2D} from "../Utility";
 import {
@@ -18,10 +17,10 @@ import {
     ClientMessageType,
     BuyDroneMessage,
     BuySpellMessage,
-    GarrisonMessage
+    GarrisonMessage, Client, CastleID, ClientID
 } from "@shared/commTypes";
 import {PlayerBase} from "./PlayerBase";
-import HeroGameLoopServer, {CastleID, Client, ClientID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {Units} from "../../types/unitTypes";
 import {CastleServer} from "./CastleServer";

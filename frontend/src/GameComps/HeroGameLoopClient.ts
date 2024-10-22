@@ -26,13 +26,12 @@ import {
     ClientMessageType,
     ServerMessageType,
     SpellCastMessage,
-    GameUpdateMessage, PlayerUpdateData, ClientMessage, ServerMessage, DroneBoughtMessage
+    GameUpdateMessage, PlayerUpdateData, ClientMessage, ServerMessage, DroneBoughtMessage, CastleID, ClientID
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
 import {CastleClient} from "./Entities/CastleClient";
 import {ParticleSystemClient} from "./ParticleSystemClient";
 import {SpellPack} from "../types/spellTypes";
-import {CastleID, ClientID} from "./HeroGameLoopServer";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
 
 

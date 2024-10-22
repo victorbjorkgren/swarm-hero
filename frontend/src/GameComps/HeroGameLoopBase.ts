@@ -4,10 +4,9 @@ import {PlayerServer} from "./Entities/PlayerServer";
 import {PlayerBase} from "./Entities/PlayerBase";
 import {ParticleSystemBase} from "./ParticleSystemBase";
 import {CastleBase} from "./Entities/CastleBase";
-import {CastleID, ClientID} from "./HeroGameLoopServer";
 import {gameConfig} from "../config";
 import {CastleServer} from "./Entities/CastleServer";
-import {ServerMessageType} from "@shared/commTypes";
+import {CastleID, ClientID, ServerMessageType} from "@shared/commTypes";
 
 export abstract class HeroGameLoopBase {
     public players: Map<string, PlayerBase> = new Map();

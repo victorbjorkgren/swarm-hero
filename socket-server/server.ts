@@ -5,6 +5,7 @@ import http from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import os from 'os';
+import {setupWss} from "./Communication.js";
 
 // Manually define __dirname in ES module scope
 const __filename = fileURLToPath(import.meta.url);
@@ -12,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+// const wss = new WebSocketServer({ server });
 
 const port = process.env.PORT || 8080;
 
@@ -31,24 +32,7 @@ const getNetworkIP = (): string | undefined => {
 
 app.use(express.static('public'));
 
-wss.on('connection', (ws: WebSocket) => {
-    console.log('Client connected');
-
-    ws.on('message', (message: string) => {
-        console.log(`Received message => ${message}`);
-
-        // Broadcast to all clients
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(message);
-            }
-        });
-    });
-
-    ws.on('close', () => {
-        console.log('Client disconnected');
-    });
-});
+const wss = setupWss(getNetworkIP(), 3);
 
 app.get('*', (req, res) => {
     console.log('Sending client code')
@@ -57,7 +41,7 @@ app.get('*', (req, res) => {
 
 server.listen(port, () => {
     const networkIP = getNetworkIP();
-    console.log('WebSocket server running on:');
+    console.log('Client delivery server running on:');
     console.log(`- Local: http://localhost:${port}`);
     if (networkIP) {
         console.log(`- Network: http://${networkIP}:${port}`);

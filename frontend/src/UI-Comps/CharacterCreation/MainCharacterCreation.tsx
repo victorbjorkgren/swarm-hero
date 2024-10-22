@@ -4,17 +4,12 @@ import {CharacterStats, StatSelection} from "./StatSelection";
 import {Application} from "pixi.js";
 import {setupBackground} from "../../GameComps/Graphics/TileBackground";
 import {TitleScreen} from "./TitleScreen";
+import {Character} from "../../types/types";
 
 enum Steps {
     TitleScreen,
     Faction,
     Stats
-}
-
-export interface Character {
-    playerName: string;
-    faction: Factions;
-    stats: CharacterStats
 }
 
 interface Props {

@@ -1,93 +1,96 @@
-export interface Communication {}
-//
-// export const useSignalServer = () => {
-//     const signalingServer = new WebSocket('ws://localhost:8080');
-//     let peerConnection: { addIceCandidate: (arg0: RTCIceCandidate) => void; } | null = null;
-//     let hostId = null;
-//     let isHost = false;
-//
-//     signalingServer.onmessage = (message) => {
-//         const data = JSON.parse(message.data);
-//
-//         if (data.type === 'hostAssigned') {
-//             hostId = data.hostId;
-//             isHost = (hostId === myPlayerId);  // Check if this client is the host
-//
-//             if (!isHost) {
-//                 // If I'm not the host, start a WebRTC connection with the host
-//                 startConnectionWithHost();
-//             }
-//         } else if (data.type === 'offer' && isHost) {
-//             // If I'm the host and I receive an offer, respond with an answer
-//             handleOffer(data.offer, data.sourceId);
-//         } else if (data.type === 'answer' && !isHost) {
-//             // If I'm not the host, and I receive an answer to my offer
-//             handleAnswer(data.answer);
-//         } else if (data.type === 'iceCandidate') {
-//             // Handle ICE candidates for both host and non-host clients
-//             peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-//         }
-//     };
-// }
-//
-// const configuration = {
-//     iceServers: [
-//         { urls: 'stun:stun.l.google.com:19302' } // Using Google STUN server for simplicity
-//     ]
-// };
-//
-// function startConnectionWithHost() {
-//     peerConnection = new RTCPeerConnection(configuration);
-//
-//     // Handle ICE candidates (send them to the signaling server)
-//     peerConnection.onicecandidate = (event) => {
-//         if (event.candidate) {
-//             signalingServer.send(JSON.stringify({
-//                 type: 'iceCandidate',
-//                 candidate: event.candidate,
-//                 targetId: hostId
-//             }));
-//         }
-//     };
-//
-//     // Create and send WebRTC offer
-//     peerConnection.createOffer()
-//         .then(offer => {
-//             peerConnection.setLocalDescription(offer);
-//             signalingServer.send(JSON.stringify({
-//                 type: 'offer',
-//                 offer: offer,
-//                 targetId: hostId
-//             }));
-//         });
-// }
-//
-// // Host handling offer from other players
-// const handleOffer = (offer, sourceId) => {
-//     let peerConnection = new RTCPeerConnection(configuration);
-//
-//     peerConnection.onicecandidate = (event) => {
-//         if (event.candidate) {
-//             signalingServer.send(JSON.stringify({
-//                 type: 'iceCandidate',
-//                 candidate: event.candidate,
-//                 targetId: sourceId
-//             }));
-//         }
-//     };
-//
-//     peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-//     peerConnection.createAnswer()
-//         .then(answer => {
-//             peerConnection.setLocalDescription(answer);
-//             signalingServer.send(JSON.stringify({
-//                 type: 'answer',
-//                 answer: answer,
-//                 targetId: sourceId
-//             }));
-//         });
-// }
-//
-// function handleAnswer(answer) {
-//     peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-// }
+import Peer, {SignalData} from "simple-peer";
+import {Client, ClientID} from "@shared/commTypes";
+
+export type SignalMesssage = {
+    from: ClientID;
+    to: ClientID;
+    signal: SignalData;
+}
+
+export const useMesh = (nPlayerGame: number) => {
+    const peers: Map<ClientID, Client> = new Map();
+    const signalServer = new WebSocket('ws://localhost:8081');
+    let myID: string = "";
+    let isHost: boolean = false;
+    let connectedPeers: Set<ClientID> = new Set()
+
+    signalServer.onopen = () => {
+        console.log('Connected to signaling server');
+    };
+
+    signalServer.onmessage = (message) => {
+        const data = JSON.parse(message.data)
+        switch (data.type) {
+            case 'host-setup':
+                myID = data.payload.playerId as string;
+                isHost = myID === data.payload.hostId;
+                console.log('Received host setup', myID, isHost);
+                // createPeer();
+                break;
+            case 'peer-join':
+                const newPeerId = data.payload.peerId;
+                if (newPeerId !== myID) {
+                    createPeer(newPeerId);
+                }
+                break;
+            case 'signal-message':
+                handleMessage(data.payload)
+                break;
+            case 'all-peers-ready':
+                handleDone();
+                break;
+            default:
+                console.error('Unhandled message type', message.type);
+                break;
+        }
+    };
+
+    // Broadcast our signal to everyone else
+    function createPeer(peerId: string) {
+        const newPeer = new Peer({ initiator: true, trickle: false });
+        newPeer.on('signal', (signal) => {
+            signalServer.send(JSON.stringify({type: 'signal-message', payload: {from: myID, to: peerId, signal}}));
+        });
+        newPeer.on('connect', () => {
+            console.log(`Connected to a new peer ${peerId}`);
+            connectedPeers.add(peerId);
+            checkDone();
+        });
+        peers.set(peerId, { peer: newPeer, id: myID });
+    }
+
+    const handleMessage = (messageData: SignalMesssage) => {
+        const { from, to, signal } = messageData;
+        if (from === myID) return; // Ignore messages from ourselves
+
+        let peerInstance = peers.get(from);
+
+        if (!peerInstance) {
+            const newPeer = new Peer({ initiator: false, trickle: false });
+            newPeer.on('signal', (signal) => {
+                signalServer.send(JSON.stringify({type: 'signal-message', payload: {from: myID, to: from, signal}}));
+            });
+            newPeer.on('connect', () => {
+                console.log(`Connected to peer ${from}`);
+                connectedPeers.add(from);
+                checkDone();
+            });
+            peerInstance = { peer: newPeer, id: from };
+            peers.set(from, peerInstance!);
+        }
+
+        peerInstance!.peer.signal(signal);
+    }
+
+    const checkDone = () => {
+        if (connectedPeers.size === nPlayerGame - 1) {
+            console.log('Connected to all players');
+            signalServer.send(JSON.stringify({type: 'ready-to-disconnect'}))
+        }
+    }
+
+    const handleDone = () => {
+        signalServer.close();
+        console.log('Ready to play!');
+    }
+}

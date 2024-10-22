@@ -1,12 +1,11 @@
 import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "../Utility";
 import {ParticleSystemBase} from "../ParticleSystemBase";
-import {AABBCollider, CollisionResult, Controller, DirectionalSpriteSheet, Team} from "../../types/types";
-import HeroGameLoopServer, {CastleID, Client, ClientID, EntityID} from "../HeroGameLoopServer";
+import {AABBCollider, Character, CollisionResult, Controller, DirectionalSpriteSheet, Team} from "../../types/types";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {SpellPack} from "../../types/spellTypes";
 import {Units} from "../../types/unitTypes";
-import {Character} from "../../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {
     healthConversion,
     manaConversion,
@@ -19,6 +18,7 @@ import {NetworkController} from "../Controllers/NetworkController";
 import {AIController} from "../Controllers/AIController";
 import {PlayerBase} from "./PlayerBase";
 import {CastleServer} from "./CastleServer";
+import {CastleID, Client, ClientID, EntityID} from "@shared/commTypes";
 
 export class PlayerServer extends PlayerBase {
     public id: ClientID;

@@ -2,13 +2,14 @@ import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
 import {CastleServer} from "../Entities/CastleServer";
 import {EntityBase, EntityTypes} from "../../types/types";
-import HeroGameLoopServer, {CastleID, ClientID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {NavMesh} from "../NavMesh";
 import {UnitManager} from "../UnitManager";
 import {ParticleBase} from "../Entities/ParticleBase";
 import {CastleBase} from "../Entities/CastleBase";
 import {PlayerClient} from "../Entities/PlayerClient";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
+import {CastleID, ClientID} from "@shared/commTypes";
 
 enum State {
     Flee,

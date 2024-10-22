@@ -12,7 +12,8 @@ import {UnitManager} from "./UnitManager";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
 import {PlayerBase} from "./Entities/PlayerBase";
 import {CastleBase} from "./Entities/CastleBase";
-import {ParticleID} from "./HeroGameLoopServer";
+
+import {ParticleID} from "@shared/commTypes";
 
 export class ParticleSystemBase {
     private sqCohedeDist: number = 250 ** 2;

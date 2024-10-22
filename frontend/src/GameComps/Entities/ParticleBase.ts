@@ -1,10 +1,11 @@
 import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {EntityBase, Team} from "../../types/types";
 import {Graphics} from "pixi.js";
-import HeroGameLoopServer, {EntityID, ParticleID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
+import {EntityID, ParticleID} from "@shared/commTypes";
 
 export class ParticleBase implements EntityBase {
     vel: Vector2D;

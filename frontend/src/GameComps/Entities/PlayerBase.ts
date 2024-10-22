@@ -1,6 +1,5 @@
 import {AABBCollider, CollisionResult, EntityBase, Team} from "../../types/types";
 import {checkAABBCollision, Vector2D} from "../Utility";
-import {EntityID} from "../HeroGameLoopServer";
 import {gameConfig} from "../../config";
 import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
 import {SpellPack} from "../../types/spellTypes";
@@ -9,6 +8,7 @@ import {HeroGameLoopBase} from "../HeroGameLoopBase";
 import {CastleBase} from "./CastleBase";
 import {ParticleBase} from "./ParticleBase";
 import {CastleServer} from "./CastleServer";
+import {EntityID} from "@shared/commTypes";
 
 export abstract class PlayerBase implements EntityBase {
     public vel: Vector2D = Vector2D.zeros();

@@ -1,18 +1,18 @@
-import {WebSocket, WebSocketServer} from 'ws';
 import {v4 as uuidv4} from 'uuid';
 
 import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {CastleServer} from "./Entities/CastleServer";
-import {AABBCollider, Controls, Team} from "../types/types";
+import {AABBCollider, Character, Controls} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
-import {NavMesh} from "./NavMesh";
 import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 import {gameConfig} from "../config";
 import {
     BuyDroneMessage,
     CastleInitData,
+    Client,
+    ClientID,
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
@@ -24,20 +24,7 @@ import {
     ServerPayloads,
     SpellCastMessage
 } from "@shared/commTypes";
-import {Character} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
-import {PlayerBase} from "./Entities/PlayerBase";
-
-export type EntityID = string;
-export type ClientID = EntityID;
-export type CastleID = EntityID;
-export type ParticleID = EntityID;
-
-export interface Client {
-    id: ClientID;
-    ws: WebSocket;
-    character?: Character;
-}
 
 
 export default class HeroGameLoopServer extends HeroGameLoopBase{
@@ -48,7 +35,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
     private readyForCreation: Client[] = [];
 
     private clients: Map<ClientID, Client> = new Map();
-    private wss = new WebSocketServer({ port: 8080 });
+    // private wss = new WebSocketServer({ port: 8080 });
 
     private updateInterval: number | NodeJS.Timeout | null = null;
     private nextUpdateMessage: GameUpdateMessage | null = null;
@@ -65,23 +52,23 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
 
         // this.navMesh = new NavMesh(this);
 
-        this.wss.on('connection', (ws: WebSocket) => {
-            const clientId = uuidv4();
-            const client: Client = {id: clientId, ws: ws};
-            this.clients.set(clientId, client);
-
-            console.log(`New client connected with id ${client.id}`);
-            ws.on('message', (message: string) => {
-                const parsedMessage = JSON.parse(message);
-                this.handleClientMessage(clientId, parsedMessage);
-            });
-
-            // Handle client disconnect
-            ws.on('close', () => {
-                this.clients.delete(clientId);
-                console.log(`Client disconnected: ${clientId}`);
-            });
-        })
+        // this.wss.on('connection', (ws: WebSocket) => {
+        //     const clientId = uuidv4();
+        //     const client: Client = {id: clientId, ws: ws};
+        //     this.clients.set(clientId, client);
+        //
+        //     console.log(`New client connected with id ${client.id}`);
+        //     ws.on('message', (message: string) => {
+        //         const parsedMessage = JSON.parse(message);
+        //         this.handleClientMessage(clientId, parsedMessage);
+        //     });
+        //
+        //     // Handle client disconnect
+        //     ws.on('close', () => {
+        //         this.clients.delete(clientId);
+        //         console.log(`Client disconnected: ${clientId}`);
+        //     });
+        // })
     }
 
     broadcast<T extends ServerMessageType>(type: T, payload: ServerPayloads[T]) {
@@ -91,7 +78,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         }
         const data = JSON.stringify(message)
         this.clients.forEach(client => {
-            client.ws.send(data);
+            client.peer.send(data);
         });
     }
 
@@ -160,7 +147,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         if (this.initialData === null) return;
         this.readyForCreation.forEach(client => {
             const message: InitialDataMessage = {yourId: client.id, package: this.initialData!}
-            client.ws.send(JSON.stringify(message));
+            client.peer.send(JSON.stringify(message));
         })
         this.readyForCreation.length = 0;
     }

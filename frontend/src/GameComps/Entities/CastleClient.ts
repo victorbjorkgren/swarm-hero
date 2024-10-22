@@ -1,10 +1,11 @@
 import {Team, TexturePack} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
-import HeroGameLoopServer, {CastleID, ClientID} from "../HeroGameLoopServer";
+import HeroGameLoopServer from "../HeroGameLoopServer";
 import {Vector2D} from "../Utility";
 import {CastleBase} from "./CastleBase";
 import {PlayerClient} from "./PlayerClient";
 import {Graphics, Sprite} from "pixi.js";
+import {CastleID, ClientID} from "@shared/commTypes";
 
 export class CastleClient extends CastleBase {
     private castleSprite: Sprite | null = null;

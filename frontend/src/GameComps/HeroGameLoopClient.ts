@@ -86,8 +86,8 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
 
         this.clients.forEach(client => {
             if (client.id !== localId) {
-                console.log(client);
                 client.datachannel.onmessage = (event: MessageEvent) => {
+                    console.log('incoming message', event.data);
                     const parsedMessage = JSON.parse(event.data);
                     this.handlePeerMessage(parsedMessage, client);
                     if (client.id === this.hostId && 'serverFlag' in parsedMessage) {
@@ -100,18 +100,17 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.clients.forEach(client => {
             this.players.set(client.id, new PlayerClient(client.id, this))
         })
+        this.players.set(localId, new PlayerClient(localId, this))
 
         this.setLocalPlayer(character)
     }
 
     _hostLoopBack<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
-        console.log('Loop Back');
         const message: ClientMessage<any> = {type: type, payload: payload};
         this.server?.handleClientMessage(this.localId, message)
     }
 
     _hostRemote<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
-        console.log('Remote push')
         const message: ClientMessage<any> = {type: type, payload: payload};
         this.hostchannel!.send(JSON.stringify(message));
     }
@@ -271,7 +270,8 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     setLocalPlayer(localCharacter: Character) {
-        const player = this.players.get(this.localId)!;
+        const player = this.players.get(this.localId);
+        if (!player) throw new Error("No player at localID!");
 
         this.localPlayer = player;
         player.isLocal = true;

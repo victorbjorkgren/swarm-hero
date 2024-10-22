@@ -5,8 +5,11 @@ import {Factions} from "./UI-Comps/CharacterCreation/FactionSelection";
 import {ControllerMapping} from "./types/types";
 
 export const gameConfig = {
+    nPlayerGame: 3,
+
     mapWidth: 8000,
     mapHeight: 4000,
+
     castlePositions: [
         new Vector2D(500, 500),
         new Vector2D(7500, 3500),

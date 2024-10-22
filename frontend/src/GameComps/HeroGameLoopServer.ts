@@ -34,7 +34,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     // public navMesh: NavMesh;
 
     private initialData: InitialDataPackage | null = null;
-    private readyForCreation: Client[] = [];
+    private readyForCreation: Map<ClientID, Character> = new Map();
 
 
     // private wss = new WebSocketServer({ port: 8080 });
@@ -128,17 +128,16 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
 
     handleInitialDataRequest(clientId: ClientID, character: Character) {
         console.log(`Init data request from ${clientId}`);
-        if (this.localClientScene.localId === clientId) return;
-
-        const client = this.clients.get(clientId);
-        if (!client) {
-
-            console.error(`Client ${clientId} not found`);
-            return;
-        }
-        client.character = character;
-        this.readyForCreation.push(client);
+        this.readyForCreation.set(clientId, character);
         console.log(`Client ${clientId} is waiting for initial data`);
+        this.tryStart();
+    }
+
+    tryStart() {
+        console.log(`Attempting to start the game with ${this.readyForCreation.size} players`);
+        if (this.readyForCreation.size === gameConfig.nPlayerGame) {
+            this.start()
+        }
     }
 
     handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {
@@ -149,7 +148,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     sendInitialData() {
         if (this.initialData === null) return;
         this.broadcast(ServerMessageType.InitialData, {package: this.initialData!})
-        this.readyForCreation.length = 0;
+        this.readyForCreation.clear();
     }
 
     stopGame() {
@@ -182,11 +181,11 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     }
 
     start() {
-        this.stopGame();
+        // this.stopGame();
         this.preload().then(() => {
             this.create();
-            this.tickerUp()
-            this.resumeGame();
+            // this.tickerUp()
+            // this.resumeGame();
         });
     }
 
@@ -285,20 +284,23 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         const playerInitData: PlayerInitData[] = []
         const castleInitData: CastleInitData[] = []
 
-        this.readyForCreation.forEach((client, index) => {
-            if (!client.character) throw new Error(`Client ${client.id} has no character at creation`);
+        let index = 0;
+        this.readyForCreation.forEach((character, clientId) => {
+            if (!character) throw new Error(`Client ${clientId} has no character at creation`);
             const teamIdx = index % this.teams.length;
             const castleId = uuidv4();
             const castleSpawn = gameConfig.castlePositions[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
-            const newCastle = new CastleServer(castleId, this.teams[teamIdx], castleSpawn, client.id, this);
-            const newPlayer = new PlayerServer(playerSpawn, this.teams[teamIdx], client, this);
+            const newCastle = new CastleServer(castleId, this.teams[teamIdx], castleSpawn, clientId, this);
+            const newPlayer = new PlayerServer(playerSpawn, this.teams[teamIdx], clientId, character, this);
             newPlayer.gainCastleControl(newCastle);
-            this.players.set(client.id, newPlayer);
+            this.players.set(clientId, newPlayer);
             this.castles.set(castleId, newCastle);
 
-            playerInitData.push({id: client.id, pos: playerSpawn, character: client.character, teamIdx: teamIdx})
-            castleInitData.push({id: castleId, pos: castleSpawn, owner: client.id, teamIdx: teamIdx})
+            playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamIdx: teamIdx})
+            castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamIdx: teamIdx})
+
+            index++;
         })
 
         this.initialData = {teams: this.teams, players: playerInitData, castles: castleInitData};

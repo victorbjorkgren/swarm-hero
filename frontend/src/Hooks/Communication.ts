@@ -91,7 +91,7 @@ export const connectMesh = (
             // dataChannel.onmessage = (event) => {
             //     console.log(`Message from ${peerId}:`, event.data);
             // };
-            connectedPeers.set(peerId, { peer: peerConnection, datachannel: dataChannel, id: myId });
+            connectedPeers.set(peerId, { peer: peerConnection, datachannel: dataChannel, id: peerId });
             checkDone();
         } else {
             peerConnection.ondatachannel = (event) => {
@@ -99,7 +99,7 @@ export const connectMesh = (
                 dataChannel.onopen = () => {
                     console.log("Data channel is open");
                 };
-                connectedPeers.set(peerId, { peer: peerConnection, datachannel: dataChannel, id: myId });
+                connectedPeers.set(peerId, { peer: peerConnection, datachannel: dataChannel, id: peerId });
                 checkDone()
                 // dataChannel.onmessage = (event) => {
                 //     console.log(`Message from ${peerId}:`, event.data);
@@ -158,10 +158,8 @@ export const connectMesh = (
                     );
                 });
         } else if (signal.type === "answer") {
-            // If we received an answer, set it as the remote description
             peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
         } else if (signal.candidate) {
-            // Add ICE candidates as they arrive
             peerConnection.addIceCandidate(new RTCIceCandidate(signal));
         }
     };

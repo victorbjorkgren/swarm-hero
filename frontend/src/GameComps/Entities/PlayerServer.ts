@@ -27,15 +27,16 @@ export class PlayerServer extends PlayerBase {
     constructor(
         public pos: Vector2D,
         public team: Team,
-        private client: Client,
+        private clientId: ClientID,
+        character: Character,
         public scene: HeroGameLoopServer,
     ) {
         super();
-        if (!client.character) throw new Error("Could not find a character on client");
+        if (!character) throw new Error("Could not find a character on client");
 
-        this.id = client.id;
-        this.team!.playerIds.push(client.id);
-        this.parseCharacter(client.character)
+        this.id = clientId;
+        this.team!.playerIds.push(clientId);
+        this.parseCharacter(character)
         // this.controller = new NetworkController(this);
     }
 
@@ -62,7 +63,7 @@ export class PlayerServer extends PlayerBase {
 
     gainCastleControl(castle: CastleServer) {
         this.myCastles.push(castle);
-        castle.owner = this.client.id;
+        castle.owner = this.clientId;
     }
 
     receiveDamage(damage: number) {

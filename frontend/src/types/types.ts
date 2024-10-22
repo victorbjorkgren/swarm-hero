@@ -30,7 +30,7 @@ export interface EntityBase {
     mass: number;
     health: number;
     givesIncome: number;
-    team: Team;
+    team: Team | null;
 
     targetedBy: ParticleBase[];
 

@@ -25,28 +25,26 @@ import {
     SpellCastMessage
 } from "@shared/commTypes";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
+import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {HeroGameLoopClient} from "./HeroGameLoopClient";
 
 
-export default class HeroGameLoopServer extends HeroGameLoopBase{
+export default class HeroGameLoopServer extends HeroGameLoopBase {
     public override players: Map<string, PlayerServer> = new Map();
     // public navMesh: NavMesh;
 
     private initialData: InitialDataPackage | null = null;
     private readyForCreation: Client[] = [];
 
-    private clients: Map<ClientID, Client> = new Map();
+
     // private wss = new WebSocketServer({ port: 8080 });
 
     private updateInterval: number | NodeJS.Timeout | null = null;
     private nextUpdateMessage: GameUpdateMessage | null = null;
 
     constructor(
-        // public pixiRef: Application,
-        // private setWinner: React.Dispatch<React.SetStateAction<string | undefined>>,
-        // public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
-        // private playersRef: React.MutableRefObject<Player[]>,
-        // private setDayTime: React.Dispatch<React.SetStateAction<number>>,
-        // private character: Character,
+        private clients: PeerMap,
+        private localClientScene: HeroGameLoopClient
     ) {
         super();
 
@@ -74,12 +72,14 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
     broadcast<T extends ServerMessageType>(type: T, payload: ServerPayloads[T]) {
         const message: ServerMessage<T> = {
             type: type,
-            payload: payload
+            payload: payload,
+            serverFlag: null
         }
         const data = JSON.stringify(message)
         this.clients.forEach(client => {
-            client.peer.send(data);
+            client.datachannel.send(data);
         });
+        this.localClientScene.handleServerMessage(message);
     }
 
     handleClientMessage(clientId: ClientID, message: ClientMessage<any>) {
@@ -90,12 +90,12 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
             case ClientMessageType.RequestSpellCast:
                 this.handleSpellCastRequest(clientId, message.payload);
                 break;
-            case ClientMessageType.KeyDown:
-                this.handleKeyboardPress(clientId, message.payload, true);
-                break;
-            case ClientMessageType.KeyUp:
-                this.handleKeyboardPress(clientId, message.payload, false);
-                break;
+            // case ClientMessageType.KeyDown:
+            //     this.handleKeyboardPress(clientId, message.payload, true);
+            //     break;
+            // case ClientMessageType.KeyUp:
+            //     this.handleKeyboardPress(clientId, message.payload, false);
+            //     break;
             case ClientMessageType.RequestBuyDrone:
                 this.handleBuyDroneRequest(clientId, message.payload);
                 break;
@@ -104,18 +104,18 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         }
     }
 
-    handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
-        const controller = this.players.get(clientId)?.controller;
-        if (!controller) {
-            console.error(`Client ${clientId} has no controller`);
-            return;
-        }
-        if (down) {
-            controller.remoteKeyDown(key);
-        } else {
-            controller.remoteKeyUp(key);
-        }
-    }
+    // handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
+    //     const controller = this.players.get(clientId)?.controller;
+    //     if (!controller) {
+    //         console.error(`Client ${clientId} has no controller`);
+    //         return;
+    //     }
+    //     if (down) {
+    //         controller.remoteKeyDown(key);
+    //     } else {
+    //         controller.remoteKeyUp(key);
+    //     }
+    // }
 
     handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
         const instigator = this.players.get(clientId);
@@ -127,8 +127,12 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
     }
 
     handleInitialDataRequest(clientId: ClientID, character: Character) {
+        console.log(`Init data request from ${clientId}`);
+        if (this.localClientScene.localId === clientId) return;
+
         const client = this.clients.get(clientId);
         if (!client) {
+
             console.error(`Client ${clientId} not found`);
             return;
         }
@@ -140,15 +144,11 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
     handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {
         const buyer = this.players.get(message.buyer);
         if (!buyer) return;
-
     }
 
     sendInitialData() {
         if (this.initialData === null) return;
-        this.readyForCreation.forEach(client => {
-            const message: InitialDataMessage = {yourId: client.id, package: this.initialData!}
-            client.peer.send(JSON.stringify(message));
-        })
+        this.broadcast(ServerMessageType.InitialData, {package: this.initialData!})
         this.readyForCreation.length = 0;
     }
 
@@ -232,16 +232,16 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         this.colliders.push(spriteToAABBCollider(blockerSprite));
     }
 
-    resetControllers() {
-        this.players.forEach(player => {
-            player.controller.cleanup()
-        })
-    }
+    // resetControllers() {
+    //     this.players.forEach(player => {
+    //         player.controller.cleanup()
+    //     })
+    // }
 
     create() {
         this.players.clear();
         this.castles.clear();
-        this.resetControllers();
+        // this.resetControllers();
 
         const boundaryCollider: AABBCollider = {
             minX: 0,
@@ -331,7 +331,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase{
         // Updates
         this.particleSystem?.update();
         this.players.forEach(player => {
-            player.controller.movement();
+            // player.controller.movement();
             player.updateMovement();
             // player.render();
         })

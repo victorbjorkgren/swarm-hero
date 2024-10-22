@@ -5,17 +5,30 @@ import {Application} from "pixi.js";
 import {setupBackground} from "../../GameComps/Graphics/TileBackground";
 import {TitleScreen} from "./TitleScreen";
 import {Character} from "../../types/types";
+import {MatchMaking} from "./MatchMaking";
+import {Client, ClientID} from "@shared/commTypes";
 
 enum Steps {
     TitleScreen,
     Faction,
-    Stats
+    Stats,
+    MatchMaking
+}
+
+export type PeerMap = Map<ClientID, Client>;
+
+export type GameConnection = {
+    localId: ClientID,
+    hostId: ClientID,
+    peers: PeerMap
 }
 
 interface Props {
-    doneCallback: (charactor: Character) => void;
+    doneCallback: (character: Character, connectionData: GameConnection) => void;
     defaultCharacter: Character | null;
 }
+
+let character: Character | null = null;
 
 export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCharacter}) => {
     const [currentStep, setCurrentStep] = useState<Steps>(Steps.TitleScreen);
@@ -68,12 +81,16 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCha
 
     const statsDone = (stats: CharacterStats) => {
         if (name.length < 1 && faction === null) return;
-        const character = {
+        character = {
             playerName: name,
             faction: faction!,
             stats: stats,
         }
-        doneCallback(character);
+        setCurrentStep(Steps.MatchMaking);
+    }
+
+    const matchMakingDone = (connectionData: GameConnection) => {
+        doneCallback(character!, connectionData);
     }
 
     const handleNewGame = () => {
@@ -104,6 +121,11 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCha
                         handleBack={handleBackToMain}
                         defaultStats={defaultCharacter?.stats || null}
                     /> }
+                {currentStep === Steps.MatchMaking &&
+                    <MatchMaking
+                        handleBack={handleBackToMain}
+                        doneCallback={matchMakingDone}
+                    />}
             </div>
         </div>
     );

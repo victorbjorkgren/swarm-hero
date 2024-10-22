@@ -8,8 +8,10 @@ export const gameConfig = {
     mapWidth: 8000,
     mapHeight: 4000,
     castlePositions: [
-        new Vector2D(500, 2000),
-        new Vector2D(7500, 2000),
+        new Vector2D(500, 500),
+        new Vector2D(7500, 3500),
+        new Vector2D(7500, 500),
+        new Vector2D(500, 3500),
     ],
     playerStartOffset: new Vector2D(0, 100),
 

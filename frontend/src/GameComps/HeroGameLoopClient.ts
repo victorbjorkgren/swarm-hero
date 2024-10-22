@@ -1,38 +1,32 @@
-import {
-    AnimatedSprite,
-    AnimatedSpriteFrames,
-    Application,
-    Assets,
-    Graphics,
-    Sprite,
-    Spritesheet,
-    Texture
-} from "pixi.js";
+import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import React from "react";
-import {WebSocket} from "ws";
-import {PlayerServer} from "./Entities/PlayerServer";
 import {setupBackground} from "./Graphics/TileBackground";
-import {AABBCollider, Controller, ControllerMapping, popUpEvent, Team, TexturePack} from "../types/types";
-import {CastleServer} from "./Entities/CastleServer";
+import {AABBCollider, Character, Controls, popUpEvent, Team, TexturePack} from "../types/types";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
-import {gameConfig, player1Keys, UnitPacks} from "../config";
-import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
+import {gameConfig, UnitPacks} from "../config";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
-import {AIController} from "./Controllers/AIController";
-import {ParticleSystemBase} from "./ParticleSystemBase";
 import {
-    InitialDataMessage,
+    CastleID,
+    Client,
+    ClientID,
+    ClientMessage,
     ClientMessageType,
+    ClientPayloads,
+    DroneBoughtMessage,
+    GameUpdateMessage,
+    InitialDataMessage,
+    PlayerUpdateData,
+    ServerMessage,
     ServerMessageType,
-    SpellCastMessage,
-    GameUpdateMessage, PlayerUpdateData, ClientMessage, ServerMessage, DroneBoughtMessage, CastleID, ClientID
+    SpellCastMessage
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
 import {CastleClient} from "./Entities/CastleClient";
 import {ParticleSystemClient} from "./ParticleSystemClient";
-import {SpellPack} from "../types/spellTypes";
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
+import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import HeroGameLoopServer from "./HeroGameLoopServer";
 
 
 export class HeroGameLoopClient extends HeroGameLoopBase {
@@ -58,9 +52,15 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     private resolveInitialData: (data: any)=>void = ()=>{};
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
     public localPlayer: PlayerClient | null = null;
-    private localId: ClientID | null = null;
+
+    public hostchannel: RTCDataChannel | null = null;
+    public server: HeroGameLoopServer | null = null;
+    public isHost: boolean = false;
+
     public particleSystem: ParticleSystemClient | null = null;
     public startTime: number | null = null;
+
+    public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void
 
     constructor(
         public pixiRef: Application,
@@ -68,13 +68,107 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
         private playersRef: React.MutableRefObject<Map<ClientID, PlayerClient>>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
-        public socket: WebSocket | null,
+        public localId: ClientID,
+        public hostId: ClientID,
+        character: Character,
+        public clients: PeerMap,
     ) {
         super();
-        this.socket?.on('message', (message: string)=>{
-            const parsedMessage = JSON.parse(message);
-            this.handleServerMessage(parsedMessage)
+
+        if (localId === hostId) {
+            this.isHost = true;
+            this.server = new HeroGameLoopServer(clients, this);
+            this.sendToHost = this._hostLoopBack;
+        } else {
+            this.hostchannel = clients.get(hostId)!.datachannel
+            this.sendToHost = this._hostRemote;
+        }
+
+        this.clients.forEach(client => {
+            if (client.id !== localId) {
+                console.log(client);
+                client.datachannel.onmessage = (event: MessageEvent) => {
+                    const parsedMessage = JSON.parse(event.data);
+                    this.handlePeerMessage(parsedMessage, client);
+                    if (client.id === this.hostId && 'serverFlag' in parsedMessage) {
+                        this.handleServerMessage(parsedMessage)
+                    }
+                }
+            }
         })
+
+        this.clients.forEach(client => {
+            this.players.set(client.id, new PlayerClient(client.id, this))
+        })
+
+        this.setLocalPlayer(character)
+    }
+
+    _hostLoopBack<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
+        console.log('Loop Back');
+        const message: ClientMessage<any> = {type: type, payload: payload};
+        this.server?.handleClientMessage(this.localId, message)
+    }
+
+    _hostRemote<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
+        console.log('Remote push')
+        const message: ClientMessage<any> = {type: type, payload: payload};
+        this.hostchannel!.send(JSON.stringify(message));
+    }
+
+    broadcast<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
+        const message: ClientMessage<T> = {
+            type: type,
+            payload: payload
+        }
+        const data = JSON.stringify(message)
+        this.clients.forEach(client => {
+            if (client.id === this.localId) return;
+            client.datachannel.send(data);
+        })
+    }
+
+    handlePeerMessage(message: ClientMessage<any>, sender: Client) {
+        if (this.server) {
+            this.server.handleClientMessage(sender.id, message);
+        }
+        switch (message.type) {
+            case ClientMessageType.ReadyToJoin:
+                break;
+            case ClientMessageType.RequestSpellCast:
+                this.handleSpellCastRequest(sender.id, message.payload);
+                break;
+            case ClientMessageType.KeyDown:
+                this.handleKeyboardPress(sender.id, message.payload, true);
+                break;
+            case ClientMessageType.KeyUp:
+                this.handleKeyboardPress(sender.id, message.payload, false);
+                break;
+            case ClientMessageType.RequestBuyDrone:
+                // this.handleBuyDroneRequest(clientId, message.payload);
+                break;
+            default:
+                console.warn('Unhandled message type:', message.type);
+        }
+    }
+
+    handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
+        const instigator = this.players.get(clientId);
+        if (!instigator) return;
+        const success = instigator.castSpell(castData.position, castData.spell);
+    }
+
+    handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
+        const controller = this.players.get(clientId)?.controller;
+        if (!controller) {
+            console.error(`Client ${clientId} has no controller`);
+            return;
+        }
+        if (down) {
+            controller.remoteKeyDown(key);
+        } else {
+            controller.remoteKeyUp(key);
+        }
     }
 
     handleServerMessage(message: ServerMessage<any>) {
@@ -133,11 +227,13 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         })
     }
 
-    requestInitialData(): Promise<InitialDataMessage> {
+    requestInitialData(): void {
         if (!this.localPlayer) throw new Error("No local player!");
-        const message: ClientMessage<ClientMessageType.ReadyToJoin> = { type: ClientMessageType.ReadyToJoin, payload: this.localPlayer.character }
-        this.socket?.send(JSON.stringify(message));
-        return new Promise<InitialDataMessage>((resolve, reject) => {
+        if (!this.localPlayer.character) throw new Error("No local character!");
+
+        console.log("promise")
+
+        this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
                 () => reject('Timeout waiting for initial data'),
                 10*1000
@@ -147,6 +243,11 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
                 resolve(data);
             };
         });
+
+        console.log("promise done")
+
+        this.sendToHost(ClientMessageType.ReadyToJoin, this.localPlayer.character);
+
     }
 
     stopGame() {
@@ -169,15 +270,13 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.localPlayer?.newDay();
     }
 
-    setLocalPlayer(localId: ClientID) {
-        const player = this.players.get(localId);
-        if (!player) return;
+    setLocalPlayer(localCharacter: Character) {
+        const player = this.players.get(this.localId)!;
 
-        this.localId = localId
         this.localPlayer = player;
         player.isLocal = true;
+        player.character = localCharacter;
         this.cameraPivot = player.pos.copy();
-        // this.localcontroller = new LocalPlayerController(player, player1Keys, this.socket);
 
         this.pixiRef.stage.on('pointermove', (event) => {
             const mousePosition = event.global;
@@ -185,7 +284,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             player.aimPos.x = worldPosition.x / this.renderScale;
             player.aimPos.y = worldPosition.y / this.renderScale;
         });
-        this.pixiRef.stage.on('click', () => {player.castSpell()})
+        this.pixiRef.stage.on('click', () => {player.attemptSpellCast()})
     }
 
     resetControllers() {
@@ -212,12 +311,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     async preload() {
-        this.players.clear();
-        this.teams = [];
-        this.castles.clear();
-        this.colliders = [];
-
-        this.initialDataPromise = this.requestInitialData();
+        this.requestInitialData();
 
         const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
         const explosion = Assets.load('/sprites/explosion_toon.json');
@@ -267,15 +361,13 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         }
         this.colliders.push(boundaryCollider);
 
-
         const initData = await this.initialDataPromise;
 
         this.teams = initData.package.teams;
 
         initData.package.players.forEach(pInit => {
-            this.players.set(
-                pInit.id,
-                new PlayerClient(pInit.id, pInit.pos, this.teams[pInit.teamIdx], pInit.character, this));
+            const player = this.players.get(pInit.id)!
+            player.gameInit(pInit.pos, this.teams[pInit.teamIdx], pInit.character)
         });
         initData.package.castles.forEach(cInit => {
             const castle = new CastleClient(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
@@ -283,8 +375,6 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
         })
-
-        this.setLocalPlayer(initData.yourId);
 
         this.particleSystem = new ParticleSystemClient(this.teams, this);
         this.playersRef.current = this.players;

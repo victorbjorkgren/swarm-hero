@@ -5,6 +5,7 @@ import {Keyboard} from "../Keyboard";
 import {PlayerClient} from "../Entities/PlayerClient";
 import {WebSocket} from "ws";
 import {ClientMessage, ClientMessageType} from "@shared/commTypes";
+import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 export class LocalPlayerController implements Controller {
     private readonly specialHandler: () => void;
@@ -16,7 +17,7 @@ export class LocalPlayerController implements Controller {
     constructor(
         private player: PlayerClient,
         private keyBindings: ControllerMapping,
-        private socket: WebSocket
+        private scene: HeroGameLoopClient,
     ) {
         this.specialHandler = () => this.special()
         this.buyHandler = () => this.buy();
@@ -64,18 +65,10 @@ export class LocalPlayerController implements Controller {
         if (this.movementKeysDown.has(key) && down) {}
         else if (!this.movementKeysDown.has(key) && !down) {}
         else if (this.movementKeysDown.has(key) && !down ) {
-            const message: ClientMessage<ClientMessageType.KeyUp> = {
-                type: ClientMessageType.KeyUp,
-                payload: key,
-            }
-            this.socket.send(JSON.stringify(message))
+            this.scene.broadcast(ClientMessageType.KeyUp, key);
         }
         else if (!this.movementKeysDown.has(key) && down) {
-            const message: ClientMessage<ClientMessageType.KeyDown> = {
-                type: ClientMessageType.KeyDown,
-                payload: key,
-            }
-            this.socket.send(JSON.stringify(message))
+            this.scene.broadcast(ClientMessageType.KeyDown, key)
         }
     }
 

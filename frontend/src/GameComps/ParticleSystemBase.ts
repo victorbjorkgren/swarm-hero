@@ -89,7 +89,7 @@ export class ParticleSystemBase {
             Vector2D.add(castle.pos, randomSpawnOffset),
             10,
             1,
-            player.team,
+            player.team!,
             groupID,
             unitInfo,
             owner,

@@ -3,22 +3,27 @@ import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
 import {Units} from "../frontend/src/types/unitTypes";
 import {WebSocket} from "ws";
-import Peer from "simple-peer";
+// import Peer from "simple-peer";
 
 export type EntityID = string;
 export type ClientID = EntityID;
 export type CastleID = EntityID;
 export type ParticleID = EntityID;
 
+export type EventID = string
+export type SpellCastID = EventID;
+
 export interface Client {
     id: ClientID;
-    peer: Peer.Instance;
+    peer: RTCPeerConnection;
+    datachannel: RTCDataChannel
     character?: Character;
 }
 
 export interface ServerMessage<T extends ServerMessageType> {
     type: T;
     payload: ServerPayloads[T];
+    serverFlag: null;
 }
 
 export enum ServerMessageType {
@@ -56,7 +61,6 @@ export type DroneBoughtMessage = {
 }
 
 export type InitialDataMessage = {
-    yourId: ClientID,
     package: InitialDataPackage,
 }
 
@@ -139,9 +143,9 @@ export interface ClientMessage<T extends ClientMessageType> {
 
 export enum ClientMessageType {
     ReadyToJoin = "ReadyToJoin",
-    RequestSpellCast = "RequestSpellCast",
-    KeyDown = "KeyDown",
     KeyUp = "KeyUp",
+    KeyDown = "KeyDown",
+    RequestSpellCast = "RequestSpellCast",
     RequestBuyDrone = "RequestBuyDrone",
     RequestBuySpell = "RequestBuySpell",
     RequestGarrison = "RequestGarrison",
@@ -149,9 +153,9 @@ export enum ClientMessageType {
 
 export type ClientPayloads = {
     [ClientMessageType.ReadyToJoin]: Character;
-    [ClientMessageType.RequestSpellCast]: SpellCastMessage;
-    [ClientMessageType.KeyDown]: Controls;
     [ClientMessageType.KeyUp]: Controls;
+    [ClientMessageType.KeyDown]: Controls;
+    [ClientMessageType.RequestSpellCast]: SpellCastMessage;
     [ClientMessageType.RequestBuyDrone]: BuyDroneMessage;
     [ClientMessageType.RequestBuySpell]: BuySpellMessage;
     [ClientMessageType.RequestGarrison]: GarrisonMessage;
@@ -182,9 +186,9 @@ export type SpellCastMessage = {
     instigator: ClientID;
     position: Vector2D,
     spell: SpellPack,
+    castId: SpellCastID;
     safeTeam: Team[],
 }
-
 
 
 // SIGNAL SERVER

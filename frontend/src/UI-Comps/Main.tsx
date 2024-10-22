@@ -1,5 +1,5 @@
 import {useRef, useState} from "react";
-import {MainCharacterCreation} from "./CharacterCreation/MainCharacterCreation";
+import {GameConnection, MainCharacterCreation, PeerMap} from "./CharacterCreation/MainCharacterCreation";
 import MainGame from "./InGame/MainGame";
 import {Factions} from "./CharacterCreation/FactionSelection";
 import {Character} from "../types/types";
@@ -24,10 +24,12 @@ export const Main = () => {
     const [currentScene, setCurrentScene] = useState<Scenes>(Scenes.CharacterCreation)
 
     const characterRef = useRef<Character | null>(devCharacter);
+    const connectionData = useRef<GameConnection | null>(null);
 
 
-    const characterCreationDone = (newCharacter: Character) => {
+    const characterCreationDone = (newCharacter: Character, incomingConnection: GameConnection) => {
         characterRef.current = newCharacter;
+        connectionData.current = incomingConnection;
         setCurrentScene(Scenes.MainGame);
     }
 
@@ -40,7 +42,7 @@ export const Main = () => {
             {currentScene === Scenes.CharacterCreation
                 && <MainCharacterCreation doneCallback={characterCreationDone} defaultCharacter={characterRef.current}/>}
             {currentScene === Scenes.MainGame
-                && <MainGame character={characterRef.current} doneCallback={gameDone}/>}
+                && <MainGame character={characterRef.current} connection={connectionData.current} doneCallback={gameDone}/>}
         </>
     );
 };

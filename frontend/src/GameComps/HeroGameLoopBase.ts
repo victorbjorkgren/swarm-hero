@@ -34,18 +34,18 @@ export abstract class HeroGameLoopBase {
 
     areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
         for (const [playerId, player] of this.players) {
-            if (safeTeam.includes(player.team)) continue;
+            if (safeTeam.includes(player.team!)) continue;
             if (Vector2D.sqDist(position, player.pos) > sqRange) continue;
             player.receiveDamage(damage);
         }
         for (const [castleId, castle] of this.castles) {
-            if (safeTeam.includes(castle.team)) continue;
+            if (safeTeam.includes(castle.team!)) continue;
             if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
             castle.receiveDamage(damage);
         }
         if (this.particleSystem) {
             this.particleSystem.getParticles().deepForEach((particle) => {
-                if (safeTeam.includes(particle.team)) return;
+                if (safeTeam.includes(particle.team!)) return;
                 if (Vector2D.sqDist(position, particle.pos) > sqRange) return;
                 particle.receiveDamage(damage);
             })

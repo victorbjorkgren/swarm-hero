@@ -46,6 +46,12 @@ export const setupWss = (networkIP: string | undefined, nPlayerGame: number) => 
         });
 
         ws.on('close', () => {
+            players.delete(playerId);
+            if (!readyPeers.has(playerId)) {
+                wss.clients.forEach((client) => {
+                    client.send(JSON.stringify({type: 'peer-leave', payload: {peerId: playerId}}));
+                })
+            }
             console.log(`Disconnected from ${playerId}`);
         });
     });

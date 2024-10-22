@@ -223,7 +223,7 @@ export class AIBehavior {
     }
 
     reinforceCastleCondition(): boolean {
-        const castleIds = this.player.team.castleIds;
+        const castleIds = this.player.team!.castleIds;
         if (castleIds.length === 0) return false;
         let minVul = 1;
         for (const castleId of castleIds) {
@@ -232,7 +232,7 @@ export class AIBehavior {
             for (const foeId of this.nearbyFoes(this.visibleDistance)) {
                 const foe = this.scene.players.get(foeId);
                 if (!foe) continue;
-                const vulnerability = this.reinforcedStrength(castle, this.player.team.playerIds, EntityTypes.Player, foe);
+                const vulnerability = this.reinforcedStrength(castle, this.player.team!.playerIds, EntityTypes.Player, foe);
                 if (vulnerability < minVul) {
                     minVul = vulnerability;
                     this.engaging = castle;
@@ -269,7 +269,7 @@ export class AIBehavior {
 
     nearbyFoeCastles(dist: number): CastleID[] {
         const nearbyFoeCastles = [];
-        for (const castleId of this.otherPlayer.team.castleIds) {
+        for (const castleId of this.otherPlayer.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (castle && castle.isAlive()) {
                 const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
@@ -304,10 +304,10 @@ export class AIBehavior {
     }
 
     nearestFriendlyCastle(): CastleBase | null {
-        if (this.player.team.castleIds.length === 0) return null;
+        if (this.player.team!.castleIds.length === 0) return null;
         let nearestFriendlyCastle: CastleServer | null = null;
         let minSqD: number = 1000000000;
-        for (const castleId of this.player.team.castleIds) {
+        for (const castleId of this.player.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (!castle) continue;
             const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();

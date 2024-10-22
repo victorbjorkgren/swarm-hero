@@ -31,7 +31,7 @@ export abstract class CastleBase implements EntityBase {
         public owner: ClientID,
         protected scene: HeroGameLoopBase,
     ) {
-        this.team.castleIds.push(id);
+        this.team!.castleIds.push(id);
         // this.pos = team.castleCentroid;
         // this.team.castles.push(this);
         // this.pixiRef = scene.pixiRef;
@@ -57,7 +57,7 @@ export abstract class CastleBase implements EntityBase {
 
     checkPlayers() {
         this.nearbyPlayers = this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
-        for (const playerId of this.team.playerIds) {
+        for (const playerId of this.team!.playerIds) {
             const player = this.scene.players.get(playerId);
             if (!player) continue;
             if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {

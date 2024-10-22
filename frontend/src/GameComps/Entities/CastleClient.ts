@@ -74,7 +74,7 @@ export class CastleClient extends CastleBase {
             .moveTo(this.pos.x * this.scene.renderScale - this.castleSprite.width / 2, this.pos.y * this.scene.renderScale  - this.castleSprite.height / 2 - 5)
             .lineTo(this.pos.x * this.scene.renderScale - this.castleSprite.width / 2 + (this.castleSprite.width * healthRatio), this.pos.y * this.scene.renderScale - this.castleSprite.height / 2 - 5)
             .stroke({
-                color: this.team.color,
+                color: this.team!.color,
                 alpha: .8,
                 width: 2
             })

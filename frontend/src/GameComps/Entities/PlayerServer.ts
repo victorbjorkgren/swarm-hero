@@ -22,7 +22,6 @@ import {CastleID, Client, ClientID, EntityID} from "@shared/commTypes";
 
 export class PlayerServer extends PlayerBase {
     public id: ClientID;
-    public controller: Controller;
     myCastles: CastleServer[] = [];
 
     constructor(
@@ -35,9 +34,9 @@ export class PlayerServer extends PlayerBase {
         if (!client.character) throw new Error("Could not find a character on client");
 
         this.id = client.id;
-        this.team.playerIds.push(client.id);
+        this.team!.playerIds.push(client.id);
         this.parseCharacter(client.character)
-        this.controller = new NetworkController(this);
+        // this.controller = new NetworkController(this);
     }
 
     parseCharacter(character: Character) {
@@ -136,32 +135,6 @@ export class PlayerServer extends PlayerBase {
 
 
 
-    castSpell(pos: Vector2D, spell: SpellPack): boolean {
-        // if (!this.isCasting) return false;
-        // if (this.activeSpell === null) return false;
-        // if (this.spellCursorSprite === null) return false;
-        if (spell.castCost > this.mana) return false;
 
-        // const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
-
-        if (Vector2D.sqDist(pos, this.pos) > spell.castRange * spell.castRange) return false;
-
-        this.mana -= spell.castCost;
-        const sqEffectRange = spell.effectRange * spell.effectRange;
-        this.scene.areaDamage(pos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
-
-        return true;
-    }
-
-    resolveSpell(pos: Vector2D, spell: SpellPack): void {
-        this.mana -= spell.castCost;
-        const sqEffectRange = spell.effectRange * spell.effectRange;
-        this.scene.areaDamage(pos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
-        // this.scene.renderExplosion(this.aimPos, spell.effectRange);
-
-        // Reset casting preparation
-        // this.castingDoneCallback(true);
-        // this.castingDoneCallback = ()=>{};
-    }
 
 }

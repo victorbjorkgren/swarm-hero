@@ -37,7 +37,7 @@ export abstract class PlayerBase implements EntityBase {
 
     abstract id: EntityID;
     abstract pos: Vector2D;
-    abstract team: Team;
+    abstract team: Team | null;
     abstract myCastles: CastleBase[];
 
     abstract scene: HeroGameLoopBase;
@@ -98,7 +98,7 @@ export abstract class PlayerBase implements EntityBase {
 
     onDeath(): void {
         let w: string;
-        if (this.team.id === 0)
+        if (this.team!.id === 0)
             w = this.scene.teams[1].name;
         else
             w = this.scene.teams[0].name;
@@ -137,5 +137,16 @@ export abstract class PlayerBase implements EntityBase {
         return this.pos.copy();
         // }
         // return closestPointOnPolygon(this.collider.verts, from);
+    }
+
+    castSpell(castPos: Vector2D, spell: SpellPack): boolean {
+        if (spell.castCost > this.mana) return false;
+        if (Vector2D.sqDist(castPos, this.pos) > spell.castRange * spell.castRange) return false;
+
+        this.mana -= spell.castCost;
+        const sqEffectRange = spell.effectRange * spell.effectRange;
+        this.scene.areaDamage(castPos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
+
+        return true;
     }
  }

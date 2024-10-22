@@ -12,14 +12,17 @@ import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 import {HeroGameLoopClient} from "../../GameComps/HeroGameLoopClient";
 
 import {ClientID} from "@shared/commTypes";
+import {connectMesh} from "../../Hooks/Communication";
+import {GameConnection, PeerMap} from "../CharacterCreation/MainCharacterCreation";
 
 
 interface Props {
     character: Character | null;
+    connection: GameConnection | null;
     doneCallback: ()=>void;
 }
 
-const MainGame: React.FC<Props> = ({character, doneCallback}) => {
+const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
     const playersRef = useRef<Map<ClientID, PlayerClient>>(new Map());
     const gameSceneRef = useRef<HeroGameLoopClient | null>(null);
@@ -65,6 +68,7 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
     const initGame = async () => {
         if (pixiRef.current !== null) return;
         if (character === null) return;
+        if (connection === null) return;
         if (gameContainerRef.current === null) return;
 
         Keyboard.initialize();
@@ -91,16 +95,20 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
             0, 0, gameConfig.mapWidth, gameConfig.mapHeight
         );
 
-        // gameSceneRef.current = new HeroGameLoopClient(
-        //     pixiRef.current,
-        //     setWinner,
-        //     setPlayerPopUpEvent,
-        //     playersRef,
-        //     setDayTime,
-        //     null,
-        // );
-        //
-        // gameSceneRef.current.start();
+        console.log('set game')
+        gameSceneRef.current = new HeroGameLoopClient(
+            pixiRef.current,
+            setWinner,
+            setPlayerPopUpEvent,
+            playersRef,
+            setDayTime,
+            connection.localId,
+            connection.hostId,
+            character,
+            connection.peers
+        );
+        console.log('start')
+        gameSceneRef.current.start();
     };
 
     useEffect(() => {
@@ -109,7 +117,8 @@ const MainGame: React.FC<Props> = ({character, doneCallback}) => {
         return () => {
             cleanUpGame();
         };
-    }, [character]);
+    }, [character, connection]);
+
 
     const debounce = (func: (...args: any[]) => void, delay: number): (...args: any[]) => void => {
         let timeout: NodeJS.Timeout;

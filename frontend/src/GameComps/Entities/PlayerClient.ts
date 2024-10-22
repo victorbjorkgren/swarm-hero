@@ -1,4 +1,4 @@
-import {Character, CollisionResult, DirectionalSpriteSheet, Team} from "../../types/types";
+import {Character, CollisionResult, Controller, DirectionalSpriteSheet, Team} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {CastleClient} from "./CastleClient";
 import {pol2cart, Vector2D} from "../Utility";
@@ -11,13 +11,13 @@ import {
 import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {SpellPack} from "../../types/spellTypes";
-import {gameConfig, UnitPacks} from "../../config";
+import {gameConfig, player1Keys, UnitPacks} from "../../config";
 import {
     SpellCastMessage,
     ClientMessageType,
     BuyDroneMessage,
     BuySpellMessage,
-    GarrisonMessage, Client, CastleID, ClientID
+    GarrisonMessage, Client, CastleID, ClientID, SpellCastID
 } from "@shared/commTypes";
 import {PlayerBase} from "./PlayerBase";
 import HeroGameLoopServer from "../HeroGameLoopServer";
@@ -25,10 +25,17 @@ import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {Units} from "../../types/unitTypes";
 import {CastleServer} from "./CastleServer";
 import { CastleBase } from "./CastleBase";
+import { v4 as uuidv4 } from 'uuid';
+import {NetworkController} from "../Controllers/NetworkController";
+import {LocalPlayerController} from "../Controllers/LocalPlayerController";
 
 export class PlayerClient extends PlayerBase {
     myCastles: CastleClient[] = [];
     isLocal: boolean = false;
+
+    public pos: Vector2D = Vector2D.zeros();
+    public team: Team | null = null;
+    public character: Character | null = null;
 
     aimPos: Vector2D = Vector2D.zeros();
     public popUpCastle: CastleClient | null = null;
@@ -45,19 +52,32 @@ export class PlayerClient extends PlayerBase {
     private currentSpellRangeSpell: SpellPack | null = null;
     activeSpell: SpellPack | null = null;
     castingDoneCallback: (didCast: boolean) => void = () => {};
+    public observedSpellCasts: Set<SpellCastID> = new Set();
+
+    public controller: Controller;
 
 
     constructor(
         public id: ClientID,
-        public pos: Vector2D,
-        public team: Team,
-        public character: Character,
         public scene: HeroGameLoopClient,
     ) {
         super()
+        if (scene.localId == id) {
+            this.controller = new LocalPlayerController(this, player1Keys, scene);
+        } else {
+            this.controller = new NetworkController(this);
+        }
     }
 
+    gameInit(pos: Vector2D, team: Team, character: Character) {
+        this.pos = pos;
+        this.team = team;
+        this.character = character;
+    }
+
+
     parseCharacter(character: Character) {
+        this.character = character;
         this.name = character.playerName;
 
         this.maxHealth = healthConversion(character.stats.health);
@@ -137,27 +157,33 @@ export class PlayerClient extends PlayerBase {
     }
 
     requestSpellCast(position: Vector2D, spell: SpellPack, safeTeam: Team[] = []) {
-        this.scene.socket?.send(JSON.stringify({
-            type: ClientMessageType.RequestSpellCast,
-            payload: {position, spell, safeTeam} as SpellCastMessage}));
+        const castId = uuidv4();
+        this.observedSpellCasts.add(castId);
+
+        this.scene.clients.forEach(client => {
+            if (client.id === this.scene.localId) return;
+            client.datachannel.send(JSON.stringify({
+                type: ClientMessageType.RequestSpellCast,
+                payload: {position, spell, castId, safeTeam} as SpellCastMessage}));
+        })
     }
 
     requestBuyDrone(unit: Units, n: number, castleId: CastleID) {
-        this.scene.socket?.send(JSON.stringify({
-            type: ClientMessageType.RequestBuyDrone,
-            payload: {
+        this.scene.broadcast(
+            ClientMessageType.RequestBuyDrone,
+            {
                 buyer: this.id,
                 unit: unit,
                 n: n,
                 castle: castleId
             } as BuyDroneMessage,
-        }))
+        )
     }
 
     requestBuySpell(spell: SpellPack) {
         const castleId = this.popUpCastle?.id
         if (!castleId) return
-        this.scene.socket?.send(JSON.stringify({
+        this.scene.hostchannel?.send(JSON.stringify({
             type: ClientMessageType.RequestBuySpell,
             payload: {
                 buyer: this.id,
@@ -170,7 +196,7 @@ export class PlayerClient extends PlayerBase {
     requestGarrisonDrone(unit: Units, n: number, isBringing: boolean) {
         const castleId = this.popUpCastle?.id
         if (!castleId) return
-        this.scene.socket?.send(JSON.stringify({
+        this.scene.hostchannel?.send(JSON.stringify({
             type: ClientMessageType.RequestGarrison,
             payload: {
                 instigator: this.id,
@@ -280,23 +306,20 @@ export class PlayerClient extends PlayerBase {
     }
 
 
-    castSpell(): void {
+    attemptSpellCast(): void {
         if (!this.isCasting) return
         if (this.activeSpell === null) return
         if (this.spellCursorSprite === null) return
 
-        if (this.activeSpell.castCost > this.mana)
-            return this.cancelSpell();
+        const success = this.castSpell(this.aimPos, this.activeSpell);
 
-        // const effectPos = new Vector2D(this.spellCursorSprite.position.x, this.spellCursorSprite.position.y);
-        const sqCastRange = this.activeSpell.castRange * this.activeSpell.castRange;
-
-        if (Vector2D.sqDist(this.aimPos, this.pos) > sqCastRange)
-            return this.cancelSpell();
-
-        this.requestSpellCast(this.aimPos, this.activeSpell);
-        this.isCasting = false;
-        this.activeSpell = null;
+        if (success) {
+            this.requestSpellCast(this.aimPos, this.activeSpell);
+            this.isCasting = false;
+            this.activeSpell = null;
+        } else {
+            this.cancelSpell()
+        }
     }
 
     resolveSpell(castMessage: SpellCastMessage) {
@@ -327,13 +350,13 @@ export class PlayerClient extends PlayerBase {
         if (!this.scene.setPlayerPopOpen) return;
         if (this.popUpCastle !== null) return this.closeCityPopUp();
 
-        for (const castleId of this.team.castleIds) {
+        for (const castleId of this.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (castle === undefined) return;
             if (castle.nearbyPlayers.includes(this)) {
                 this.scene.setPlayerPopOpen(
                     {
-                        playerID: this.team.id,
+                        playerID: this.team!.id,
                         castle: castle
                     });
                 this.popUpCastle = castle;
@@ -413,7 +436,7 @@ export class PlayerClient extends PlayerBase {
     renderName() {
         if (this.nameSprite === null) {
             this.nameSprite = new Text(this.name, {
-                fill: {color: this.team.color, alpha: 0.7},
+                fill: {color: this.team!.color, alpha: 0.7},
                 fontSize: 13,
                 letterSpacing: -0.6
             });

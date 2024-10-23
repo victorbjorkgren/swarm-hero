@@ -1,7 +1,6 @@
-import {AABBCollider, CollisionResult, EntityBase, Team} from "../../types/types";
+import {AABBCollider, CollisionResult, EntityBase, EntityTypes, Factions, Team} from "../../types/types";
 import {checkAABBCollision, Vector2D} from "../Utility";
-import {gameConfig} from "../../config";
-import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
+import {gameConfig} from "@shared/config";
 import {SpellPack} from "../../types/spellTypes";
 import {ParticleSystemBase} from "../ParticleSystemBase";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
@@ -15,6 +14,8 @@ export abstract class PlayerBase implements EntityBase {
     public acc: Vector2D = Vector2D.zeros();
     public targetedBy: ParticleBase[] = [];
     public availableSpells: SpellPack[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Player;
 
     public maxVel: number = 1.0;
     public maxAcc: number = gameConfig.playerMaxAcc;

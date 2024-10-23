@@ -1,4 +1,4 @@
-import {Character, CollisionResult, Controller, DirectionalSpriteSheet, Team} from "../../types/types";
+import {Character, CollisionResult, Controller, DirectionalSpriteSheet, Factions, Team} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {CastleClient} from "./CastleClient";
 import {pol2cart, Vector2D} from "../Utility";
@@ -8,10 +8,9 @@ import {
     powerConversion,
     speedConversion
 } from "../../UI-Comps/CharacterCreation/StatConversion";
-import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {SpellPack} from "../../types/spellTypes";
-import {gameConfig, player1Keys, UnitPacks} from "../../config";
+import {gameConfig, player1Keys, UnitPacks} from "@shared/config";
 import {
     SpellCastMessage,
     ClientMessageType,
@@ -72,7 +71,7 @@ export class PlayerClient extends PlayerBase {
     gameInit(pos: Vector2D, team: Team, character: Character) {
         this.pos = pos;
         this.team = team;
-        this.character = character;
+        this.parseCharacter(character)
     }
 
 
@@ -378,10 +377,6 @@ export class PlayerClient extends PlayerBase {
         };
         this.isCasting = false;
         this.activeSpell = null;
-    }
-
-    updateMovement() {
-
     }
 
     render() {

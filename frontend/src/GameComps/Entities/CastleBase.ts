@@ -1,6 +1,6 @@
-import {EntityBase, Team} from "../../types/types";
+import {EntityBase, EntityTypes, Team} from "../../types/types";
 import {Vector2D} from "../Utility";
-import {gameConfig, SpellPacks} from "../../config";
+import {gameConfig, SpellPacks} from "@shared/config";
 import {PlayerBase} from "./PlayerBase";
 import HeroGameLoopServer from "../HeroGameLoopServer";
 import {SpellPack, Spells} from "../../types/spellTypes";
@@ -16,6 +16,8 @@ export abstract class CastleBase implements EntityBase {
     health: number = gameConfig.castleHealth;
     givesIncome: number = gameConfig.castleIncome;
     targetedBy: ParticleBase[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Castle;
 
     public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
     public nearbyPlayers: PlayerBase[] = [];

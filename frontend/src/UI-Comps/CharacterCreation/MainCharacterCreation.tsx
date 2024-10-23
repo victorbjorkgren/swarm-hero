@@ -1,10 +1,10 @@
-import {Factions, FactionSelection} from "./FactionSelection";
+import {FactionSelection} from "./FactionSelection";
 import React, {useEffect, useRef, useState} from "react";
 import {CharacterStats, StatSelection} from "./StatSelection";
 import {Application} from "pixi.js";
 import {setupBackground} from "../../GameComps/Graphics/TileBackground";
 import {TitleScreen} from "./TitleScreen";
-import {Character} from "../../types/types";
+import {Character, Factions} from "../../types/types";
 import {MatchMaking} from "./MatchMaking";
 import {Client, ClientID} from "@shared/commTypes";
 

@@ -65,9 +65,11 @@ export class LocalPlayerController implements Controller {
         if (this.movementKeysDown.has(key) && down) {}
         else if (!this.movementKeysDown.has(key) && !down) {}
         else if (this.movementKeysDown.has(key) && !down ) {
+            this.movementKeysDown.delete(key);
             this.scene.broadcast(ClientMessageType.KeyUp, key);
         }
         else if (!this.movementKeysDown.has(key) && down) {
+            this.movementKeysDown.add(key);
             this.scene.broadcast(ClientMessageType.KeyDown, key)
         }
     }

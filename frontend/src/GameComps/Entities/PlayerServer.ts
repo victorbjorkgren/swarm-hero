@@ -1,6 +1,14 @@
 import {checkAABBCollision, pol2cart, spriteToAABBCollider, Vector2D} from "../Utility";
 import {ParticleSystemBase} from "../ParticleSystemBase";
-import {AABBCollider, Character, CollisionResult, Controller, DirectionalSpriteSheet, Team} from "../../types/types";
+import {
+    AABBCollider,
+    Character,
+    CollisionResult,
+    Controller,
+    DirectionalSpriteSheet,
+    Factions,
+    Team
+} from "../../types/types";
 import HeroGameLoopServer from "../HeroGameLoopServer";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
@@ -12,8 +20,7 @@ import {
     powerConversion,
     speedConversion
 } from "../../UI-Comps/CharacterCreation/StatConversion";
-import {Factions} from "../../UI-Comps/CharacterCreation/FactionSelection";
-import {gameConfig, UnitPacks} from "../../config";
+import {gameConfig, UnitPacks} from "@shared/config";
 import {NetworkController} from "../Controllers/NetworkController";
 import {AIController} from "../Controllers/AIController";
 import {PlayerBase} from "./PlayerBase";

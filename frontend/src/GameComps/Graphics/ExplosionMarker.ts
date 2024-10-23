@@ -136,6 +136,8 @@ export const renderArcaneWheel = (pixi: Application): Container => {
     parent.visible = false;
 
     pixi.stage.addChild(parent);
+    // setInterval(()=>{
+    // }, 1000/60);
     pixi.ticker.add(()=> {
         line2.rotation += .004;
         line1.rotation -= .001;

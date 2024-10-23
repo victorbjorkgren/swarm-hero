@@ -4,7 +4,7 @@ import {setupBackground} from "./Graphics/TileBackground";
 import {AABBCollider, Character, Controls, popUpEvent, Team, TexturePack} from "../types/types";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
-import {gameConfig, UnitPacks} from "../config";
+import {gameConfig, UnitPacks} from "@shared/config";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {
     CastleID,
@@ -87,11 +87,12 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.clients.forEach(client => {
             if (client.id !== localId) {
                 client.datachannel.onmessage = (event: MessageEvent) => {
-                    console.log('incoming message', event.data);
                     const parsedMessage = JSON.parse(event.data);
-                    this.handlePeerMessage(parsedMessage, client);
+                    console.log('incoming message', parsedMessage);
                     if (client.id === this.hostId && 'serverFlag' in parsedMessage) {
                         this.handleServerMessage(parsedMessage)
+                    } else {
+                        this.handlePeerMessage(parsedMessage, client);
                     }
                 }
             }
@@ -158,6 +159,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
+        console.log(`Handling ${clientId} keyboard`);
         const controller = this.players.get(clientId)?.controller;
         if (!controller) {
             console.error(`Client ${clientId} has no controller`);
@@ -288,8 +290,10 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     resetControllers() {
-        this.localcontroller?.cleanup()
-        this.localcontroller = null;
+        this.players.forEach(player => {
+            player.controller.cleanup()
+            // player.controller = null;
+        })
     }
 
     async setupExplosion(explosionSheet: Promise<Spritesheet>) {
@@ -341,6 +345,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.preload().then(() => {
             this.create().then(()=>{
                 this.pixiRef.ticker.add(this.update, this);
+                // setInterval(()=>this.update(), 1000/60);
                 this.resumeGame();
             });
         });
@@ -349,8 +354,6 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     async create() {
         DebugDrawer.setPixi(this.pixiRef);
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
-        this.resetControllers();
-
 
         const boundaryCollider: AABBCollider = {
             minX: 0,
@@ -361,13 +364,15 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         }
         this.colliders.push(boundaryCollider);
 
-        const initData = await this.initialDataPromise;
+        const initData: InitialDataMessage = await this.initialDataPromise;
 
         this.teams = initData.package.teams;
 
         initData.package.players.forEach(pInit => {
+            console.log(pInit);
             const player = this.players.get(pInit.id)!
-            player.gameInit(pInit.pos, this.teams[pInit.teamIdx], pInit.character)
+            const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
+            player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)
         });
         initData.package.castles.forEach(cInit => {
             const castle = new CastleClient(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
@@ -383,16 +388,15 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     update() {
         DebugDrawer.reset();
         if (!this.gameOn) return
-
         this.renderScale = this.pixiRef.renderer.width / gameConfig.baseRenderScale;
 
         this.updateDayTime();
 
         // Updates
         this.particleSystem?.update();
-        this.localcontroller?.movement()
 
         this.players.forEach(player => {
+            player.controller.movement();
             player.updateMovement();
             player.render();
         })

@@ -8,7 +8,8 @@
     "build": "yarn frontend:build && yarn server:build",
     "transfer": "mkdir -p public/ && cp -r ../frontend/build/* public/",
     "start": "node dist/socket-server/server.js",
-    "launch": "yarn build && yarn transfer && yarn start"
+    "launch": "tsc && yarn start",
+    "full-launch": "yarn build && yarn transfer && yarn start"
   },
   "type": "module",
   "dependencies": {
@@ -20,6 +21,7 @@
     "process": "^0.11.10",
     "simple-peer": "^9.11.1",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"

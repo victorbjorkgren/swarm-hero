@@ -4,13 +4,7 @@ import {GiMagicSwirl} from "react-icons/gi";
 import {PiGhostThin} from "react-icons/pi";
 import {FaCat} from "react-icons/fa";
 import {BackButton} from "./BackButton";
-
-export enum Factions {
-    Mech,
-    Wild,
-    Mage,
-    Spirit
-}
+import {Factions} from "../../types/types";
 
 interface Props {
     doneCallback: (name: string, faction: Factions)=>void;

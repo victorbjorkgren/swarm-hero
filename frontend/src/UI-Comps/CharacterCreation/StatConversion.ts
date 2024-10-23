@@ -1,4 +1,4 @@
-import {gameConfig} from "../../config";
+import {gameConfig} from "@shared/config";
 
 export const healthConversion = (level: number): number => {
     return gameConfig.healthLevels[level];

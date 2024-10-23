@@ -1,20 +1,30 @@
-import {SpellEffects, Spells} from "./types/spellTypes";
-import {Units} from "./types/unitTypes";
-import {Vector2D} from "./GameComps/Utility";
-import {Factions} from "./UI-Comps/CharacterCreation/FactionSelection";
-import {ControllerMapping} from "./types/types";
+import {SpellEffects, Spells} from "../frontend/src/types/spellTypes";
+import {Units} from "../frontend/src/types/unitTypes";
+import {Vector2D} from "../frontend/src/GameComps/Utility";
+import {ControllerMapping, Factions} from "../frontend/src/types/types";
 
 export const gameConfig = {
     nPlayerGame: 3,
 
-    mapWidth: 8000,
-    mapHeight: 4000,
+    // mapWidth: 8000,
+    // mapHeight: 4000,
+    //
+    // castlePositions: [
+    //     new Vector2D(500, 500),
+    //     new Vector2D(7500, 3500),
+    //     new Vector2D(7500, 500),
+    //     new Vector2D(500, 3500),
+    // ],
+    // playerStartOffset: new Vector2D(0, 100),
+
+    mapWidth: 1000,
+    mapHeight: 1000,
 
     castlePositions: [
-        new Vector2D(500, 500),
-        new Vector2D(7500, 3500),
-        new Vector2D(7500, 500),
-        new Vector2D(500, 3500),
+        new Vector2D(200, 200),
+        new Vector2D(800, 800),
+        new Vector2D(200, 800),
+        new Vector2D(800, 200),
     ],
     playerStartOffset: new Vector2D(0, 100),
 

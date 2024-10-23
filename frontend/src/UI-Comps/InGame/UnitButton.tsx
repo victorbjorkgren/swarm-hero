@@ -3,7 +3,7 @@ import {SpellICon} from "./SpellICon";
 import {Spells, SpellPack} from "../../types/spellTypes";
 import {Units} from "../../types/unitTypes";
 import {UnitIcon} from "./UnitIcon";
-import {SpellPacks, UnitPacks} from "../../config";
+import {SpellPacks, UnitPacks} from "@shared/config";
 
 interface UnitButtonProps {
     n: number;

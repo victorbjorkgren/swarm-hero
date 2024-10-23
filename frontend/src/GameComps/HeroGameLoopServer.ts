@@ -4,21 +4,20 @@ import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {CastleServer} from "./Entities/CastleServer";
-import {AABBCollider, Character, Controls} from "../types/types";
+import {AABBCollider, Character, Controls, Factions} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
-import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
-import {gameConfig} from "../config";
+import {gameConfig} from "@shared/config";
 import {
     BuyDroneMessage,
-    CastleInitData,
+    CastleInitData, CastleUpdateData,
     Client,
     ClientID,
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
     InitialDataMessage,
-    InitialDataPackage,
-    PlayerInitData,
+    InitialDataPackage, ParticleUpdateData,
+    PlayerInitData, PlayerUpdateData,
     ServerMessage,
     ServerMessageType,
     ServerPayloads,
@@ -90,12 +89,12 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
             case ClientMessageType.RequestSpellCast:
                 this.handleSpellCastRequest(clientId, message.payload);
                 break;
-            // case ClientMessageType.KeyDown:
-            //     this.handleKeyboardPress(clientId, message.payload, true);
-            //     break;
-            // case ClientMessageType.KeyUp:
-            //     this.handleKeyboardPress(clientId, message.payload, false);
-            //     break;
+            case ClientMessageType.KeyDown:
+                // this.handleKeyboardPress(clientId, message.payload, true);
+                break;
+            case ClientMessageType.KeyUp:
+                // this.handleKeyboardPress(clientId, message.payload, false);
+                break;
             case ClientMessageType.RequestBuyDrone:
                 this.handleBuyDroneRequest(clientId, message.payload);
                 break;
@@ -325,18 +324,63 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     }
 
     update() {
-        if (!this.gameOn) return
-        if (this.particleSystem === undefined) return
+        // TODO: Just bring the changed values instead of all.
+        const playerUpdate: PlayerUpdateData[] = []
+        const castleUpdate: CastleUpdateData[] = []
+        const particleUpdate: ParticleUpdateData[] = []
+        this.localClientScene.players.forEach((player) => {
+            playerUpdate.push({
+                clientId: player.id,
+                alive: player.isAlive(),
+                pos: player.pos,
+                vel: player.vel,
+                acc: player.acc,
+                health: player.health,
+                mana: player.mana,
+                gold: player.gold,
+            })
 
-        this.updateDayTime();
-
-        // Updates
-        this.particleSystem?.update();
-        this.players.forEach(player => {
-            // player.controller.movement();
-            player.updateMovement();
-            // player.render();
+            player.myCastles.forEach(castle => {
+                castleUpdate.push({
+                    castleId: castle.id,
+                    alive: castle.isAlive(),
+                    owner: castle.owner,
+                    health: castle.health,
+                })
+            })
         })
+        this.localClientScene.particleSystem?.getParticles().deepForEach(particle => {
+            particleUpdate.push({
+                particleId: particle.id,
+                alive: particle.isAlive(),
+                pos: particle.pos,
+                vel: particle.vel,
+                acc: particle.acc,
+                health: particle.health,
+                owner: particle.owner.id,
+                ownerType: particle.owner.entityType,
+            })
+        })
+
+        this.broadcast(ServerMessageType.GameUpdate, {
+            playerUpdate: playerUpdate,
+            castleUpdate: castleUpdate,
+            particleUpdate: particleUpdate,
+            dayTime: this.localClientScene.dayTime,
+        })
+
+        // if (!this.gameOn) return
+        // if (this.particleSystem === undefined) return
+        //
+        // this.updateDayTime();
+        //
+        // // Updates
+        // this.particleSystem?.update();
+        // this.players.forEach(player => {
+        //     // player.controller.movement();
+        //     player.updateMovement();
+        //     // player.render();
+        // })
     };
 }
 

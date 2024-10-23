@@ -1,5 +1,5 @@
 import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
-import {EntityBase, Team} from "../../types/types";
+import {EntityBase, EntityTypes, Team} from "../../types/types";
 import {Graphics} from "pixi.js";
 import HeroGameLoopServer from "../HeroGameLoopServer";
 import {UnitPack} from "../../types/unitTypes";
@@ -26,6 +26,8 @@ export class ParticleBase implements EntityBase {
     givesIncome: number = 0;
 
     targetedBy: ParticleBase[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Particle;
 
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;

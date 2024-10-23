@@ -7,7 +7,7 @@ import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
-import {gameConfig} from "../../config";
+import {gameConfig} from "@shared/config";
 import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
 import {HeroGameLoopClient} from "../../GameComps/HeroGameLoopClient";
 

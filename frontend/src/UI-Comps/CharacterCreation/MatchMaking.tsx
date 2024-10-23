@@ -3,23 +3,29 @@ import React, {useEffect, useRef, useState} from "react";
 import {connectMesh} from "../../Hooks/Communication";
 import {GameConnection, PeerMap} from "./MainCharacterCreation";
 import {ThreeDots} from "react-loading-icons";
+import {gameConfig} from "@shared/config";
 
 interface Props {
     handleBack: () => void;
     doneCallback: (connectionData: GameConnection) => void;
 }
 let leaveQueue: ()=>void = ()=>{}
+let notConnected: boolean = true;
 
 export const MatchMaking: React.FC<Props> = ({handleBack, doneCallback}) => {
     const [nConnected, setNConnected] = useState<number>(0);
 
     const handleLeave = () => {
         leaveQueue();
+        notConnected = true
         handleBack();
     }
 
     useEffect(() => {
-        leaveQueue = connectMesh(3, setNConnected, doneCallback);
+        if (notConnected) {
+            notConnected = false;
+            leaveQueue = connectMesh(gameConfig.nPlayerGame, setNConnected, doneCallback);
+        }
     }, []);
 
     return (

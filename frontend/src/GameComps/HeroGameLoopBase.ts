@@ -4,7 +4,7 @@ import {PlayerServer} from "./Entities/PlayerServer";
 import {PlayerBase} from "./Entities/PlayerBase";
 import {ParticleSystemBase} from "./ParticleSystemBase";
 import {CastleBase} from "./Entities/CastleBase";
-import {gameConfig} from "../config";
+import {gameConfig} from "@shared/config";
 import {CastleServer} from "./Entities/CastleServer";
 import {CastleID, ClientID, ServerMessageType} from "@shared/commTypes";
 
@@ -15,7 +15,7 @@ export abstract class HeroGameLoopBase {
     public particleSystem: ParticleSystemBase | null = null;
 
     public startTime: number | null = null;
-    protected dayTime: number = 0;
+    dayTime: number = 0;
     protected dayLength: number = gameConfig.dayLength; // seconds
 
     protected gameOn: boolean = true;

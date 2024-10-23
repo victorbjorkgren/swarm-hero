@@ -1,0 +1,19 @@
+{
+  "name": "swarm-hero",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "build:signal-service": "node backend-services/signalling-service/build.js",
+    "start:frontend": "(cd frontend && yarn start)",
+    "start:signal-service": "yarn build:signal-service && node backend-services/signalling-service/dist/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/victorbjorkgren/swarm-hero.git"
+  },
+  "private": true,
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "esbuild-plugin-alias": "^0.2.1"
+  }
+}

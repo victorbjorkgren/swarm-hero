@@ -3,7 +3,6 @@ import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleClient} from "../GameComps/Entities/CastleClient";
 import {ParticleBase} from "../GameComps/Entities/ParticleBase";
 import {CastleID, ClientID, EntityID} from "@shared/commTypes";
-import {Factions} from "../UI-Comps/CharacterCreation/FactionSelection";
 import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
 export interface Polygon {
@@ -31,6 +30,8 @@ export interface EntityBase {
     health: number;
     givesIncome: number;
     team: Team | null;
+
+    entityType: EntityTypes;
 
     targetedBy: ParticleBase[];
 
@@ -124,6 +125,13 @@ export interface CollisionResult {
     collides: boolean;
     normal1?: Vector2D;
     normal2?: Vector2D;
+}
+
+export enum Factions {
+    Mech,
+    Wild,
+    Mage,
+    Spirit
 }
 
 export interface Character {

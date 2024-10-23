@@ -2,8 +2,6 @@ import {Character, Controls, EntityTypes, Team} from "../frontend/src/types/type
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
 import {Units} from "../frontend/src/types/unitTypes";
-import {WebSocket} from "ws";
-// import Peer from "simple-peer";
 
 export type EntityID = string;
 export type ClientID = EntityID;
@@ -108,6 +106,7 @@ export type ExplosionNoticeMessage = {
 
 export type PlayerUpdateData = {
     clientId: ClientID,
+    alive: boolean,
     pos: Vector2D | null,
     vel: Vector2D | null,
     acc: Vector2D | null,
@@ -118,6 +117,7 @@ export type PlayerUpdateData = {
 
 export type CastleUpdateData = {
     castleId: CastleID,
+    alive: boolean,
     owner: ClientID,
     health: number | null,
 }

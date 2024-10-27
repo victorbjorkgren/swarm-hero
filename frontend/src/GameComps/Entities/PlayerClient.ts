@@ -271,14 +271,14 @@ export class PlayerClient extends PlayerBase {
         const uMgr = this.particleSystem?.getParticles()
         if (uMgr === undefined) return false;
 
-        const droneSet = uMgr.getUnits(this, droneType)
+        const droneSet = uMgr.getUnits(this.id, droneType)
         if (droneSet === null) return false;
         if (droneSet.size < n) return false;
 
         let movedDrones = 0;
         for (const drone of droneSet) {
-            uMgr.switchOwner(drone, castle)
-            drone.setLeaderPosition(castle.pos);
+            uMgr.switchOwner(drone, castle.id)
+            drone.setLeader(castle);
             if (++movedDrones >= n) break;
         }
         return true;
@@ -291,14 +291,14 @@ export class PlayerClient extends PlayerBase {
         const uMgr = this.particleSystem?.getParticles()
         if (uMgr === undefined) return false;
 
-        const droneSet = uMgr.getUnits(castle, droneType)
+        const droneSet = uMgr.getUnits(castle.id, droneType)
         if (droneSet === null) return false;
         if (droneSet.size < n) return false;
 
         let movedDrones = 0;
         for (const drone of droneSet) {
-            uMgr.switchOwner(drone, this)
-            drone.setLeaderPosition(this.pos);
+            uMgr.switchOwner(drone, this.id)
+            drone.setLeader(this);
             if (++movedDrones >= n) break;
         }
         return true;

@@ -8,7 +8,7 @@ export const TitleScreen: React.FC<Props> = ({newGameCallback}) => {
     return (
         <>
             <div className={`absolute h-screen w-screen gap-20 items-center justify-center flex flex-col`}>
-                <span className={`font-bold text-8xl`}>Echoes of the Swarm</span>
+                <span className={`font-titleFont font-bold text-8xl`}>Echoes of the Swarm</span>
                 <button
                     className={
                     `bg-white flex items-center justify-center text-white text-2xl p-10 

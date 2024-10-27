@@ -108,8 +108,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     if (player === undefined || player === null) return null;
 
-    const playerDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player) || []);
-    const townDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.popUpCastle) || []);
+    const playerDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.id) || []);
+    const townDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.popUpCastle?.id ?? null) || []);
 
     const maxUnitBoxes = Math.max(playerDrones.length, townDrones.length) + 1;
 

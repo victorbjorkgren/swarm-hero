@@ -10,7 +10,7 @@ import {EntityID, ParticleID} from "@shared/commTypes";
 export class ParticleBase implements EntityBase {
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
-    leaderPosition: Vector2D | undefined;
+    leader: EntityBase | null = null;
     radius: number;
     isBoiding: boolean = true;
     isEngaging: boolean = false;
@@ -19,7 +19,7 @@ export class ParticleBase implements EntityBase {
     maxTargets: number = 1;
     engaging: EntityBase[] = [];
     firingLaserAt: FiringLaserAt[] = [];
-    desiredPos: Vector2D | undefined = undefined;
+    desiredPos: Vector2D | null = null;
     desiredSpeed: number = .75;
     desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
     maxAcc: number = .05;
@@ -48,7 +48,7 @@ export class ParticleBase implements EntityBase {
         protected scene: HeroGameLoopBase,
         public groupID: number,
         public unitInfo: UnitPack,
-        public owner: EntityBase,
+        public owner: EntityID,
         protected unitManager: UnitManager<ParticleBase>,
         public id: ParticleID,
     ) {
@@ -83,13 +83,14 @@ export class ParticleBase implements EntityBase {
         this.unitManager.remove(this);
     }
 
-    setLeaderPosition(position: Vector2D) {
-        this.leaderPosition = position;
+    setLeader(leader: EntityBase) {
+        this.leader = leader;
     }
 
     getLeaderPosition() {
-        if (this.leaderPosition === undefined) return undefined
-        return Vector2D.add(this.leaderPosition, Vector2D.ones().scale(20));
+        if (this.leader === null) return null
+        // return Vector2D.add(this.leader, Vector2D.ones().scale(20));
+        return this.leader.pos;
     }
 
     calcDesiredPos() {
@@ -103,7 +104,7 @@ export class ParticleBase implements EntityBase {
             // }
         } else {
             const leaderPosition = this.getLeaderPosition();
-            if (leaderPosition !== undefined) {
+            if (leaderPosition !== null) {
                 const leaderDelta = Vector2D.subtract(leaderPosition, this.pos);
                 const leaderDist = leaderDelta.magnitude();
                 if (leaderDist < this.desiredLeaderDist.min) {
@@ -111,10 +112,10 @@ export class ParticleBase implements EntityBase {
                 } else if (leaderDist > this.desiredLeaderDist.max) {
                     this.desiredPos = Vector2D.add(this.pos, leaderDelta.scale(1));
                 } else {
-                    this.desiredPos = undefined;
+                    this.desiredPos = null;
                 }
             } else {
-                this.desiredPos = undefined;
+                this.desiredPos = null;
             }
         }
     }

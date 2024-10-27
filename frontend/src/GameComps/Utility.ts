@@ -93,6 +93,10 @@ export class Vector2D {
     static ones(): Vector2D {
         return new Vector2D(1, 1);
     }
+
+    static cast<T extends {x: number, y: number}>(obj: T): Vector2D {
+        return new Vector2D(obj.x, obj.y);
+    }
 }
 
 export function randomUnitVector(rMin:number=0, rMax: number=1): Vector2D {

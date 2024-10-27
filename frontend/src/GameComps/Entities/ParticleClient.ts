@@ -1,13 +1,11 @@
 import {ParticleBase} from "./ParticleBase";
 import {EntityBase, EntityClient, Team} from "../../types/types";
-import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
-import {HeroGameLoopBase} from "../HeroGameLoopBase";
+import {Vector2D} from "../Utility";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {Graphics} from "pixi.js";
-import {ParticleID} from "@shared/commTypes";
+import {EntityID, ParticleID} from "@shared/commTypes";
 
 export class ParticleClient extends ParticleBase implements EntityClient {
     constructor(
@@ -19,12 +17,13 @@ export class ParticleClient extends ParticleBase implements EntityClient {
         protected scene: HeroGameLoopClient,
         public groupID: number,
         public unitInfo: UnitPack,
-        public owner: EntityBase,
+        public owner: EntityID,
         protected override unitManager: UnitManager<ParticleClient>,
         public id: ParticleID,
     ) {
-        super(pos,mass,team,maxVel,color,scene,groupID,unitInfo,owner,unitManager,id)
+        super(pos, mass, team, maxVel, color, scene, groupID, unitInfo, owner, unitManager, id)
     }
+
     killSprites() {
         if (this.particleSprite) {
             this.scene.pixiRef.stage.removeChild(this.particleSprite);
@@ -82,7 +81,8 @@ export class ParticleClient extends ParticleBase implements EntityClient {
                     .stroke({
                         color: 0xFFFFFF,
                         alpha: foePack.intensity,
-                        width: 1});
+                        width: 1
+                    });
             }
         }
     }

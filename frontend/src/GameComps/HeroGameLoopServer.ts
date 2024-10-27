@@ -4,7 +4,7 @@ import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {CastleServer} from "./Entities/CastleServer";
-import {AABBCollider, Character, Controls, Factions} from "../types/types";
+import {AABBCollider, Character, Controls, EntityTypes, Factions} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import {gameConfig} from "@shared/config";
 import {
@@ -183,8 +183,8 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         // this.stopGame();
         this.preload().then(() => {
             this.create();
-            // this.tickerUp()
-            // this.resumeGame();
+            this.tickerUp()
+            this.resumeGame();
         });
     }
 
@@ -350,6 +350,11 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
             })
         })
         this.localClientScene.particleSystem?.getParticles().deepForEach(particle => {
+            const leaderId = particle.leader?.id ?? null;
+            let leaderType: EntityTypes | null = null;
+            if (leaderId) {
+                leaderType = this.localClientScene.idTypes.get(leaderId) ?? null;
+            }
             particleUpdate.push({
                 particleId: particle.id,
                 alive: particle.isAlive(),
@@ -357,8 +362,10 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
                 vel: particle.vel,
                 acc: particle.acc,
                 health: particle.health,
-                owner: particle.owner.id,
-                ownerType: particle.owner.entityType,
+                owner: particle.owner,
+                ownerType: this.localClientScene.idTypes.get(particle.owner)!,
+                leader: leaderId,
+                leaderType: leaderType,
             })
         })
 
@@ -368,19 +375,6 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
             particleUpdate: particleUpdate,
             dayTime: this.localClientScene.dayTime,
         })
-
-        // if (!this.gameOn) return
-        // if (this.particleSystem === undefined) return
-        //
-        // this.updateDayTime();
-        //
-        // // Updates
-        // this.particleSystem?.update();
-        // this.players.forEach(player => {
-        //     // player.controller.movement();
-        //     player.updateMovement();
-        //     // player.render();
-        // })
     };
 }
 

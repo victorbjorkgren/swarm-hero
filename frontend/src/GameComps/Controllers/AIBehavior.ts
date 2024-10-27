@@ -254,8 +254,8 @@ export class AIBehavior {
     }
 
     estimateFoeStrength(foe: EntityBase, attacker: EntityBase): number {
-        const foeDrones = this.getUnitManager()?.flatOwnerCount(foe) || 0
-        const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker) || 0
+        const foeDrones = this.getUnitManager()?.flatOwnerCount(foe.id) || 0
+        const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker.id) || 0
         if (attackerDrones === 0) return 1000;
         return foeDrones / attackerDrones;
     }

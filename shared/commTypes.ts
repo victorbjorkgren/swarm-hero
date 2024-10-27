@@ -125,14 +125,14 @@ export type CastleUpdateData = {
 export type ParticleUpdateData = {
     particleId: ParticleID,
     alive: boolean
-    pos?: Vector2D,
-    vel?: Vector2D,
-    acc?: Vector2D,
-    health?: number,
-    owner?: EntityID
-    ownerType?: EntityTypes,
-    leader?: EntityID,
-    leaderType?: EntityTypes
+    pos: Vector2D,
+    vel: Vector2D,
+    acc: Vector2D,
+    health: number,
+    owner: EntityID
+    ownerType: EntityTypes,
+    leader: EntityID | null,
+    leaderType: EntityTypes | null
 }
 
 

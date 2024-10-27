@@ -36,8 +36,8 @@ export class ParticleSystemBase {
     }
 
     createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: PlayerBase, droneId: ParticleID): ParticleBase {
-        const p = new ParticleBase( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner, this.unitManager, droneId);
-        p.setLeaderPosition(owner.pos);
+        const p = new ParticleBase( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner.id, this.unitManager, droneId);
+        p.setLeader(owner);
         this.unitManager.add(p);
         return p;
     }
@@ -131,7 +131,7 @@ export class ParticleSystemBase {
                     if(!player) continue;
                     this.engageIfClose(me, player)
                     if (me.engaging.length >= me.maxTargets) return;
-                    this.unitManager.ownerForEach(player, (other) => {
+                    this.unitManager.ownerForEach(player.id, (other) => {
                         if (me.engaging.length >= me.maxTargets) return;
                         this.engageIfClose(me, other);
                     })
@@ -141,7 +141,7 @@ export class ParticleSystemBase {
                     if (!castle) continue;
                     this.engageIfClose(me, castle)
                     if (me.engaging.length >= me.maxTargets) return;
-                    this.unitManager.ownerForEach(castle, (other) => {
+                    this.unitManager.ownerForEach(castle.id, (other) => {
                         if (me.engaging.length >= me.maxTargets) return;
                         this.engageIfClose(me, other);
                     })

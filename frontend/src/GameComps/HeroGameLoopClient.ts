@@ -1,21 +1,32 @@
 import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import React from "react";
 import {setupBackground} from "./Graphics/TileBackground";
-import {AABBCollider, Character, Controls, popUpEvent, Team, TexturePack} from "../types/types";
+import {
+    AABBCollider,
+    Character,
+    Controls,
+    EntityBase,
+    EntityTypes,
+    popUpEvent,
+    Team,
+    TexturePack
+} from "../types/types";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
 import {gameConfig, UnitPacks} from "@shared/config";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {
     CastleID,
+    CastleUpdateData,
     Client,
     ClientID,
     ClientMessage,
     ClientMessageType,
     ClientPayloads,
-    DroneBoughtMessage,
+    DroneBoughtMessage, EntityID,
     GameUpdateMessage,
     InitialDataMessage,
+    ParticleUpdateData,
     PlayerUpdateData,
     ServerMessage,
     ServerMessageType,
@@ -40,6 +51,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     public players: Map<ClientID, PlayerClient> = new Map();
     public teams: Team[] = [];
     public castles: Map<CastleID, CastleClient> = new Map();
+    public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
 
@@ -209,15 +221,16 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     handleGameUpdate(data: GameUpdateMessage) {
+        this.dayTime = data.dayTime;
         data.playerUpdate?.forEach((playerUpdate: PlayerUpdateData)=>{
             const player = this.players.get(playerUpdate.clientId);
             if (!player) return;
             if (playerUpdate.pos !== null)
-                player.pos = playerUpdate.pos.copy();
+                player.pos = Vector2D.cast(playerUpdate.pos);
             if (playerUpdate.vel !== null)
-                player.vel = playerUpdate.vel.copy();
+                player.vel = Vector2D.cast(playerUpdate.vel);
             if (playerUpdate.acc !== null)
-                player.acc = playerUpdate.acc.copy();
+                player.acc = Vector2D.cast(playerUpdate.acc);
 
             if (playerUpdate.health !== null)
                 player.health = playerUpdate.health;
@@ -226,6 +239,56 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             if (playerUpdate.gold !== null)
                 player.gold = playerUpdate.gold;
         })
+        data.castleUpdate?.forEach((castleUpdate: CastleUpdateData) => {
+            const castle = this.castles.get(castleUpdate.castleId);
+            if (!castle) return;
+            if (castleUpdate.health !== null)
+                castle.health = castleUpdate.health
+            if (castleUpdate.owner !== null)
+                castle.owner = castleUpdate.owner; // TODO: Switch for player as well
+        })
+        data.particleUpdate?.forEach((particleUpdate: ParticleUpdateData) => {
+            const uMgr = this.particleSystem?.getParticles();
+            if (!uMgr) return;
+            const particle = uMgr.getById(particleUpdate.particleId);
+            if (!particle) return;
+            if (particleUpdate.pos !== null)
+                particle.pos = Vector2D.cast(particleUpdate.pos);
+            if (particleUpdate.vel !== null)
+                particle.vel = Vector2D.cast(particleUpdate.vel);
+            if (particleUpdate.acc !== null)
+                particle.acc = Vector2D.cast(particleUpdate.acc);
+            if (particleUpdate.health !== null)
+                particle.health = particleUpdate.health
+            if (particleUpdate.owner !== null) {
+                if (particle.owner !== particleUpdate.owner) {
+                    const newOwnerEntity = this.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
+                    if (!newOwnerEntity) return;
+                    uMgr.switchOwner(particle, newOwnerEntity.id);
+                }
+            }
+            if (particleUpdate.leader !== null) {
+                if (!particle.leader || particle.leader.id !== particleUpdate.leader) {
+                    const newOwnerEntity = this.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
+                    if (!newOwnerEntity) return;
+                    uMgr.switchOwner(particle, newOwnerEntity.id);
+                }
+            }
+
+        })
+    }
+
+    getEntityById(id: EntityID, type: EntityTypes): EntityBase | undefined {
+        switch (type) {
+            case EntityTypes.Castle:
+                return this.castles.get(id);
+            case EntityTypes.Player:
+                return this.players.get(id);
+            case EntityTypes.Particle:
+                return this.particleSystem?.getParticles().getById(id);
+            default:
+                throw new Error(`Unsupported Entity type: ${type}`);
+        }
     }
 
     requestInitialData(): void {
@@ -373,12 +436,14 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             const player = this.players.get(pInit.id)!
             const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
             player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)
+            this.idTypes.set(pInit.id, EntityTypes.Player);
         });
         initData.package.castles.forEach(cInit => {
             const castle = new CastleClient(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
             this.castles.set(cInit.id, castle)
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
+            this.idTypes.set(cInit.id, EntityTypes.Castle);
         })
 
         this.particleSystem = new ParticleSystemClient(this.teams, this);

@@ -92,7 +92,7 @@ export abstract class PlayerBase implements EntityBase {
         this.myCastles.forEach(castle => {
             this.gold += castle.givesIncome;
         })
-        this.particleSystem?.getParticles().ownerForEach(this, (drone) => {
+        this.particleSystem?.getParticles().ownerForEach(this.id, (drone) => {
             this.gold += drone.givesIncome;
         })
     }

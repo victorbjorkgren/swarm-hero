@@ -41,8 +41,8 @@ export class PlayerClient extends PlayerBase {
 
     private playerSpritePack: DirectionalSpriteSheet | null = null;
     private currentAnimation: AnimatedSprite | null = null;
-    private healthSprite: Graphics | null = null;
-    private manaSprite: Graphics | null = null;
+    private healthBarSprite: Graphics | null = null;
+    private manaBarSprite: Graphics | null = null;
     private rangeSprite: Graphics | null = null;
     private spellCursorSprite: Container | null = null;
     private nameSprite: Text | null = null;
@@ -51,7 +51,6 @@ export class PlayerClient extends PlayerBase {
     private currentSpellRangeSpell: SpellPack | null = null;
     activeSpell: SpellPack | null = null;
     castingDoneCallback: (didCast: boolean) => void = () => {};
-    public observedSpellCasts: Set<SpellCastID> = new Set();
 
     public controller: Controller;
 
@@ -157,13 +156,19 @@ export class PlayerClient extends PlayerBase {
 
     broadcastSpellCast(position: Vector2D, spell: SpellPack, safeTeam: Team[] = []) {
         const castId = uuidv4();
-        this.observedSpellCasts.add(castId);
-
+        this.scene.observedSpellCasts.add(castId);
+        const payload: SpellCastMessage = {
+            instigator: this.id,
+            position: position,
+            spell: spell,
+            castId: castId,
+            safeTeam: safeTeam
+        };
         this.scene.clients.forEach(client => {
             if (client.id === this.scene.localId) return;
             client.datachannel.send(JSON.stringify({
                 type: ClientMessageType.RequestSpellCast,
-                payload: {position, spell, castId, safeTeam} as SpellCastMessage}));
+                payload: payload}));
         })
     }
 
@@ -220,6 +225,7 @@ export class PlayerClient extends PlayerBase {
     }
 
     attemptBuyDrone(unit: Units, n: number): boolean {
+        // Host Check
         if (!this.scene.particleSystem) return false;
         if (this.popUpCastle === undefined || this.popUpCastle === null) return false;
         if (!this.popUpCastle.isAlive()) return false;
@@ -244,6 +250,7 @@ export class PlayerClient extends PlayerBase {
     }
 
     attemptBuySpell(spell: SpellPack) {
+        // Host Check
         if (this.popUpCastle === undefined || this.popUpCastle === null) return false;
         if (!this.popUpCastle.isAlive()) return false;
         if (this.gold < spell.buyCost) return false
@@ -305,6 +312,7 @@ export class PlayerClient extends PlayerBase {
 
 
     attemptSpellCast(): void {
+        // Direct Peer
         if (!this.isCasting) return
         if (this.activeSpell === null) return
         if (this.spellCursorSprite === null) return
@@ -319,18 +327,6 @@ export class PlayerClient extends PlayerBase {
             this.cancelSpell()
         }
     }
-
-    resolveSpell(castMessage: SpellCastMessage) {
-        const spell = castMessage.spell
-        const sqEffectRange = spell.effectRange * spell.effectRange;
-        this.scene.areaDamage(castMessage.position, sqEffectRange, spell.effectAmount * this.powerMultiplier, castMessage.safeTeam);
-        this.renderExplosion(castMessage.position, spell.effectRange);
-
-        this.mana -= spell.castCost;
-        this.castingDoneCallback(true);
-        this.castingDoneCallback = ()=>{};
-    }
-
 
     closeCityPopUp(): void {
         this.scene.setPlayerPopOpen(undefined);
@@ -368,6 +364,20 @@ export class PlayerClient extends PlayerBase {
         this.isCasting = true;
         this.activeSpell = spell;
         this.castingDoneCallback = castingDoneCallback;
+    }
+
+    castSpell(castPos: Vector2D, spell: SpellPack): boolean {
+        if (!this.availableSpells.some(spellPack => JSON.stringify(spellPack) === JSON.stringify(spell))) return false;
+        if (spell.castCost > this.mana) return false;
+        if (Vector2D.sqDist(castPos, this.pos) > spell.castRange * spell.castRange) return false;
+        this.mana -= spell.castCost;
+        const sqEffectRange = spell.effectRange * spell.effectRange;
+        this.scene.areaDamage(castPos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
+        this.renderExplosion(castPos, spell.effectRange);
+
+        this.castingDoneCallback(true);
+        this.castingDoneCallback = ()=>{};
+        return true;
     }
 
     cancelSpell() {
@@ -441,18 +451,18 @@ export class PlayerClient extends PlayerBase {
     }
 
     renderStatsBar(): void {
-        if (this.healthSprite === null) {
-            this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoopClient.zIndex.ground;
-            this.scene.pixiRef.stage.addChild(this.healthSprite);
+        if (this.healthBarSprite === null) {
+            this.healthBarSprite = new Graphics();
+            this.healthBarSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+            this.scene.pixiRef.stage.addChild(this.healthBarSprite);
         }
-        if (this.manaSprite === null) {
-            this.manaSprite = new Graphics();
-            this.manaSprite.zIndex = HeroGameLoopClient.zIndex.ground;
-            this.scene.pixiRef.stage.addChild(this.manaSprite);
+        if (this.manaBarSprite === null) {
+            this.manaBarSprite = new Graphics();
+            this.manaBarSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+            this.scene.pixiRef.stage.addChild(this.manaBarSprite);
         }
-        this.healthSprite.clear();
-        this.manaSprite.clear()
+        this.healthBarSprite.clear();
+        this.manaBarSprite.clear()
 
         if (!this.isAlive()) return;
         if (this.currentAnimation === null) return;
@@ -460,7 +470,7 @@ export class PlayerClient extends PlayerBase {
         const healthRatio = this.health / this.maxHealth;
         const manaRatio = this.mana / this.maxMana;
         const lx = 40;
-        this.healthSprite
+        this.healthBarSprite
             .moveTo(this.pos.x * this.scene.renderScale - (lx / 2), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 8)
             .lineTo((this.pos.x * this.scene.renderScale - (lx / 2)) + (lx * healthRatio), this.pos.y * this.scene.renderScale  - this.currentAnimation.height / 2 - 8)
             .stroke({
@@ -468,9 +478,9 @@ export class PlayerClient extends PlayerBase {
                 alpha: .3,
                 width: 2
             })
-        this.manaSprite
+        this.manaBarSprite
             .moveTo(this.pos.x * this.scene.renderScale - (lx / 2), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 5)
-            .lineTo((this.pos.x * this.scene.renderScale - (lx / 2)) + (lx * healthRatio), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 5)
+            .lineTo((this.pos.x * this.scene.renderScale - (lx / 2)) + (lx * manaRatio), this.pos.y * this.scene.renderScale - this.currentAnimation.height / 2 - 5)
             .stroke({
                 color: 0x0000FF,
                 alpha: .3,

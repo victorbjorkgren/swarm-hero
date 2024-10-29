@@ -29,7 +29,7 @@ import {
     ParticleUpdateData,
     PlayerUpdateData,
     ServerMessage,
-    ServerMessageType, SpellBoughtMessage,
+    ServerMessageType, SpellBoughtMessage, SpellCastID,
     SpellCastMessage
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
@@ -58,6 +58,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     private cameraPivot: Vector2D = Vector2D.zeros();
     public castleTexturePack: TexturePack | null = null;
     explosionSprite: AnimatedSpriteFrames | null = null;
+    public observedSpellCasts: Set<SpellCastID> = new Set();
 
     public renderScale: number = 1
 
@@ -167,13 +168,15 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     }
 
     handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
+        if (this.observedSpellCasts.has(castData.castId)) return;
+        this.observedSpellCasts.add(castData.castId);
+        if (clientId !== castData.instigator) return;
         const instigator = this.players.get(clientId);
-        if (!instigator) return;
-        const success = instigator.castSpell(castData.position, castData.spell);
+        if (!instigator || !instigator.isAlive()) return;
+        instigator.castSpell(castData.position, castData.spell);
     }
 
     handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
-        console.log(`Handling ${clientId} keyboard`);
         const controller = this.players.get(clientId)?.controller;
         if (!controller) {
             console.error(`Client ${clientId} has no controller`);
@@ -198,7 +201,8 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
                 this.handleGameUpdate(message.payload as GameUpdateMessage);
                 break;
             case ServerMessageType.SpellCast:
-                this.handleSpellCast(message.payload as SpellCastMessage);
+                const castData = message.payload as SpellCastMessage;
+                this.handleSpellCastRequest(castData.instigator, castData);
                 break;
             case ServerMessageType.DroneBought:
                 this.handleDroneBought(message.payload as DroneBoughtMessage);
@@ -229,11 +233,6 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             console.log('Creating drone')
             this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId)
         }
-    }
-
-    handleSpellCast(message: SpellCastMessage) {
-        const instigator = this.players.get(message.instigator)
-        instigator?.resolveSpell(message)
     }
 
     handleGameUpdate(data: GameUpdateMessage) {

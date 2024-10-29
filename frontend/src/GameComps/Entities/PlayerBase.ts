@@ -25,7 +25,7 @@ export abstract class PlayerBase implements EntityBase {
 
     public name: string = ""
     protected maxHealth: number = 0;
-    protected powerMultiplier: number = 0;
+    powerMultiplier: number = 0;
     protected maxMana: number = 0;
     protected faction: Factions = Factions.Wild;
 
@@ -137,16 +137,5 @@ export abstract class PlayerBase implements EntityBase {
         return this.pos.copy();
         // }
         // return closestPointOnPolygon(this.collider.verts, from);
-    }
-
-    castSpell(castPos: Vector2D, spell: SpellPack): boolean {
-        if (spell.castCost > this.mana) return false;
-        if (Vector2D.sqDist(castPos, this.pos) > spell.castRange * spell.castRange) return false;
-
-        this.mana -= spell.castCost;
-        const sqEffectRange = spell.effectRange * spell.effectRange;
-        this.scene.areaDamage(castPos, sqEffectRange, spell.effectAmount * this.powerMultiplier);
-
-        return true;
     }
  }

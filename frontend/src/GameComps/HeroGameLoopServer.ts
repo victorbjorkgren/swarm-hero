@@ -114,6 +114,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     }
 
     handleBuySpellRequest(clientId: ClientID, spellRequest: RequestBuySpellMessage) {
+        console.log('buying')
         if (clientId !== spellRequest.buyer) return;
         const buyCheck = this.checkPlayerCanBuySpell(clientId, spellRequest.castle, spellRequest.spell);
         if (!buyCheck) return;
@@ -131,12 +132,9 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     }
 
     handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
-        const instigator = this.players.get(clientId);
-        if (!instigator) return;
-        const success = instigator.castSpell(castData.position, castData.spell);
-        if (success) {
-            this.broadcast(ServerMessageType.SpellCast, castData)
-        }
+        // Broadcast Direct Peer message
+        console.log('Relaying cast event!')
+        this.broadcast(ServerMessageType.SpellCast, castData)
     }
 
     handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {

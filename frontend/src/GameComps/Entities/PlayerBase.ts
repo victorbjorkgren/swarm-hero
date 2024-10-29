@@ -8,6 +8,7 @@ import {CastleBase} from "./CastleBase";
 import {ParticleBase} from "./ParticleBase";
 import {CastleServer} from "./CastleServer";
 import {EntityID} from "@shared/commTypes";
+import {CastleClient} from "./CastleClient";
 
 export abstract class PlayerBase implements EntityBase {
     public vel: Vector2D = Vector2D.zeros();
@@ -21,8 +22,6 @@ export abstract class PlayerBase implements EntityBase {
     public maxAcc: number = gameConfig.playerMaxAcc;
     public gold: number = gameConfig.playerStartGold;
     public givesIncome: number = gameConfig.playerSelfIncome;
-
-    public particleSystem: ParticleSystemBase | null = null;
 
     public name: string = ""
     protected maxHealth: number = 0;
@@ -92,7 +91,7 @@ export abstract class PlayerBase implements EntityBase {
         this.myCastles.forEach(castle => {
             this.gold += castle.givesIncome;
         })
-        this.particleSystem?.getParticles().ownerForEach(this.id, (drone) => {
+        this.scene.particleSystem?.getParticles().ownerForEach(this.id, (drone) => {
             this.gold += drone.givesIncome;
         })
     }
@@ -120,9 +119,9 @@ export abstract class PlayerBase implements EntityBase {
         // }
     }
 
-    findNearbyCastle(): CastleServer | null {
+    findNearbyCastle(): CastleBase | null {
         for (const castle of this.myCastles) {
-            if (castle.nearbyPlayers.find(player => player === this))
+            if (castle.nearbyPlayers.find(playerId => playerId === this.id))
                 return castle;
         }
         return null

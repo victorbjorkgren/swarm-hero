@@ -15,7 +15,7 @@ import {
     SpellCastMessage,
     ClientMessageType,
     BuyDroneMessage,
-    BuySpellMessage,
+    RequestBuySpellMessage,
     GarrisonMessage, Client, CastleID, ClientID, SpellCastID
 } from "@shared/commTypes";
 import {PlayerBase} from "./PlayerBase";
@@ -155,7 +155,7 @@ export class PlayerClient extends PlayerBase {
         this.currentAnimation.play();
     }
 
-    requestSpellCast(position: Vector2D, spell: SpellPack, safeTeam: Team[] = []) {
+    broadcastSpellCast(position: Vector2D, spell: SpellPack, safeTeam: Team[] = []) {
         const castId = uuidv4();
         this.observedSpellCasts.add(castId);
 
@@ -167,7 +167,7 @@ export class PlayerClient extends PlayerBase {
         })
     }
 
-    requestBuyDrone(unit: Units, n: number, castleId: CastleID) {
+    broadcastBuyDrone(unit: Units, n: number, castleId: CastleID) {
         this.scene.broadcast(
             ClientMessageType.RequestBuyDrone,
             {
@@ -177,19 +177,6 @@ export class PlayerClient extends PlayerBase {
                 castle: castleId
             } as BuyDroneMessage,
         )
-    }
-
-    requestBuySpell(spell: SpellPack) {
-        const castleId = this.popUpCastle?.id
-        if (!castleId) return
-        this.scene.hostchannel?.send(JSON.stringify({
-            type: ClientMessageType.RequestBuySpell,
-            payload: {
-                buyer: this.id,
-                spell: spell,
-                castle: castleId
-            } as BuySpellMessage,
-        }))
     }
 
     requestGarrisonDrone(unit: Units, n: number, isBringing: boolean) {
@@ -209,7 +196,7 @@ export class PlayerClient extends PlayerBase {
 
     findNearbyCastle(): CastleClient | null {
         for (const castle of this.myCastles) {
-            if (castle.nearbyPlayers.find(player => player === this))
+            if (castle.nearbyPlayers.find(playerId => playerId === this.id))
                 return castle;
         }
         return null
@@ -232,33 +219,45 @@ export class PlayerClient extends PlayerBase {
         // return closestPointOnPolygon(this.collider.verts, from);
     }
 
-    buyDrone(unit: Units, n: number): boolean {
-        if (!this.particleSystem) return false;
+    attemptBuyDrone(unit: Units, n: number): boolean {
+        if (!this.scene.particleSystem) return false;
         if (this.popUpCastle === undefined || this.popUpCastle === null) return false;
         if (!this.popUpCastle.isAlive()) return false;
         if (this.gold < (UnitPacks[unit].buyCost * n)) return false
 
-        this.gold -= UnitPacks[unit].buyCost * n;
+        this.scene.hostchannel?.send(JSON.stringify({
+            type: ClientMessageType.RequestBuyDrone,
+            payload: {
+                buyer: this.id,
+                unit: unit,
+                n: n,
+                castle: this.popUpCastle.id
+            }
+        }))
 
-        this.requestBuyDrone(unit, n, this.popUpCastle.id);
-        // for (let i = 0; i < n; i++) {
-        //     this.particleSystem.getNewParticle(this, castle, 0, UnitPacks[unit], this)
-        // }
         return true;
+
+        // this.gold -= UnitPacks[unit].buyCost * n;
+        //
+        // this.broadcastBuyDrone(unit, n, this.popUpCastle.id);
+        // return true;
     }
 
-    buySpell(spell: SpellPack): boolean {
+    attemptBuySpell(spell: SpellPack) {
         if (this.popUpCastle === undefined || this.popUpCastle === null) return false;
         if (!this.popUpCastle.isAlive()) return false;
         if (this.gold < spell.buyCost) return false
-
         const spellIndex = this.popUpCastle.availableSpells.indexOf(spell);
         if (spellIndex === -1) return false;
 
-        this.gold -= spell.buyCost;
-        this.availableSpells.push(spell);
-        this.popUpCastle.availableSpells.splice(spellIndex, 1);
-
+        this.scene.hostchannel?.send(JSON.stringify({
+            type: ClientMessageType.RequestBuySpell,
+            payload: {
+                buyer: this.id,
+                spell: spell,
+                castle: this.popUpCastle.id
+            }
+        }))
         return true;
     }
 
@@ -268,7 +267,7 @@ export class PlayerClient extends PlayerBase {
         if (!castle.isAlive()) return false;
         if (castle.owner !== this.id) return false;
 
-        const uMgr = this.particleSystem?.getParticles()
+        const uMgr = this.scene.particleSystem.getParticles()
         if (uMgr === undefined) return false;
 
         const droneSet = uMgr.getUnits(this.id, droneType)
@@ -288,7 +287,7 @@ export class PlayerClient extends PlayerBase {
         const castle = this.popUpCastle;
         if (castle === null) return false;
 
-        const uMgr = this.particleSystem?.getParticles()
+        const uMgr = this.scene.particleSystem.getParticles()
         if (uMgr === undefined) return false;
 
         const droneSet = uMgr.getUnits(castle.id, droneType)
@@ -313,7 +312,7 @@ export class PlayerClient extends PlayerBase {
         const success = this.castSpell(this.aimPos, this.activeSpell);
 
         if (success) {
-            this.requestSpellCast(this.aimPos, this.activeSpell);
+            this.broadcastSpellCast(this.aimPos, this.activeSpell);
             this.isCasting = false;
             this.activeSpell = null;
         } else {
@@ -340,7 +339,7 @@ export class PlayerClient extends PlayerBase {
 
     playerLeavingCastleMenu() {
         if (this.popUpCastle === null) return;
-        if (!this.popUpCastle.nearbyPlayers.includes(this)) {
+        if (!this.popUpCastle.nearbyPlayers.includes(this.id)) {
             this.closeCityPopUp();
         }
     }
@@ -352,7 +351,7 @@ export class PlayerClient extends PlayerBase {
         for (const castleId of this.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (castle === undefined) return;
-            if (castle.nearbyPlayers.includes(this)) {
+            if (castle.nearbyPlayers.includes(this.id)) {
                 this.scene.setPlayerPopOpen(
                     {
                         playerID: this.team!.id,

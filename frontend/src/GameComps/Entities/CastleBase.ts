@@ -1,8 +1,6 @@
 import {EntityBase, EntityTypes, Team} from "../../types/types";
 import {Vector2D} from "../Utility";
 import {gameConfig, SpellPacks} from "@shared/config";
-import {PlayerBase} from "./PlayerBase";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {SpellPack, Spells} from "../../types/spellTypes";
 import {ParticleBase} from "./ParticleBase";
 import {HeroGameLoopBase} from "../HeroGameLoopBase";
@@ -20,7 +18,7 @@ export abstract class CastleBase implements EntityBase {
     public entityType: EntityTypes = EntityTypes.Castle;
 
     public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
-    public nearbyPlayers: PlayerBase[] = [];
+    public nearbyPlayers: ClientID[] = [];
 
     public availableSpells: SpellPack[] = [
         SpellPacks[Spells.Explosion],
@@ -57,8 +55,15 @@ export abstract class CastleBase implements EntityBase {
         return this.pos;
     }
 
+    playerWithinRange(playerId: ClientID): boolean {
+        const player = this.scene.players.get(playerId);
+        if (!player || !player.isAlive()) return false;
+        if (!this.isAlive()) return false;
+        return Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist
+    }
+
     checkPlayers() {
-        this.nearbyPlayers = this.nearbyPlayers.filter(player => Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist);
+        this.nearbyPlayers = this.nearbyPlayers.filter(playerId => this.playerWithinRange(playerId));
         for (const playerId of this.team!.playerIds) {
             const player = this.scene.players.get(playerId);
             if (!player) continue;
@@ -66,7 +71,7 @@ export abstract class CastleBase implements EntityBase {
                 // if (!player.isLocal) {
                 //     player.popUpCastle = this;
                 // }
-                this.nearbyPlayers.push(player);
+                this.nearbyPlayers.push(player.id);
             // } else {
             //     if (!player.isLocal) {
             //         player.popUpCastle = null;

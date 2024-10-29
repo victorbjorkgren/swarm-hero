@@ -80,9 +80,9 @@ export class PlayerServer extends PlayerBase {
         }
     }
 
-    setParticleSystem(particleSystem: ParticleSystemBase): void {
-        this.particleSystem = particleSystem;
-    }
+    // setParticleSystem(particleSystem: ParticleSystemBase): void {
+    //     this.particleSystem = particleSystem;
+    // }
 
     // async getCat() {
     //     const catSpriteSheet: Spritesheet = await Assets.cache.get('/sprites/black_cat_run.json');

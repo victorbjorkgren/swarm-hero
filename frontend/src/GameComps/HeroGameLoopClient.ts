@@ -29,7 +29,7 @@ import {
     ParticleUpdateData,
     PlayerUpdateData,
     ServerMessage,
-    ServerMessageType,
+    ServerMessageType, SpellBoughtMessage,
     SpellCastMessage
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
@@ -69,7 +69,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     public server: HeroGameLoopServer | null = null;
     public isHost: boolean = false;
 
-    public particleSystem: ParticleSystemClient | null = null;
+    public particleSystem: ParticleSystemClient;
     public startTime: number | null = null;
 
     public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void
@@ -96,11 +96,13 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             this.sendToHost = this._hostRemote;
         }
 
+        this.particleSystem = new ParticleSystemClient(this.teams, this);
+
         this.clients.forEach(client => {
             if (client.id !== localId) {
                 client.datachannel.onmessage = (event: MessageEvent) => {
                     const parsedMessage = JSON.parse(event.data);
-                    console.log('incoming message', parsedMessage);
+                    // console.log('incoming message', parsedMessage);
                     if (client.id === this.hostId && 'serverFlag' in parsedMessage) {
                         this.handleServerMessage(parsedMessage)
                     } else {
@@ -201,17 +203,31 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             case ServerMessageType.DroneBought:
                 this.handleDroneBought(message.payload as DroneBoughtMessage);
                 break;
+            case ServerMessageType.SpellBought:
+                this.handleSpellBought(message.payload as SpellBoughtMessage);
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
+    }
+
+    handleSpellBought(message: SpellBoughtMessage) {
+        console.log(`${message.buyer} buys spell ${message.spell.element}`)
+        const player = this.players.get(message.buyer);
+        const castle = this.castles.get(message.castle);
+        if (!player || !castle) return;
+        player.gold -= message.spell.buyCost;
+        player.availableSpells.push(message.spell);
     }
 
     handleDroneBought(message: DroneBoughtMessage) {
         const player = this.players.get(message.buyer);
         const castle = this.castles.get(message.castleId);
         if (!player || !castle) return;
+        player.gold -= UnitPacks[message.unit].buyCost * message.n;
         for (let i = 0; i < message.n; i++) {
-            this.particleSystem?.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId)
+            console.log('Creating drone')
+            this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId)
         }
     }
 
@@ -429,7 +445,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
 
         const initData: InitialDataMessage = await this.initialDataPromise;
 
-        this.teams = initData.package.teams;
+        initData.package.teams.forEach(team => this.teams.push(team));
 
         initData.package.players.forEach(pInit => {
             console.log(pInit);
@@ -446,7 +462,6 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             this.idTypes.set(cInit.id, EntityTypes.Castle);
         })
 
-        this.particleSystem = new ParticleSystemClient(this.teams, this);
         this.playersRef.current = this.players;
     };
 

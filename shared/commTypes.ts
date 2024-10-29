@@ -35,6 +35,7 @@ export enum ServerMessageType {
     // ExplosionNotice = "ExplosionNotice",
     CastleTakeOver = "CastleTakeOver",
     DroneBought = "DroneBought",
+    SpellBought = "SpellBought",
 }
 
 export type ServerPayloads = {
@@ -48,6 +49,13 @@ export type ServerPayloads = {
     [ServerMessageType.SpellCast]: SpellCastMessage;
     [ServerMessageType.CastleTakeOver]: null;
     [ServerMessageType.DroneBought]: DroneBoughtMessage;
+    [ServerMessageType.SpellBought]: SpellBoughtMessage;
+}
+
+export type SpellBoughtMessage = {
+    buyer: ClientID,
+    castle: CastleID,
+    spell: SpellPack,
 }
 
 export type DroneBoughtMessage = {
@@ -157,7 +165,7 @@ export type ClientPayloads = {
     [ClientMessageType.KeyDown]: Controls;
     [ClientMessageType.RequestSpellCast]: SpellCastMessage;
     [ClientMessageType.RequestBuyDrone]: BuyDroneMessage;
-    [ClientMessageType.RequestBuySpell]: BuySpellMessage;
+    [ClientMessageType.RequestBuySpell]: RequestBuySpellMessage;
     [ClientMessageType.RequestGarrison]: GarrisonMessage;
 }
 
@@ -168,7 +176,7 @@ export type BuyDroneMessage = {
     castle: CastleID,
 }
 
-export type BuySpellMessage = {
+export type RequestBuySpellMessage = {
     buyer: ClientID,
     spell: SpellPack,
     castle: CastleID,

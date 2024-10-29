@@ -4,7 +4,8 @@ import {ClientID} from "@shared/commTypes";
 import {getNetworkIP} from "../Utilities.js";
 import {gameConfig} from "../../shared/config.js";
 
-const ip = getNetworkIP();
+// const ip = getNetworkIP();
+const ip = 'localhost';
 const port = 8081;
 const nPlayers = gameConfig.nPlayerGame;
 

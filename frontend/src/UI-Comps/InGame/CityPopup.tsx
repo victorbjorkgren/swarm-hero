@@ -89,7 +89,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     const handleBuySpell = (spell: SpellPack, index: number) => {
         if (player === null || player === undefined) return;
-        const success = player.buySpell(spell);
+        const success = player.attemptBuySpell(spell);
         if (!success) {
             setBuySpellFlashError(prevErrors => {
                 const newErrors = [...prevErrors];
@@ -108,8 +108,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     if (player === undefined || player === null) return null;
 
-    const playerDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.id) || []);
-    const townDrones = Array.from(player.particleSystem?.getParticles().getUnitCounts(player.popUpCastle?.id ?? null) || []);
+    const playerDrones = Array.from(player.scene.particleSystem.getParticles().getUnitCounts(player.id) || []);
+    const townDrones = Array.from(player.scene.particleSystem.getParticles().getUnitCounts(player.popUpCastle?.id ?? null) || []);
 
     const maxUnitBoxes = Math.max(playerDrones.length, townDrones.length) + 1;
 

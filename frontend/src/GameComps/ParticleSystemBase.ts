@@ -14,6 +14,7 @@ import {PlayerBase} from "./Entities/PlayerBase";
 import {CastleBase} from "./Entities/CastleBase";
 
 import {ParticleID} from "@shared/commTypes";
+import {ParticleClient} from "./Entities/ParticleClient";
 
 export class ParticleSystemBase {
     private sqCohedeDist: number = 250 ** 2;
@@ -33,13 +34,6 @@ export class ParticleSystemBase {
 
     getParticles(): UnitManager<ParticleBase> {
         return this.unitManager;
-    }
-
-    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: PlayerBase, droneId: ParticleID): ParticleBase {
-        const p = new ParticleBase( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner.id, this.unitManager, droneId);
-        p.setLeader(owner);
-        this.unitManager.add(p);
-        return p;
     }
 
     update(): void {
@@ -83,19 +77,7 @@ export class ParticleSystemBase {
         // }
     }
 
-    getNewParticle(player: PlayerBase, castle: CastleBase, groupID: number, unitInfo: UnitPack, owner: PlayerBase, droneId: ParticleID): ParticleBase {
-        const randomSpawnOffset = new Vector2D((Math.random()-.5)*30, (Math.random()-.5)*30);
-        return this.createParticle(
-            Vector2D.add(castle.pos, randomSpawnOffset),
-            10,
-            1,
-            player.team!,
-            groupID,
-            unitInfo,
-            owner,
-            droneId
-        );
-    }
+
 
     sqFiringDistance(me: ParticleBase, other: EntityBase): number {
         return Vector2D.sqDist(me.pos, other.getFiringPos(me.pos));

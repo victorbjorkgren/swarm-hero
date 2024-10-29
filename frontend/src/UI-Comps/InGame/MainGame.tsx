@@ -152,7 +152,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
     const handleRecruit = (unit: Units, n: number): boolean => {
         if (gameSceneRef.current === null) return false
         if (gameSceneRef.current?.localPlayer === null) return false
-        return gameSceneRef.current?.localPlayer.buyDrone(unit, n);
+        return gameSceneRef.current?.localPlayer.attemptBuyDrone(unit, n);
     }
 
     return (

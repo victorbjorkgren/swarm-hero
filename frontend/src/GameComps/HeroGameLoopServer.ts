@@ -4,20 +4,23 @@ import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
 import {PlayerServer} from "./Entities/PlayerServer";
 import {CastleServer} from "./Entities/CastleServer";
-import {AABBCollider, Character, Controls, EntityTypes, Factions} from "../types/types";
+import {AABBCollider, Character, EntityTypes, Factions} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
-import {gameConfig} from "@shared/config";
+import {gameConfig, UnitPacks} from "@shared/config";
 import {
     BuyDroneMessage,
-    CastleInitData, CastleUpdateData,
-    Client,
+    CastleID,
+    CastleInitData,
+    CastleUpdateData,
     ClientID,
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
-    InitialDataMessage,
-    InitialDataPackage, ParticleUpdateData,
-    PlayerInitData, PlayerUpdateData,
+    InitialDataPackage,
+    ParticleUpdateData,
+    PlayerInitData,
+    PlayerUpdateData,
+    RequestBuySpellMessage,
     ServerMessage,
     ServerMessageType,
     ServerPayloads,
@@ -26,6 +29,10 @@ import {
 import {HeroGameLoopBase} from "./HeroGameLoopBase";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {HeroGameLoopClient} from "./HeroGameLoopClient";
+import {Units} from "../types/unitTypes";
+import {PlayerBase} from "./Entities/PlayerBase";
+import {CastleBase} from "./Entities/CastleBase";
+import {SpellPack} from "../types/spellTypes";
 
 
 export default class HeroGameLoopServer extends HeroGameLoopBase {
@@ -98,23 +105,30 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
             case ClientMessageType.RequestBuyDrone:
                 this.handleBuyDroneRequest(clientId, message.payload);
                 break;
+            case ClientMessageType.RequestBuySpell:
+                this.handleBuySpellRequest(clientId, message.payload);
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
     }
 
-    // handleKeyboardPress(clientId: ClientID, key: Controls, down: boolean) {
-    //     const controller = this.players.get(clientId)?.controller;
-    //     if (!controller) {
-    //         console.error(`Client ${clientId} has no controller`);
-    //         return;
-    //     }
-    //     if (down) {
-    //         controller.remoteKeyDown(key);
-    //     } else {
-    //         controller.remoteKeyUp(key);
-    //     }
-    // }
+    handleBuySpellRequest(clientId: ClientID, spellRequest: RequestBuySpellMessage) {
+        if (clientId !== spellRequest.buyer) return;
+        const buyCheck = this.checkPlayerCanBuySpell(clientId, spellRequest.castle, spellRequest.spell);
+        if (!buyCheck) return;
+        this.resolvePlayerBuysSpell(buyCheck.player, buyCheck.castle, spellRequest.spell);
+    }
+
+    resolvePlayerBuysSpell(player: PlayerBase, castle: CastleBase, spell: SpellPack) {
+        // player.gold -= spell.buyCost;
+        // player.availableSpells.push(spell);
+        this.broadcast(ServerMessageType.SpellBought, {
+            buyer: player.id,
+            castle: castle.id,
+            spell: spell,
+        })
+    }
 
     handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
         const instigator = this.players.get(clientId);
@@ -123,6 +137,13 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         if (success) {
             this.broadcast(ServerMessageType.SpellCast, castData)
         }
+    }
+
+    handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {
+        if (clientId !== message.buyer) return null;
+        const buyCheck = this.checkPlayerCanBuyDrone(message.buyer, message.unit, message.n);
+        if (!buyCheck) return;
+        this.resolvePlayerBuysDrone(buyCheck.player, buyCheck.castle, message.unit, message.n);
     }
 
     handleInitialDataRequest(clientId: ClientID, character: Character) {
@@ -139,9 +160,41 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         }
     }
 
-    handleBuyDroneRequest(clientId: ClientID, message: BuyDroneMessage) {
-        const buyer = this.players.get(message.buyer);
-        if (!buyer) return;
+    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: PlayerBase, castle: CastleBase} | null {
+        const buyer = this.localClientScene.players.get(playerId);
+        if (!buyer || !buyer.isAlive()) return null;
+        const castle = buyer.findNearbyCastle();
+        if (!castle || !castle.isAlive()) return null;
+
+        if (buyer.gold < (UnitPacks[unit].buyCost * n)) return null;
+
+        return {player: buyer, castle: castle};
+    }
+
+    checkPlayerCanBuySpell(clientId: ClientID, castleId: CastleID, spell: SpellPack) {
+        const buyer = this.localClientScene.players.get(clientId);
+        if (!buyer || !buyer.isAlive()) return null;
+        const castle = this.localClientScene.castles.get(castleId)
+        if (!castle || !castle.isAlive()) return null;
+        if (!castle.playerWithinRange(buyer.id)) return null
+        if (buyer.gold < spell.buyCost) return null;
+
+        return {player: buyer, castle: castle};
+    }
+
+    resolvePlayerBuysDrone(buyer: PlayerBase, castle: CastleBase, unit: Units, n: number) {
+        const newDroneId = uuidv4();
+        this.localClientScene.idTypes.set(newDroneId, EntityTypes.Particle);
+        // this.particleSystem?.getNewParticle(buyer, castle, 0, UnitPacks[unit], buyer, newDroneId);
+        this.broadcast(
+            ServerMessageType.DroneBought,
+            {
+                buyer: buyer.id,
+                unit: unit,
+                n: n,
+                castleId: castle.id,
+                droneId: newDroneId,
+            })
     }
 
     sendInitialData() {

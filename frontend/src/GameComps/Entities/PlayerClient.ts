@@ -364,16 +364,16 @@ export class PlayerClient implements EntityBase {
     requestGarrisonDrone(unit: Units, n: number, isBringing: boolean) {
         const castleId = this.popUpCastle?.id
         if (!castleId) return
-        this.scene.hostchannel?.send(JSON.stringify({
-            type: ClientMessageType.RequestGarrison,
-            payload: {
+        this.scene.sendToHost(
+            ClientMessageType.RequestGarrison,
+            {
                 instigator: this.id,
                 isBringing: isBringing,
                 unit: unit,
                 n: n,
                 castle: castleId
-            } as GarrisonMessage,
-        }))
+            }
+        )
     }
 
     gainCastleControl(castle: CastleClient) {
@@ -388,15 +388,15 @@ export class PlayerClient implements EntityBase {
         if (!this.popUpCastle.isAlive()) return false;
         if (this.gold < (UnitPacks[unit].buyCost * n)) return false
 
-        this.scene.hostchannel?.send(JSON.stringify({
-            type: ClientMessageType.RequestBuyDrone,
-            payload: {
+        this.scene.sendToHost(
+            ClientMessageType.RequestBuyDrone,
+            {
                 buyer: this.id,
                 unit: unit,
                 n: n,
                 castle: this.popUpCastle.id
             }
-        }))
+        )
 
         return true;
 
@@ -414,14 +414,14 @@ export class PlayerClient implements EntityBase {
         const spellIndex = this.popUpCastle.availableSpells.indexOf(spell);
         if (spellIndex === -1) return false;
 
-        this.scene.hostchannel?.send(JSON.stringify({
-            type: ClientMessageType.RequestBuySpell,
-            payload: {
+        this.scene.sendToHost(
+            ClientMessageType.RequestBuySpell,
+            {
                 buyer: this.id,
                 spell: spell,
                 castle: this.popUpCastle.id
             }
-        }))
+        )
         return true;
     }
 

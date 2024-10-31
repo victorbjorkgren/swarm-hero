@@ -32,6 +32,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
 import {ParticleClient} from "./ParticleClient";
+import {SpectatorController} from "../Controllers/SpectatorController";
 
 export class PlayerClient implements EntityBase {
     public vel: Vector2D = Vector2D.zeros();
@@ -79,10 +80,10 @@ export class PlayerClient implements EntityBase {
     isCasting: boolean = false;
     private currentSpellRangeSpell: SpellPack | null = null;
     activeSpell: SpellPack | null = null;
-    castingDoneCallback: (didCast: boolean) => void = () => {};
 
     public controller: Controller;
 
+    castingDoneCallback: (didCast: boolean) => void = () => {};
 
     constructor(
         public id: ClientID,
@@ -112,7 +113,7 @@ export class PlayerClient implements EntityBase {
                 ServerMessageType.EntityDeath,
                 {
                     departed: this.id,
-                    departedType: EntityTypes.Particle,
+                    departedType: EntityTypes.Player,
                 }
             )
         }
@@ -152,6 +153,7 @@ export class PlayerClient implements EntityBase {
 
     newDay() {
         this.gold += this.givesIncome;
+        this.mana = this.maxMana;
         this.myCastles.forEach(castle => {
             this.gold += castle.givesIncome;
         })
@@ -161,12 +163,52 @@ export class PlayerClient implements EntityBase {
     }
 
     onDeath(): void {
-        let w: string;
-        if (this.team!.id === 0)
-            w = this.scene.teams[1].name;
-        else
-            w = this.scene.teams[0].name;
-        this.scene.onDeath(w.toString());
+        console.log('Player onDeath')
+        this.controller.cleanup();
+        this.controller = new SpectatorController();
+        this.killSprites();
+        this.scene.onDeath(this);
+    }
+
+    killSprites() {
+        if (this.playerSpritePack) {
+            Object.keys(this.playerSpritePack).forEach(key => {
+                const animation = this.playerSpritePack![key as keyof DirectionalSpriteSheet];
+                this.scene.pixiRef.stage.removeChild(animation);
+                animation.destroy();
+            });
+            this.playerSpritePack = null;
+        }
+        if (this.currentAnimation) {
+            this.scene.pixiRef.stage.removeChild(this.currentAnimation)
+            this.currentAnimation.destroy();
+            this.currentAnimation = null;
+        }
+        if (this.healthBarSprite) {
+            this.scene.pixiRef.stage.removeChild(this.healthBarSprite)
+            this.healthBarSprite.destroy();
+            this.healthBarSprite = null;
+        }
+        if (this.manaBarSprite) {
+            this.scene.pixiRef.stage.removeChild(this.manaBarSprite)
+            this.manaBarSprite.destroy();
+            this.manaBarSprite = null;
+        }
+        if (this.rangeSprite) {
+            this.scene.pixiRef.stage.removeChild(this.rangeSprite)
+            this.rangeSprite.destroy();
+            this.rangeSprite = null;
+        }
+        if (this.spellCursorSprite) {
+            this.scene.pixiRef.stage.removeChild(this.spellCursorSprite)
+            this.spellCursorSprite.destroy();
+            this.spellCursorSprite = null;
+        }
+        if (this.nameSprite) {
+            this.scene.pixiRef.stage.removeChild(this.nameSprite)
+            this.nameSprite.destroy();
+            this.nameSprite = null;
+        }
     }
 
     get collider(): AABBCollider {

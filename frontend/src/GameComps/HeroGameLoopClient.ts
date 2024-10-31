@@ -59,6 +59,7 @@ export class HeroGameLoopClient {
     public readonly sceneHeight: number = gameConfig.mapHeight;
 
     public players: Map<ClientID, PlayerClient> = new Map();
+    public remainingPlayers: Set<PlayerClient> = new Set();
     public teams: Team[] = [];
     public castles: Map<CastleID, CastleClient> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
@@ -126,6 +127,8 @@ export class HeroGameLoopClient {
             this.players.set(client.id, new PlayerClient(client.id, this))
         })
         this.players.set(localId, new PlayerClient(localId, this))
+
+        this.players.forEach(playerInstance => {this.remainingPlayers.add(playerInstance)})
 
         this.setLocalPlayer(character)
     }
@@ -222,13 +225,21 @@ export class HeroGameLoopClient {
             case ServerMessageType.EntityDeath:
                 this.handleEntityDeath(message.payload as EntityDeathMessage);
                 break;
+            case ServerMessageType.Winner:
+                this.handleWinner(message.payload as string);
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
     }
 
+    handleWinner(winnerName: string) {
+        if (this.setWinner === undefined) return
+        this.setWinner(winnerName);
+        this.stopGame();
+    }
+
     handleEntityDeath(message: EntityDeathMessage) {
-        console.log("Eulogy received", message);
         const departed = this.getEntityById(message.departed, message.departedType);
         departed?.onDeath();
     }
@@ -396,10 +407,17 @@ export class HeroGameLoopClient {
         })
     }
 
-    onDeath(id: string) {
-        if (this.setWinner === undefined) return
-        this.setWinner(id);
-        this.stopGame();
+    onDeath(player: PlayerClient) {
+        console.log("onDeath", player);
+        if (!player.team) return;
+        const p = player.team.playerIds.indexOf(player.id)
+        console.log(p)
+        console.log(player.team.playerIds);
+        if (p !== -1) {
+            player.team.playerIds.splice(p, 1)
+            console.log(player.team.playerIds);
+        }
+        this.server?.checkWinner();
     }
 
     setLocalPlayer(localCharacter: Character) {

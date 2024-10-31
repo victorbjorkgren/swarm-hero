@@ -79,7 +79,6 @@ export class ParticleClient implements EntityClient {
     receiveDamage(damage: number): void {
         this.health -= damage;
         if (!this.isAlive()) {
-            console.log('Particle Dying')
             this.broadcastDeath();
         }
     }
@@ -89,7 +88,6 @@ export class ParticleClient implements EntityClient {
     }
 
     onDeath() {
-        console.log('Particle Death!')
         this.unitManager.remove(this);
         this.killSprites();
     }
@@ -164,7 +162,6 @@ export class ParticleClient implements EntityClient {
 
     broadcastDeath(): void {
         if (this.scene.server) {
-            console.log('Particle Eulogy')
             this.scene.server.broadcast(
                 ServerMessageType.EntityDeath,
                 {

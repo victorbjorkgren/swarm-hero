@@ -208,8 +208,12 @@ export default class GameHost {
         this.broadcast(ServerMessageType.Resume, null);
     }
 
-    onDeath(id: string) {
-        this.broadcast(ServerMessageType.Winner, id)
+    checkWinner() {
+        const remainingTeams = this.localClientScene.teams.filter(team => team.playerIds.length > 0)
+        console.log(remainingTeams, remainingTeams.length);
+        if (remainingTeams.length > 1) return;
+        const winner = remainingTeams.length === 1 ? remainingTeams[0].name : "Tie"
+        this.broadcast(ServerMessageType.Winner, winner);
         this.stopGame();
     }
 

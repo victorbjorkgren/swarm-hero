@@ -1,7 +1,16 @@
-import {Character, CollisionResult, Controller, DirectionalSpriteSheet, Factions, Team} from "../../types/types";
+import {
+    AABBCollider,
+    Character,
+    CollisionResult,
+    Controller,
+    DirectionalSpriteSheet, EntityBase,
+    EntityTypes,
+    Factions,
+    Team
+} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {CastleClient} from "./CastleClient";
-import {pol2cart, Vector2D} from "../Utility";
+import {checkAABBCollision, pol2cart, Vector2D} from "../Utility";
 import {
     healthConversion,
     manaConversion,
@@ -15,20 +24,40 @@ import {
     SpellCastMessage,
     ClientMessageType,
     BuyDroneMessage,
-    RequestBuySpellMessage,
-    GarrisonMessage, Client, CastleID, ClientID, SpellCastID
+    GarrisonMessage, CastleID, ClientID, ServerMessageType
 } from "@shared/commTypes";
-import {PlayerBase} from "./PlayerBase";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {Units} from "../../types/unitTypes";
-import {CastleServer} from "./CastleServer";
-import { CastleBase } from "./CastleBase";
 import { v4 as uuidv4 } from 'uuid';
 import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
+import {ParticleClient} from "./ParticleClient";
 
-export class PlayerClient extends PlayerBase {
+export class PlayerClient implements EntityBase {
+    public vel: Vector2D = Vector2D.zeros();
+    public acc: Vector2D = Vector2D.zeros();
+    public targetedBy: ParticleClient[] = [];
+    public availableSpells: SpellPack[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Player;
+
+    public maxVel: number = 1.0;
+    public maxAcc: number = gameConfig.playerMaxAcc;
+    public gold: number = gameConfig.playerStartGold;
+    public givesIncome: number = gameConfig.playerSelfIncome;
+
+    public name: string = ""
+    protected maxHealth: number = 0;
+    powerMultiplier: number = 0;
+    protected maxMana: number = 0;
+    protected faction: Factions = Factions.Wild;
+
+    public mana: number = this.maxMana;
+    public health: number = this.maxHealth;
+
+    public radius: number = 20; // for collider - unused
+    public mass: number = 50**3; // for collision - unused
+
     myCastles: CastleClient[] = [];
     isLocal: boolean = false;
 
@@ -59,12 +88,119 @@ export class PlayerClient extends PlayerBase {
         public id: ClientID,
         public scene: HeroGameLoopClient,
     ) {
-        super()
-        if (scene.localId == id) {
+        if (scene.localId === id) {
             this.controller = new LocalPlayerController(this, player1Keys, scene);
         } else {
             this.controller = new NetworkController(this);
         }
+    }
+
+    isAlive(): boolean {
+        return this.health > 0;
+    }
+
+    receiveDamage(damage: number): void {
+        this.health -= damage
+        if (!this.isAlive()) {
+            this.broadcastDeath()
+        }
+    }
+
+    broadcastDeath(): void {
+        if (this.scene.server) {
+            this.scene.server.broadcast(
+                ServerMessageType.EntityDeath,
+                {
+                    departed: this.id,
+                    departedType: EntityTypes.Particle,
+                }
+            )
+        }
+    }
+
+    checkCollisions(): CollisionResult {
+        const myCollider = this.collider;
+        for (const collider of this.scene.colliders) {
+            const collisionTest = checkAABBCollision(myCollider, collider);
+            if (collisionTest.collides) return collisionTest;
+        }
+        return {collides: false};
+    }
+
+    updateMovement() {
+        if (this.acc.isZero()) {
+            this.vel.scale(.9)
+        } else {
+            this.vel.add(this.acc);
+            this.vel.limit(this.maxVel);
+        }
+        if (this.vel.sqMagnitude() < (.075 * .075)) {
+            this.vel.x = 0;
+            this.vel.y = 0;
+        }
+        const collisionTest = this.checkCollisions();
+        if (collisionTest.collides) {
+            const normal = collisionTest.normal1!;
+            if (normal.x > 0 && this.vel.x > 0) this.vel.x = 0;
+            else if (normal.x < 0 && this.vel.x < 0) this.vel.x = 0;
+            if (normal.y > 0 && this.vel.y > 0) this.vel.y = 0;
+            else if (normal.y < 0 && this.vel.y < 0) this.vel.y = 0;
+        }
+
+        this.pos.add(this.vel);
+    }
+
+    newDay() {
+        this.gold += this.givesIncome;
+        this.myCastles.forEach(castle => {
+            this.gold += castle.givesIncome;
+        })
+        this.scene.particleSystem?.getParticles().ownerForEach(this.id, (drone) => {
+            this.gold += drone.givesIncome;
+        })
+    }
+
+    onDeath(): void {
+        let w: string;
+        if (this.team!.id === 0)
+            w = this.scene.teams[1].name;
+        else
+            w = this.scene.teams[0].name;
+        this.scene.onDeath(w.toString());
+    }
+
+    get collider(): AABBCollider {
+        // if (this.currentAnimation !== null) {
+        //     return spriteToAABBCollider(this.currentAnimation);
+        // } else {
+        return {
+            minX: this.pos.x - 20,
+            maxX: this.pos.x + 20,
+            minY: this.pos.y - 20,
+            maxY: this.pos.y + 20,
+            inverted: false
+        };
+        // }
+    }
+
+    findNearbyCastle(): CastleClient | null {
+        for (const castle of this.myCastles) {
+            if (castle.nearbyPlayers.find(playerId => playerId === this.id))
+                return castle;
+        }
+        return null
+    }
+
+    getFiringPos(from: Vector2D): Vector2D {
+        // if (this.currentAnimation !== null) {
+        //     return new Vector2D(
+        //         this.pos.x,
+        //         this.pos.y,
+        //     )
+        // } else {
+        return this.pos.copy();
+        // }
+        // return closestPointOnPolygon(this.collider.verts, from);
     }
 
     gameInit(pos: Vector2D, team: Team, character: Character) {
@@ -72,7 +208,6 @@ export class PlayerClient extends PlayerBase {
         this.team = team;
         this.parseCharacter(character)
     }
-
 
     parseCharacter(character: Character) {
         this.character = character;
@@ -199,29 +334,9 @@ export class PlayerClient extends PlayerBase {
         }))
     }
 
-    findNearbyCastle(): CastleClient | null {
-        for (const castle of this.myCastles) {
-            if (castle.nearbyPlayers.find(playerId => playerId === this.id))
-                return castle;
-        }
-        return null
-    }
-
     gainCastleControl(castle: CastleClient) {
         this.myCastles.push(castle);
         castle.owner = this.id;
-    }
-
-    getFiringPos(from: Vector2D): Vector2D {
-        // if (this.currentAnimation !== null) {
-        //     return new Vector2D(
-        //         this.pos.x,
-        //         this.pos.y,
-        //     )
-        // } else {
-            return this.pos.copy();
-        // }
-        // return closestPointOnPolygon(this.collider.verts, from);
     }
 
     attemptBuyDrone(unit: Units, n: number): boolean {
@@ -309,7 +424,6 @@ export class PlayerClient extends PlayerBase {
         }
         return true;
     }
-
 
     attemptSpellCast(): void {
         // Direct Peer

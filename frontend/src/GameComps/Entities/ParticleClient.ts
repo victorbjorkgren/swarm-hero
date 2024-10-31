@@ -1,13 +1,49 @@
-import {ParticleBase} from "./ParticleBase";
-import {EntityBase, EntityClient, Team} from "../../types/types";
-import {Vector2D} from "../Utility";
+import {EntityBase, EntityClient, EntityTypes, Team} from "../../types/types";
+import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {Graphics} from "pixi.js";
-import {EntityID, ParticleID} from "@shared/commTypes";
+import {EntityID, ParticleID, ServerMessageType} from "@shared/commTypes";
 
-export class ParticleClient extends ParticleBase implements EntityClient {
+interface FiringLaserAt {
+    target: EntityBase;
+    intensity: number;
+    firingPos: Vector2D;
+}
+
+export class ParticleClient implements EntityClient {
+    vel: Vector2D;
+    acc: Vector2D = Vector2D.zeros();
+    leader: EntityBase | null = null;
+    radius: number;
+    isBoiding: boolean = true;
+    isEngaging: boolean = false;
+    sqFireRadius: number = 50 ** 2;
+    sqEngageRadius: number = 100 ** 2;
+    maxTargets: number = 1;
+    engaging: EntityBase[] = [];
+    firingLaserAt: FiringLaserAt[] = [];
+    desiredPos: Vector2D | null = null;
+    desiredSpeed: number = .75;
+    desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
+    maxAcc: number = .05;
+    givesIncome: number = 0;
+
+    targetedBy: ParticleClient[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Particle;
+
+    particleSprite: Graphics | null = null;
+    attackSprite: Graphics | null = null;
+    healthSprite: Graphics | null = null;
+    debugSprite: Graphics | null = null;
+
+    protected maxHealth: number = 100;
+    public health: number = this.maxHealth;
+
+    static price: number = 100;
+
     constructor(
         public pos: Vector2D,
         public mass: number,
@@ -18,10 +54,11 @@ export class ParticleClient extends ParticleBase implements EntityClient {
         public groupID: number,
         public unitInfo: UnitPack,
         public owner: EntityID,
-        protected override unitManager: UnitManager<ParticleClient>,
+        protected unitManager: UnitManager<ParticleClient>,
         public id: ParticleID,
     ) {
-        super(pos, mass, team, maxVel, color, scene, groupID, unitInfo, owner, unitManager, id)
+        this.vel = randomUnitVector().scale(this.maxVel);
+        this.radius = massToRadius(mass);
     }
 
     killSprites() {
@@ -39,9 +76,103 @@ export class ParticleClient extends ParticleBase implements EntityClient {
         }
     }
 
-    override onDeath() {
+    receiveDamage(damage: number): void {
+        this.health -= damage;
+        if (!this.isAlive()) {
+            console.log('Particle Dying')
+            this.broadcastDeath();
+        }
+    }
+
+    setGroupID(groupID: number): void {
+        this.groupID = groupID;
+    }
+
+    onDeath() {
+        console.log('Particle Death!')
         this.unitManager.remove(this);
         this.killSprites();
+    }
+
+    setLeader(leader: EntityBase) {
+        this.leader = leader;
+    }
+
+    getLeaderPosition() {
+        if (this.leader === null) return null
+        // return Vector2D.add(this.leader, Vector2D.ones().scale(20));
+        return this.leader.pos;
+    }
+
+    calcDesiredPos() {
+        if (this.engaging.length > 0) {
+            // if (this.engaging[0].health <= this.health) {
+            // BRAVADO
+            this.desiredPos = this.engaging[0].getFiringPos(this.pos);
+            // } else {
+            // FEAR
+            //    this.desiredPos = Vector2D.subtract(this.engaging[0].pos, this.pos).scale(-1);
+            // }
+        } else {
+            const leaderPosition = this.getLeaderPosition();
+            if (leaderPosition !== null) {
+                const leaderDelta = Vector2D.subtract(leaderPosition, this.pos);
+                const leaderDist = leaderDelta.magnitude();
+                if (leaderDist < this.desiredLeaderDist.min) {
+                    this.desiredPos = Vector2D.add(this.pos, leaderDelta.scale(-1));
+                } else if (leaderDist > this.desiredLeaderDist.max) {
+                    this.desiredPos = Vector2D.add(this.pos, leaderDelta.scale(1));
+                } else {
+                    this.desiredPos = null;
+                }
+            } else {
+                this.desiredPos = null;
+            }
+        }
+    }
+
+    getFiringPos(from: Vector2D): Vector2D {
+        return this.pos;
+    }
+
+    approachDesiredVel() {
+        this.vel.scale(1 + this.desiredSpeed - this.vel.magnitude());
+    }
+
+    initFrame() {
+        this.acc = Vector2D.zeros();
+        if (this.engaging.length > 0) {
+            this.isEngaging = true;
+            this.isBoiding = false
+        } else {
+            this.isEngaging = false;
+            this.isBoiding = true
+        }
+
+    }
+
+    approachDesiredPos() {
+        if (this.desiredPos) {
+            const desiredV = Vector2D.subtract(this.desiredPos, this.pos);
+            this.acc.add(Vector2D.subtract(desiredV, this.vel));
+        }
+    }
+
+    isAlive(): boolean {
+        return this.health > 0;
+    }
+
+    broadcastDeath(): void {
+        if (this.scene.server) {
+            console.log('Particle Eulogy')
+            this.scene.server.broadcast(
+                ServerMessageType.EntityDeath,
+                {
+                    departed: this.id,
+                    departedType: EntityTypes.Particle,
+                }
+            )
+        }
     }
 
     render() {
@@ -49,8 +180,6 @@ export class ParticleClient extends ParticleBase implements EntityClient {
             this.renderSelf();
             this.renderAttack();
             this.renderStatsBar();
-        } else {
-            this.killSprites();
         }
     }
 
@@ -98,7 +227,7 @@ export class ParticleClient extends ParticleBase implements EntityClient {
 
         const pxZero = this.pos.x * this.scene.renderScale - this.radius - 3;
         const lenX = 2 * this.radius + 6
-        const healthRatio = this._health / this.maxHealth;
+        const healthRatio = this.health / this.maxHealth;
         this.healthSprite
             .moveTo(pxZero, this.pos.y * this.scene.renderScale - this.radius - 2)
             .lineTo(pxZero + lenX * healthRatio, this.pos.y * this.scene.renderScale - this.radius - 2)

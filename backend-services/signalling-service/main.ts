@@ -2,7 +2,7 @@ import WebSocket, {WebSocketServer} from 'ws';
 import {v4 as uuidv4} from 'uuid';
 import {ClientID} from "@shared/commTypes";
 import {getNetworkIP} from "../Utilities.js";
-import {gameConfig} from "../../shared/config.js";
+import {gameConfig} from "@shared/config";
 
 // const ip = getNetworkIP();
 const ip = 'localhost';
@@ -90,6 +90,10 @@ export const gameRoomSignalServer = (networkIP: string, port: number, nPlayerGam
                 }
             });
         };
+
+
+        process.on('SIGINT', cleanUp);
+        process.on('SIGTERM', cleanUp);
 
         console.log(`- Network: http://${networkIP}:${port}`);
     })

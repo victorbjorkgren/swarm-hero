@@ -5,6 +5,7 @@ import {ControllerMapping, Factions} from "../frontend/src/types/types";
 
 export const gameConfig = {
     nPlayerGame: 3,
+    nTeamGame: 2,
 
     // mapWidth: 8000,
     // mapHeight: 4000,

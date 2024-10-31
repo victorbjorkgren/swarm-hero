@@ -1,9 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {ParticleSystemBase} from "./ParticleSystemBase";
 import {spriteToAABBCollider, Vector2D} from "./Utility";
-import {PlayerServer} from "./Entities/PlayerServer";
-import {CastleServer} from "./Entities/CastleServer";
 import {AABBCollider, Character, EntityTypes, Factions} from "../types/types";
 import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import {gameConfig, UnitPacks} from "@shared/config";
@@ -26,17 +23,16 @@ import {
     ServerPayloads,
     SpellCastMessage
 } from "@shared/commTypes";
-import {HeroGameLoopBase} from "./HeroGameLoopBase";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {HeroGameLoopClient} from "./HeroGameLoopClient";
 import {Units} from "../types/unitTypes";
-import {PlayerBase} from "./Entities/PlayerBase";
-import {CastleBase} from "./Entities/CastleBase";
 import {SpellPack} from "../types/spellTypes";
+import {CastleClient} from "./Entities/CastleClient";
+import {PlayerClient} from "./Entities/PlayerClient";
 
 
-export default class HeroGameLoopServer extends HeroGameLoopBase {
-    public override players: Map<string, PlayerServer> = new Map();
+export default class GameHost {
+    public players: Map<string, PlayerClient> = new Map();
     // public navMesh: NavMesh;
 
     private initialData: InitialDataPackage | null = null;
@@ -52,7 +48,6 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         private clients: PeerMap,
         private localClientScene: HeroGameLoopClient
     ) {
-        super();
 
         // this.navMesh = new NavMesh(this);
 
@@ -121,7 +116,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         this.resolvePlayerBuysSpell(buyCheck.player, buyCheck.castle, spellRequest.spell);
     }
 
-    resolvePlayerBuysSpell(player: PlayerBase, castle: CastleBase, spell: SpellPack) {
+    resolvePlayerBuysSpell(player: PlayerClient, castle: CastleClient, spell: SpellPack) {
         // player.gold -= spell.buyCost;
         // player.availableSpells.push(spell);
         this.broadcast(ServerMessageType.SpellBought, {
@@ -158,7 +153,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         }
     }
 
-    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: PlayerBase, castle: CastleBase} | null {
+    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: PlayerClient, castle: CastleClient} | null {
         const buyer = this.localClientScene.players.get(playerId);
         if (!buyer || !buyer.isAlive()) return null;
         const castle = buyer.findNearbyCastle();
@@ -180,9 +175,9 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         return {player: buyer, castle: castle};
     }
 
-    resolvePlayerBuysDrone(buyer: PlayerBase, castle: CastleBase, unit: Units, n: number) {
-        const newDroneId = uuidv4();
-        this.localClientScene.idTypes.set(newDroneId, EntityTypes.Particle);
+    resolvePlayerBuysDrone(buyer: PlayerClient, castle: CastleClient, unit: Units, n: number) {
+        const newDroneIds = Array.from({length: n}, ()=>uuidv4());
+        // this.localClientScene.idTypes.set(newDroneId, EntityTypes.Particle);
         // this.particleSystem?.getNewParticle(buyer, castle, 0, UnitPacks[unit], buyer, newDroneId);
         this.broadcast(
             ServerMessageType.DroneBought,
@@ -191,7 +186,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
                 unit: unit,
                 n: n,
                 castleId: castle.id,
-                droneId: newDroneId,
+                droneId: newDroneIds,
             })
     }
 
@@ -202,13 +197,13 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
     }
 
     stopGame() {
-        this.gameOn = false;
+        this.localClientScene.gameOn = false;
         this.tickerDown();
         this.broadcast(ServerMessageType.Pause, null);
     }
 
     resumeGame() {
-        this.gameOn = true;
+        this.localClientScene.gameOn = true;
         this.tickerUp();
         this.broadcast(ServerMessageType.Resume, null);
     }
@@ -243,7 +238,7 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         // this.players.clear();
         // this.teams = [];
         // this.castles = [];
-        this.colliders = [];
+        this.localClientScene.colliders = [];
 
         const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
         await this.setupBlockers(walls);
@@ -273,12 +268,12 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         const sheet = await wallSpriteSheet;
         const texture: Texture = sheet.textures['TX Tileset Wall-0.png'];
         const blockerSprite: Sprite = new Sprite(texture);
-        blockerSprite.x = this.sceneWidth / 2 - blockerSprite.width / 2;
-        blockerSprite.y = this.sceneHeight / 2 - blockerSprite.height / 2;
+        blockerSprite.x = this.localClientScene.sceneWidth / 2 - blockerSprite.width / 2;
+        blockerSprite.y = this.localClientScene.sceneHeight / 2 - blockerSprite.height / 2;
 
         // blockerSprite.zIndex = HeroGameLoopServer.zIndex.ground;
         // this.pixiRef.stage.addChild(blockerSprite);
-        this.colliders.push(spriteToAABBCollider(blockerSprite));
+        this.localClientScene.colliders.push(spriteToAABBCollider(blockerSprite));
     }
 
     // resetControllers() {
@@ -289,41 +284,20 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
 
     create() {
         this.players.clear();
-        this.castles.clear();
+        this.localClientScene.castles.clear();
         // this.resetControllers();
 
         const boundaryCollider: AABBCollider = {
             minX: 0,
             minY: 0,
-            maxX: this.sceneWidth,
-            maxY: this.sceneHeight,
+            maxX: this.localClientScene.sceneWidth,
+            maxY: this.localClientScene.sceneHeight,
             inverted: true,
         }
 
-        this.colliders.push(boundaryCollider);
+        this.localClientScene.colliders.push(boundaryCollider);
 
-        this.teams = [
-            {
-                id: 0,
-                name: 'Yellow',
-                color: 0xffff00,
-                // playerCentroid: Vector2D.add(gameConfig.castlePositions[0], gameConfig.playerStartOffset),
-                // castleCentroid: gameConfig.castlePositions[0],
-                // controllerMapping: player1Keys,
-                playerIds: [],
-                castleIds: []
-            },
-            {
-                id: 1,
-                name: 'White',
-                color: 0xffffff,
-                // playerCentroid: Vector2D.add(gameConfig.castlePositions[1], gameConfig.playerStartOffset),
-                // castleCentroid: gameConfig.castlePositions[1],
-                // controllerMapping: null,
-                playerIds: [],
-                castleIds: []
-            }
-        ]
+
         // console.log('castleCentroid', this.teams[0].castleCentroid);
         const aiCharacter = {
             playerName: "Kitty",
@@ -337,15 +311,15 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
         let index = 0;
         this.readyForCreation.forEach((character, clientId) => {
             if (!character) throw new Error(`Client ${clientId} has no character at creation`);
-            const teamIdx = index % this.teams.length;
+            const teamIdx = index % gameConfig.nTeamGame;
             const castleId = uuidv4();
             const castleSpawn = gameConfig.castlePositions[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
-            const newCastle = new CastleServer(castleId, this.teams[teamIdx], castleSpawn, clientId, this);
-            const newPlayer = new PlayerServer(playerSpawn, this.teams[teamIdx], clientId, character, this);
-            newPlayer.gainCastleControl(newCastle);
-            this.players.set(clientId, newPlayer);
-            this.castles.set(castleId, newCastle);
+            // const newCastle = new CastleClient(castleId, castleSpawn, this.teams[teamIdx], clientId, this.localClientScene);
+            // const newPlayer = new PlayerClient(playerSpawn, this.teams[teamIdx], clientId, character, this);
+            // newPlayer.gainCastleControl(newCastle);
+            // this.players.set(clientId, newPlayer);
+            // this.castles.set(castleId, newCastle);
 
             playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamIdx: teamIdx})
             castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamIdx: teamIdx})
@@ -353,26 +327,26 @@ export default class HeroGameLoopServer extends HeroGameLoopBase {
             index++;
         })
 
-        this.initialData = {teams: this.teams, players: playerInitData, castles: castleInitData};
+        this.initialData = {players: playerInitData, castles: castleInitData};
         this.sendInitialData();
 
-        this.particleSystem = new ParticleSystemBase(this.teams, this);
+        // this.particleSystem = new ParticleSystemBase(this.teams, this);
         // for (const player of this.players) {
         //     player.setParticleSystem(this.particleSystem);
         // }
         // this.playersRef.current = this.players;
     };
 
-    updateDayTime() {
-        if (this.startTime === null)
-            this.startTime = Date.now();
-        const elapsedTime = (Date.now() - this.startTime) / 1000;
-        if (elapsedTime > this.dayLength) {
-            this.startTime = Date.now();
-            this.triggerNewDay();
-        }
-        this.dayTime = elapsedTime / this.dayLength;
-    }
+    // updateDayTime() {
+    //     if (this.localClientScene.startTime === null)
+    //         this.localClientScene.startTime = Date.now();
+    //     const elapsedTime = (Date.now() - this.localClientScene.startTime) / 1000;
+    //     if (elapsedTime > this.localClientScene.dayLength) {
+    //         this.localClientScene.startTime = Date.now();
+    //         this.localClientScene.triggerNewDay();
+    //     }
+    //     this.localClientScene.dayTime = elapsedTime / this.localClientScene.dayLength;
+    // }
 
     update() {
         // TODO: Just bring the changed values instead of all.

@@ -1,7 +1,7 @@
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleClient} from "../GameComps/Entities/CastleClient";
-import {ParticleBase} from "../GameComps/Entities/ParticleBase";
+import {ParticleClient} from "../GameComps/Entities/ParticleClient";
 import {CastleID, ClientID, EntityID} from "@shared/commTypes";
 import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
@@ -33,10 +33,11 @@ export interface EntityBase {
 
     entityType: EntityTypes;
 
-    targetedBy: ParticleBase[];
+    targetedBy: ParticleClient[];
 
     isAlive(): boolean;
-    receiveDamage(damage: number): void
+    receiveDamage(damage: number): void;
+    onDeath(): void;
 
     getFiringPos(from: Vector2D): Vector2D;
 }

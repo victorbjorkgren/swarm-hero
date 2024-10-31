@@ -32,10 +32,10 @@ export enum ServerMessageType {
     Resume = "Resume",
     Winner = "Winner",
     SpellCast = "SpellCast",
-    // ExplosionNotice = "ExplosionNotice",
     CastleTakeOver = "CastleTakeOver",
     DroneBought = "DroneBought",
     SpellBought = "SpellBought",
+    EntityDeath = "EntityDeath"
 }
 
 export type ServerPayloads = {
@@ -45,11 +45,16 @@ export type ServerPayloads = {
     [ServerMessageType.Pause]: null;
     [ServerMessageType.Resume]: null;
     [ServerMessageType.Winner]: string;
-    // [ServerMessageType.ExplosionNotice]: ExplosionNoticeMessage;
     [ServerMessageType.SpellCast]: SpellCastMessage;
     [ServerMessageType.CastleTakeOver]: null;
     [ServerMessageType.DroneBought]: DroneBoughtMessage;
     [ServerMessageType.SpellBought]: SpellBoughtMessage;
+    [ServerMessageType.EntityDeath]: EntityDeathMessage;
+}
+
+export type EntityDeathMessage = {
+    departed: EntityID,
+    departedType:EntityTypes
 }
 
 export type SpellBoughtMessage = {
@@ -63,7 +68,7 @@ export type DroneBoughtMessage = {
     unit: Units,
     n: number,
     castleId: CastleID,
-    droneId: ParticleID,
+    droneId: ParticleID[],
 }
 
 export type InitialDataMessage = {
@@ -71,7 +76,7 @@ export type InitialDataMessage = {
 }
 
 export type InitialDataPackage = {
-    teams: Team[],
+    // teams: Team[],
     players: PlayerInitData[],
     castles: CastleInitData[]
 }

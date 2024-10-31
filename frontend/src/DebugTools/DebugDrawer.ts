@@ -1,6 +1,5 @@
-import {Application, Graphics, Sprite} from "pixi.js";
+import {Application, Graphics} from "pixi.js";
 import {Vector2D} from "../GameComps/Utility";
-import HeroGameLoopServer from "../GameComps/HeroGameLoopServer";
 import {HeroGameLoopClient} from "../GameComps/HeroGameLoopClient";
 
 export default class DebugDrawer {

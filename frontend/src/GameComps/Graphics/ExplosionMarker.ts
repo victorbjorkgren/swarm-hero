@@ -1,6 +1,5 @@
 import {Application, Container, FillGradient, Graphics, GraphicsContext} from "pixi.js";
 import {pol2cart} from "../Utility";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 export const renderArcaneWheel = (pixi: Application): Container => {

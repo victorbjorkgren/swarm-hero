@@ -1,6 +1,5 @@
 import { ClientID } from "@shared/commTypes";
 import { GameConnection, PeerMap } from "../UI-Comps/CharacterCreation/MainCharacterCreation";
-import {PlayerServer} from "../GameComps/Entities/PlayerServer";
 
 export type SignalMesssage = {
     from: ClientID;

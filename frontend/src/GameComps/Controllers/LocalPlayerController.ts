@@ -1,10 +1,8 @@
 import {Controller, ControllerMapping, Controls} from "../../types/types";
-import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
 import {Keyboard} from "../Keyboard";
 import {PlayerClient} from "../Entities/PlayerClient";
-import {WebSocket} from "ws";
-import {ClientMessage, ClientMessageType} from "@shared/commTypes";
+import {ClientMessageType} from "@shared/commTypes";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 
 export class LocalPlayerController implements Controller {

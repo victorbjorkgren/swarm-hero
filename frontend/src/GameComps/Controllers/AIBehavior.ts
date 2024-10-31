@@ -1,15 +1,12 @@
-import {PlayerServer} from "../Entities/PlayerServer";
 import {Vector2D} from "../Utility";
-import {CastleServer} from "../Entities/CastleServer";
 import {EntityBase, EntityTypes} from "../../types/types";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {NavMesh} from "../NavMesh";
 import {UnitManager} from "../UnitManager";
-import {ParticleBase} from "../Entities/ParticleBase";
-import {CastleBase} from "../Entities/CastleBase";
+import {ParticleClient} from "../Entities/ParticleClient";
 import {PlayerClient} from "../Entities/PlayerClient";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
 import {CastleID, ClientID} from "@shared/commTypes";
+import {CastleClient} from "../Entities/CastleClient";
 
 enum State {
     Flee,
@@ -51,7 +48,7 @@ export class AIBehavior {
         this.navMesh.updateNavMesh(scene.colliders);
     }
 
-    getUnitManager(): UnitManager<ParticleBase> | undefined {
+    getUnitManager(): UnitManager<ParticleClient> | undefined {
         return this.scene.particleSystem?.getParticles();
     }
 
@@ -303,9 +300,9 @@ export class AIBehavior {
         return difficulty;
     }
 
-    nearestFriendlyCastle(): CastleBase | null {
+    nearestFriendlyCastle(): CastleClient | null {
         if (this.player.team!.castleIds.length === 0) return null;
-        let nearestFriendlyCastle: CastleServer | null = null;
+        let nearestFriendlyCastle: CastleClient | null = null;
         let minSqD: number = 1000000000;
         for (const castleId of this.player.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);

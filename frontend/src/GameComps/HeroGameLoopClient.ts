@@ -23,30 +23,40 @@ import {
     ClientMessage,
     ClientMessageType,
     ClientPayloads,
-    DroneBoughtMessage, EntityID,
+    DroneBoughtMessage,
+    EntityDeathMessage,
+    EntityID,
     GameUpdateMessage,
     InitialDataMessage,
     ParticleUpdateData,
     PlayerUpdateData,
     ServerMessage,
-    ServerMessageType, SpellBoughtMessage, SpellCastID,
+    ServerMessageType,
+    SpellBoughtMessage,
+    SpellCastID,
     SpellCastMessage
 } from "@shared/commTypes";
 import {PlayerClient} from "./Entities/PlayerClient";
 import {CastleClient} from "./Entities/CastleClient";
 import {ParticleSystemClient} from "./ParticleSystemClient";
-import {HeroGameLoopBase} from "./HeroGameLoopBase";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
-import HeroGameLoopServer from "./HeroGameLoopServer";
+import GameHost from "./GameHost";
 
 
-export class HeroGameLoopClient extends HeroGameLoopBase {
+export class HeroGameLoopClient {
     static zIndex = {
         'environment': 0,
         'ground': 1,
         'flyers': 2,
         'hud': 3,
     }
+
+    dayTime: number = 0;
+    dayLength: number = gameConfig.dayLength; // seconds
+
+    gameOn: boolean = true;
+    public readonly sceneWidth: number = gameConfig.mapWidth;
+    public readonly sceneHeight: number = gameConfig.mapHeight;
 
     public players: Map<ClientID, PlayerClient> = new Map();
     public teams: Team[] = [];
@@ -67,7 +77,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
     public localPlayer: PlayerClient | null = null;
 
     public hostchannel: RTCDataChannel | null = null;
-    public server: HeroGameLoopServer | null = null;
+    public server: GameHost | null = null;
     public isHost: boolean = false;
 
     public particleSystem: ParticleSystemClient;
@@ -86,11 +96,10 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         character: Character,
         public clients: PeerMap,
     ) {
-        super();
 
         if (localId === hostId) {
             this.isHost = true;
-            this.server = new HeroGameLoopServer(clients, this);
+            this.server = new GameHost(clients, this);
             this.sendToHost = this._hostLoopBack;
         } else {
             this.hostchannel = clients.get(hostId)!.datachannel
@@ -210,9 +219,18 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             case ServerMessageType.SpellBought:
                 this.handleSpellBought(message.payload as SpellBoughtMessage);
                 break;
+            case ServerMessageType.EntityDeath:
+                this.handleEntityDeath(message.payload as EntityDeathMessage);
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
+    }
+
+    handleEntityDeath(message: EntityDeathMessage) {
+        console.log("Eulogy received", message);
+        const departed = this.getEntityById(message.departed, message.departedType);
+        departed?.onDeath();
     }
 
     handleSpellBought(message: SpellBoughtMessage) {
@@ -231,7 +249,8 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         player.gold -= UnitPacks[message.unit].buyCost * message.n;
         for (let i = 0; i < message.n; i++) {
             console.log('Creating drone')
-            this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId)
+            this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId[i])
+            this.idTypes.set(message.droneId[i], EntityTypes.Particle)
         }
     }
 
@@ -339,14 +358,48 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         this.pixiRef.ticker.start();
     }
 
+    areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
+        for (const [playerId, player] of this.players) {
+            if (safeTeam.includes(player.team!)) continue;
+            if (Vector2D.sqDist(position, player.pos) > sqRange) continue;
+            player.receiveDamage(damage);
+        }
+        for (const [castleId, castle] of this.castles) {
+            if (safeTeam.includes(castle.team!)) continue;
+            if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
+            castle.receiveDamage(damage);
+        }
+        if (this.particleSystem) {
+            this.particleSystem.getParticles().deepForEach((particle) => {
+                if (safeTeam.includes(particle.team!)) return;
+                if (Vector2D.sqDist(position, particle.pos) > sqRange) return;
+                particle.receiveDamage(damage);
+            })
+        }
+    }
+
+    updateDayTime() {
+        if (this.startTime === null)
+            this.startTime = Date.now();
+        const elapsedTime = (Date.now() - this.startTime) / 1000;
+        if (elapsedTime > gameConfig.dayLength) {
+            this.startTime = Date.now();
+            this.triggerNewDay()
+        }
+        this.dayTime = elapsedTime / this.dayLength;
+
+    }
+
+    triggerNewDay() {
+        this.players.forEach(player => {
+            player.newDay();
+        })
+    }
+
     onDeath(id: string) {
         if (this.setWinner === undefined) return
         this.setWinner(id);
         this.stopGame();
-    }
-
-    triggerNewDay(): void {
-        this.localPlayer?.newDay();
     }
 
     setLocalPlayer(localCharacter: Character) {
@@ -433,6 +486,29 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
         DebugDrawer.setPixi(this.pixiRef);
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
 
+        this.teams = [
+            {
+                id: 0,
+                name: 'Yellow',
+                color: 0xffff00,
+                // playerCentroid: Vector2D.add(gameConfig.castlePositions[0], gameConfig.playerStartOffset),
+                // castleCentroid: gameConfig.castlePositions[0],
+                // controllerMapping: player1Keys,
+                playerIds: [],
+                castleIds: []
+            },
+            {
+                id: 1,
+                name: 'White',
+                color: 0xffffff,
+                // playerCentroid: Vector2D.add(gameConfig.castlePositions[1], gameConfig.playerStartOffset),
+                // castleCentroid: gameConfig.castlePositions[1],
+                // controllerMapping: null,
+                playerIds: [],
+                castleIds: []
+            }
+        ]
+
         const boundaryCollider: AABBCollider = {
             minX: 0,
             minY: 0,
@@ -444,13 +520,14 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
 
         const initData: InitialDataMessage = await this.initialDataPromise;
 
-        initData.package.teams.forEach(team => this.teams.push(team));
+        // initData.package.teams.forEach(team => this.teams.push(team));
 
         initData.package.players.forEach(pInit => {
             console.log(pInit);
             const player = this.players.get(pInit.id)!
             const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
             player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)
+            this.teams[pInit.teamIdx].playerIds.push(player.id);
             this.idTypes.set(pInit.id, EntityTypes.Player);
         });
         initData.package.castles.forEach(cInit => {
@@ -458,6 +535,7 @@ export class HeroGameLoopClient extends HeroGameLoopBase {
             this.castles.set(cInit.id, castle)
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
+            this.teams[cInit.teamIdx].castleIds.push(castle.id);
             this.idTypes.set(cInit.id, EntityTypes.Castle);
         })
 

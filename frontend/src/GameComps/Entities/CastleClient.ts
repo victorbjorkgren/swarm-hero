@@ -1,16 +1,33 @@
-import {Team, TexturePack} from "../../types/types";
+import {EntityBase, EntityTypes, Team, TexturePack} from "../../types/types";
 import {HeroGameLoopClient} from "../HeroGameLoopClient";
-import HeroGameLoopServer from "../HeroGameLoopServer";
 import {Vector2D} from "../Utility";
-import {CastleBase} from "./CastleBase";
-import {PlayerClient} from "./PlayerClient";
 import {Graphics, Sprite} from "pixi.js";
-import {CastleID, ClientID} from "@shared/commTypes";
+import {CastleID, ClientID, ServerMessageType} from "@shared/commTypes";
+import {gameConfig, SpellPacks} from "@shared/config";
+import {ParticleClient} from "./ParticleClient";
+import {SpellPack, Spells} from "../../types/spellTypes";
 
-export class CastleClient extends CastleBase {
+export class CastleClient implements EntityBase {
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
     private texture: TexturePack;
+
+    vel: Vector2D = Vector2D.zeros();
+    radius: number = 20;
+    mass: number = Infinity;
+    maxHealth: number = gameConfig.castleHealth;
+    health: number = gameConfig.castleHealth;
+    givesIncome: number = gameConfig.castleIncome;
+    targetedBy: ParticleClient[] = [];
+
+    public entityType: EntityTypes = EntityTypes.Castle;
+
+    public sqActivationDist: number = gameConfig.castleActivationDist ** 2;
+    public nearbyPlayers: ClientID[] = [];
+
+    public availableSpells: SpellPack[] = [
+        SpellPacks[Spells.Explosion],
+    ];
 
     constructor(
         public id: CastleID,
@@ -19,9 +36,43 @@ export class CastleClient extends CastleBase {
         public owner: ClientID,
         protected scene: HeroGameLoopClient
     ) {
-        super(id, team, pos, owner, scene);
+        this.team!.castleIds.push(id);
         if (!scene.castleTexturePack) throw new Error("Could not find a castleTexturePack");
         this.texture = scene.castleTexturePack
+    }
+
+    isAlive(): boolean {
+        return this.health > 0;
+    }
+
+    getFiringPos(from: Vector2D): Vector2D {
+        return this.pos;
+    }
+
+    playerWithinRange(playerId: ClientID): boolean {
+        const player = this.scene.players.get(playerId);
+        if (!player || !player.isAlive()) return false;
+        if (!this.isAlive()) return false;
+        return Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist
+    }
+
+    checkPlayers() {
+        this.nearbyPlayers = this.nearbyPlayers.filter(playerId => this.playerWithinRange(playerId));
+        for (const playerId of this.team!.playerIds) {
+            const player = this.scene.players.get(playerId);
+            if (!player) continue;
+            if (Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist) {
+                // if (!player.isLocal) {
+                //     player.popUpCastle = this;
+                // }
+                this.nearbyPlayers.push(player.id);
+                // } else {
+                //     if (!player.isLocal) {
+                //         player.popUpCastle = null;
+                //     }
+            }
+        }
+        return this.nearbyPlayers.length > 0;
     }
 
     render() {
@@ -84,7 +135,31 @@ export class CastleClient extends CastleBase {
 
     }
 
+    receiveDamage(damage: number): void {
+        this.health = this.health - damage;
+        if (!this.isAlive()) {
+            this.broadcastDeath();
+        }
+    }
+
     onDeath(): void {
+        if (this.castleSprite) {
+            this.scene.pixiRef.stage.removeChild(this.castleSprite);
+            this.castleSprite.destroy();
+        }
+    }
+
+    broadcastDeath(): void {
+        // Host Event
+        if (this.scene.server) {
+            this.scene.server.broadcast(
+                ServerMessageType.EntityDeath,
+                {
+                    departed: this.id,
+                    departedType: EntityTypes.Castle,
+                }
+            )
+        }
     }
 
 }

@@ -1,15 +1,14 @@
-import {ParticleBase} from "./Entities/ParticleBase";
-import {EntityBase} from "../types/types";
+import {ParticleClient} from "./Entities/ParticleClient";
 import {Units} from "../types/unitTypes";
 import {EntityID, ParticleID} from "@shared/commTypes";
 
 
-export type UnitMap<TParticle extends ParticleBase> = Map<Units, Set<TParticle>>;
-export type EntityUnitMap<TParticle extends ParticleBase> = Map<EntityID, UnitMap<TParticle>>;
-export type IdMap<TParticle extends ParticleBase> = Map<ParticleID, TParticle>;
+export type UnitMap<TParticle extends ParticleClient> = Map<Units, Set<TParticle>>;
+export type EntityUnitMap<TParticle extends ParticleClient> = Map<EntityID, UnitMap<TParticle>>;
+export type IdMap<TParticle extends ParticleClient> = Map<ParticleID, TParticle>;
 export type UnitCount = {unit: Units, count: number};
 
-export class UnitManager<TParticle extends ParticleBase> {
+export class UnitManager<TParticle extends ParticleClient> {
     private unitMap: EntityUnitMap<TParticle> = new Map();
     private idMap: IdMap<TParticle> = new Map();
 

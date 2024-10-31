@@ -1,7 +1,5 @@
-import HeroGameLoopServer from "./HeroGameLoopServer";
 import {AABBCollider} from "../types/types";
 import {Vector2D} from "./Utility";
-import DebugDrawer from "../DebugTools/DebugDrawer";
 import {HeroGameLoopClient} from "./HeroGameLoopClient";
 
 type Grid = boolean[][];

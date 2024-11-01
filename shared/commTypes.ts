@@ -109,7 +109,8 @@ export type GameUpdateMessage = {
     playerUpdate?: PlayerUpdateData[],
     castleUpdate?: CastleUpdateData[],
     particleUpdate?: ParticleUpdateData[],
-    dayTime: number
+    dayTime: number,
+    hostPriorities: ClientID[]
 }
 
 export type ExplosionNoticeMessage = {
@@ -155,6 +156,9 @@ export interface ClientMessage<T extends ClientMessageType> {
 }
 
 export enum ClientMessageType {
+    Ping = "Ping",
+    Pong = "Pong",
+    LatencyReport = "LatencyReport",
     ReadyToJoin = "ReadyToJoin",
     KeyUp = "KeyUp",
     KeyDown = "KeyDown",
@@ -165,6 +169,9 @@ export enum ClientMessageType {
 }
 
 export type ClientPayloads = {
+    [ClientMessageType.Ping]: PingCode;
+    [ClientMessageType.Pong]: PingCode;
+    [ClientMessageType.LatencyReport]: LatencyReport;
     [ClientMessageType.ReadyToJoin]: Character;
     [ClientMessageType.KeyUp]: Controls;
     [ClientMessageType.KeyDown]: Controls;
@@ -173,6 +180,10 @@ export type ClientPayloads = {
     [ClientMessageType.RequestBuySpell]: RequestBuySpellMessage;
     [ClientMessageType.RequestGarrison]: GarrisonMessage;
 }
+
+export type LatencyReport = Map<ClientID, number>;
+
+export type PingCode = string;
 
 export type BuyDroneMessage = {
     buyer: ClientID,

@@ -1,8 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {spriteToAABBCollider, Vector2D} from "./Utility";
-import {AABBCollider, Character, EntityTypes, Factions} from "../types/types";
-import {Assets, Sprite, Spritesheet, Texture} from "pixi.js";
+import {getMedian, Vector2D} from "./Utility";
+import {Character, EntityTypes, Factions} from "../types/types";
 import {gameConfig, UnitPacks} from "@shared/config";
 import {
     BuyDroneMessage,
@@ -13,7 +12,7 @@ import {
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
-    InitialDataPackage,
+    InitialDataPackage, LatencyReport,
     ParticleUpdateData,
     PlayerInitData,
     PlayerUpdateData,
@@ -35,6 +34,8 @@ export default class GameHost {
     public players: Map<string, PlayerClient> = new Map();
     // public navMesh: NavMesh;
 
+    private latencies: Map<ClientID, Map<ClientID, number>> = new Map();
+
     private initialData: InitialDataPackage | null = null;
     private readyForCreation: Map<ClientID, Character> = new Map();
 
@@ -46,28 +47,12 @@ export default class GameHost {
 
     constructor(
         private clients: PeerMap,
-        private localClientScene: HeroGameLoopClient
+        private localClientScene: HeroGameLoopClient,
+        isStartOfGame: boolean,
     ) {
-
-        // this.navMesh = new NavMesh(this);
-
-        // this.wss.on('connection', (ws: WebSocket) => {
-        //     const clientId = uuidv4();
-        //     const client: Client = {id: clientId, ws: ws};
-        //     this.clients.set(clientId, client);
-        //
-        //     console.log(`New client connected with id ${client.id}`);
-        //     ws.on('message', (message: string) => {
-        //         const parsedMessage = JSON.parse(message);
-        //         this.handleClientMessage(clientId, parsedMessage);
-        //     });
-        //
-        //     // Handle client disconnect
-        //     ws.on('close', () => {
-        //         this.clients.delete(clientId);
-        //         console.log(`Client disconnected: ${clientId}`);
-        //     });
-        // })
+        if (!isStartOfGame) {
+            this.tickerUp();
+        }
     }
 
     broadcast<T extends ServerMessageType>(type: T, payload: ServerPayloads[T]) {
@@ -85,6 +70,9 @@ export default class GameHost {
 
     handleClientMessage(clientId: ClientID, message: ClientMessage<any>) {
         switch (message.type) {
+            case ClientMessageType.LatencyReport:
+                this.handleLatencyReport(clientId, message.payload as LatencyReport);
+                break;
             case ClientMessageType.ReadyToJoin:
                 this.handleInitialDataRequest(clientId, message.payload);
                 break;
@@ -106,6 +94,36 @@ export default class GameHost {
             default:
                 console.warn('Unhandled message type:', message.type);
         }
+    }
+
+    handleLatencyReport(reportingId: ClientID, report: LatencyReport) {
+        report.forEach((latency, evaluatedId) => {
+            let subMap = this.latencies.get(evaluatedId)
+            if (!subMap) {
+                subMap = new Map();
+            }
+            subMap.set(reportingId, latency);
+            this.latencies.set(evaluatedId, subMap);
+        })
+    }
+
+    getHostPriority(): ClientID[] {
+        const prioMap: Map<ClientID, number> = new Map();
+        // Set defaults
+        this.clients.forEach(client => prioMap.set(client.id, gameConfig.latencyTimeout))
+        // Calculate from reports
+        this.latencies.forEach((latencyMap, clientId) => {
+            const latencies: number[] = [];
+            latencyMap.forEach((latency) => {
+                latencies.push(latency)
+            })
+            let median = getMedian(latencies) || gameConfig.latencyTimeout;
+            prioMap.set(clientId, median)
+        })
+        // Return client ids sorted by median latency
+        return Array.from(prioMap.entries())
+            .sort(([, a], [, b]) => a - b)
+            .map(([key]) => key);
     }
 
     handleBuySpellRequest(clientId: ClientID, spellRequest: RequestBuySpellMessage) {
@@ -203,14 +221,12 @@ export default class GameHost {
     }
 
     resumeGame() {
-        this.localClientScene.gameOn = true;
         this.tickerUp();
         this.broadcast(ServerMessageType.Resume, null);
     }
 
     checkWinner() {
         const remainingTeams = this.localClientScene.teams.filter(team => team.playerIds.length > 0)
-        console.log(remainingTeams, remainingTeams.length);
         if (remainingTeams.length > 1) return;
         const winner = remainingTeams.length === 1 ? remainingTeams[0].name : "Tie"
         this.broadcast(ServerMessageType.Winner, winner);
@@ -219,7 +235,7 @@ export default class GameHost {
 
     tickerUp() {
         if (this.updateInterval === null)
-            this.updateInterval = setInterval(()=> this.update(), 100);
+            this.updateInterval = setInterval(()=> this.update(), 1000);
     }
 
     tickerDown() {
@@ -239,70 +255,14 @@ export default class GameHost {
     }
 
     async preload() {
-        // this.players.clear();
-        // this.teams = [];
-        // this.castles = [];
-        this.localClientScene.colliders = [];
 
-        const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
-        await this.setupBlockers(walls);
-        // const explosion = Assets.load('/sprites/explosion_toon.json');
-
-        // const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
-        // const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
-        // const cat = Assets.load('/sprites/black_cat_run.json');
-
-        // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
-
-        // const backgroundReady = setupBackground(this.pixiRef, this.sceneWidth, this.sceneHeight);
-        // const explosionReady = this.setupExplosion(explosion)
-
-        // this.castleTexturePack = {
-        //     'normal': await castle,
-        //     'highlight': await castleHighlight,
-        // }
-        // this.defaultCursorTexture= await defaultCursor;
-        // await cat;
-        // await explosionReady;
-        // await backgroundReady;
-        // await blockersReady;
     };
 
-    async setupBlockers(wallSpriteSheet: Promise<Spritesheet>) {
-        const sheet = await wallSpriteSheet;
-        const texture: Texture = sheet.textures['TX Tileset Wall-0.png'];
-        const blockerSprite: Sprite = new Sprite(texture);
-        blockerSprite.x = this.localClientScene.sceneWidth / 2 - blockerSprite.width / 2;
-        blockerSprite.y = this.localClientScene.sceneHeight / 2 - blockerSprite.height / 2;
-
-        // blockerSprite.zIndex = HeroGameLoopServer.zIndex.ground;
-        // this.pixiRef.stage.addChild(blockerSprite);
-        this.localClientScene.colliders.push(spriteToAABBCollider(blockerSprite));
-    }
-
-    // resetControllers() {
-    //     this.players.forEach(player => {
-    //         player.controller.cleanup()
-    //     })
-    // }
 
     create() {
         this.players.clear();
         this.localClientScene.castles.clear();
-        // this.resetControllers();
 
-        const boundaryCollider: AABBCollider = {
-            minX: 0,
-            minY: 0,
-            maxX: this.localClientScene.sceneWidth,
-            maxY: this.localClientScene.sceneHeight,
-            inverted: true,
-        }
-
-        this.localClientScene.colliders.push(boundaryCollider);
-
-
-        // console.log('castleCentroid', this.teams[0].castleCentroid);
         const aiCharacter = {
             playerName: "Kitty",
             faction: Factions.Wild,
@@ -319,11 +279,6 @@ export default class GameHost {
             const castleId = uuidv4();
             const castleSpawn = gameConfig.castlePositions[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
-            // const newCastle = new CastleClient(castleId, castleSpawn, this.teams[teamIdx], clientId, this.localClientScene);
-            // const newPlayer = new PlayerClient(playerSpawn, this.teams[teamIdx], clientId, character, this);
-            // newPlayer.gainCastleControl(newCastle);
-            // this.players.set(clientId, newPlayer);
-            // this.castles.set(castleId, newCastle);
 
             playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamIdx: teamIdx})
             castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamIdx: teamIdx})
@@ -333,27 +288,10 @@ export default class GameHost {
 
         this.initialData = {players: playerInitData, castles: castleInitData};
         this.sendInitialData();
-
-        // this.particleSystem = new ParticleSystemBase(this.teams, this);
-        // for (const player of this.players) {
-        //     player.setParticleSystem(this.particleSystem);
-        // }
-        // this.playersRef.current = this.players;
     };
 
-    // updateDayTime() {
-    //     if (this.localClientScene.startTime === null)
-    //         this.localClientScene.startTime = Date.now();
-    //     const elapsedTime = (Date.now() - this.localClientScene.startTime) / 1000;
-    //     if (elapsedTime > this.localClientScene.dayLength) {
-    //         this.localClientScene.startTime = Date.now();
-    //         this.localClientScene.triggerNewDay();
-    //     }
-    //     this.localClientScene.dayTime = elapsedTime / this.localClientScene.dayLength;
-    // }
-
     update() {
-        // TODO: Just bring the changed values instead of all.
+        const hostPriority = this.getHostPriority();
         const playerUpdate: PlayerUpdateData[] = []
         const castleUpdate: CastleUpdateData[] = []
         const particleUpdate: ParticleUpdateData[] = []
@@ -403,6 +341,7 @@ export default class GameHost {
             castleUpdate: castleUpdate,
             particleUpdate: particleUpdate,
             dayTime: this.localClientScene.dayTime,
+            hostPriorities: hostPriority,
         })
     };
 }

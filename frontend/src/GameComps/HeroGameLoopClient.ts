@@ -1,3 +1,5 @@
+import {v4 as uuidv4} from 'uuid';
+
 import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import React from "react";
 import {setupBackground} from "./Graphics/TileBackground";
@@ -28,7 +30,9 @@ import {
     EntityID,
     GameUpdateMessage,
     InitialDataMessage,
+    LatencyReport,
     ParticleUpdateData,
+    PingCode,
     PlayerUpdateData,
     ServerMessage,
     ServerMessageType,
@@ -42,6 +46,7 @@ import {ParticleSystemClient} from "./ParticleSystemClient";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
 
+type LatencyObject = {pingStart: number, pingCode: string, latency: number};
 
 export class HeroGameLoopClient {
     static zIndex = {
@@ -81,10 +86,13 @@ export class HeroGameLoopClient {
     public server: GameHost | null = null;
     public isHost: boolean = false;
 
+    private latencyMap: Map<ClientID, LatencyObject> = new Map();
+    private hostPriorities: ClientID[] = [];
+
     public particleSystem: ParticleSystemClient;
     public startTime: number | null = null;
 
-    public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void
+    public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void = ()=>{};
 
     constructor(
         public pixiRef: Application,
@@ -97,30 +105,26 @@ export class HeroGameLoopClient {
         character: Character,
         public clients: PeerMap,
     ) {
-
-        if (localId === hostId) {
-            this.isHost = true;
-            this.server = new GameHost(clients, this);
-            this.sendToHost = this._hostLoopBack;
-        } else {
-            this.hostchannel = clients.get(hostId)!.datachannel
-            this.sendToHost = this._hostRemote;
-        }
-
+        this.setHost(hostId, true);
         this.particleSystem = new ParticleSystemClient(this);
 
         this.clients.forEach(client => {
-            if (client.id !== localId) {
-                client.datachannel.onmessage = (event: MessageEvent) => {
-                    const parsedMessage = JSON.parse(event.data);
-                    // console.log('incoming message', parsedMessage);
-                    if (client.id === this.hostId && 'serverFlag' in parsedMessage) {
-                        this.handleServerMessage(parsedMessage)
-                    } else {
-                        this.handlePeerMessage(parsedMessage, client);
-                    }
+            if (client.id === localId) return;
+            client.datachannel.addEventListener("message", (event: MessageEvent) => {
+                const parsedMessage = JSON.parse(event.data);
+                if (!('serverFlag' in parsedMessage))
+                    this.handlePeerMessage(parsedMessage, client);
+            });
+            client.peer.oniceconnectionstatechange = () => {
+                const state = client.peer.iceConnectionState;
+                console.log(`IceConnectionStateChange: "${state}" for client ${client.id}`);
+                if (state === "disconnected" || state === "failed") {
+                    this.disconnectPlayer(client.id);
                 }
-            }
+            };
+            client.datachannel.onclose = () => this.disconnectPlayer(client.id);
+
+
         })
 
         this.clients.forEach(client => {
@@ -133,13 +137,55 @@ export class HeroGameLoopClient {
         this.setLocalPlayer(character)
     }
 
+    disconnectPlayer(clientId: ClientID): void {
+            console.log(`Client disconnect from ${clientId}`);
+            if (!this.clients.has(clientId)) {
+                console.log(`Client already disconnected ${clientId}`);
+                return;
+            }
+            this.clients.delete(clientId);
+            if (clientId === this.hostId) {
+                console.log('Host has disconnected');
+                const nextHost = this.hostPriorities[0];
+                this.setHost(nextHost, false);
+            }
+            if (this.server) {
+                console.log('I broadcast the disconnect Eulogy')
+                const payload: EntityDeathMessage = {
+                    departed: clientId,
+                    departedType: EntityTypes.Player,
+                }
+                this.server.broadcast(ServerMessageType.EntityDeath, payload);
+            }
+    }
+
+    setHost(hostId: ClientID, isStartOfGame: boolean) {
+        this.hostId = hostId;
+        if (this.localId === hostId) {
+            console.log('Setting local host')
+            this.isHost = true;
+            this.server = new GameHost(this.clients, this, isStartOfGame);
+            this.sendToHost = this._hostLoopBack;
+        } else {
+            console.log(`Setting remote host ${hostId}`)
+            this.hostchannel = this.clients.get(hostId)!.datachannel;
+            this.hostchannel.addEventListener("message", (event: MessageEvent) => {
+                const parsedMessage = JSON.parse(event.data);
+                if ('serverFlag' in parsedMessage) {
+                    this.handleServerMessage(parsedMessage)
+                }
+            })
+            this.sendToHost = this._hostRemote;
+        }
+    }
+
     _hostLoopBack<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
-        const message: ClientMessage<any> = {type: type, payload: payload};
+        const message: ClientMessage<T> = {type: type, payload: payload};
         this.server?.handleClientMessage(this.localId, message)
     }
 
     _hostRemote<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
-        const message: ClientMessage<any> = {type: type, payload: payload};
+        const message: ClientMessage<T> = {type: type, payload: payload};
         this.hostchannel!.send(JSON.stringify(message));
     }
 
@@ -160,6 +206,12 @@ export class HeroGameLoopClient {
             this.server.handleClientMessage(sender.id, message);
         }
         switch (message.type) {
+            case ClientMessageType.Ping:
+                this.handlePing(sender, message.payload as PingCode);
+                break;
+            case ClientMessageType.Pong:
+                this.handlePong(sender.id, message.payload as PingCode);
+                break;
             case ClientMessageType.ReadyToJoin:
                 break;
             case ClientMessageType.RequestSpellCast:
@@ -177,6 +229,46 @@ export class HeroGameLoopClient {
             default:
                 console.warn('Unhandled message type:', message.type);
         }
+    }
+
+    handlePing(sender: Client, pingCode: PingCode) {
+        const message: ClientMessage<ClientMessageType.Pong> = {
+            type: ClientMessageType.Pong, payload: pingCode
+        };
+        sender.datachannel.send(JSON.stringify(message));
+    }
+
+    public measureLatenciesAndReportToHost() {
+        this.clients.forEach((client) => {
+            const pingCode: PingCode = uuidv4();
+            this.latencyMap.set(client.id, {
+                pingStart: Date.now(),
+                pingCode: pingCode,
+                latency: gameConfig.latencyTimeout,
+            })
+            const message: ClientMessage<ClientMessageType.Ping> = {
+                type: ClientMessageType.Ping,
+                payload: pingCode
+            }
+            client.datachannel.send(JSON.stringify(message));
+        });
+
+        setTimeout(() => {
+            const latencyReport: LatencyReport = new Map();
+            this.latencyMap.forEach((obj, clientId) => {
+                latencyReport.set(clientId, obj.latency);
+            })
+            this.sendToHost(ClientMessageType.LatencyReport, latencyReport);
+            this.latencyMap.clear();
+        }, gameConfig.latencyTimeout);
+    }
+
+    handlePong(senderId: ClientID, pingCode: PingCode) {
+        const latencyObj = this.latencyMap.get(senderId);
+        if (!latencyObj) return;
+        if (pingCode !== latencyObj.pingCode) return;
+        latencyObj.latency = Date.now() - latencyObj.pingStart;
+        this.latencyMap.set(senderId, latencyObj);
     }
 
     handleSpellCastRequest(clientId: ClientID, castData: SpellCastMessage) {
@@ -228,6 +320,12 @@ export class HeroGameLoopClient {
             case ServerMessageType.Winner:
                 this.handleWinner(message.payload as string);
                 break;
+            case ServerMessageType.Pause:
+                this.stopGame();
+                break;
+            case ServerMessageType.Resume:
+                this.resumeGame();
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
@@ -267,6 +365,7 @@ export class HeroGameLoopClient {
 
     handleGameUpdate(data: GameUpdateMessage) {
         this.dayTime = data.dayTime;
+        this.hostPriorities = data.hostPriorities;
         data.playerUpdate?.forEach((playerUpdate: PlayerUpdateData)=>{
             const player = this.players.get(playerUpdate.clientId);
             if (!player) return;
@@ -340,8 +439,6 @@ export class HeroGameLoopClient {
         if (!this.localPlayer) throw new Error("No local player!");
         if (!this.localPlayer.character) throw new Error("No local character!");
 
-        console.log("promise")
-
         this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
                 () => reject('Timeout waiting for initial data'),
@@ -352,8 +449,6 @@ export class HeroGameLoopClient {
                 resolve(data);
             };
         });
-
-        console.log("promise done")
 
         this.sendToHost(ClientMessageType.ReadyToJoin, this.localPlayer.character);
 
@@ -411,11 +506,8 @@ export class HeroGameLoopClient {
         console.log("onDeath", player);
         if (!player.team) return;
         const p = player.team.playerIds.indexOf(player.id)
-        console.log(p)
-        console.log(player.team.playerIds);
         if (p !== -1) {
             player.team.playerIds.splice(p, 1)
-            console.log(player.team.playerIds);
         }
         this.server?.checkWinner();
     }
@@ -541,7 +633,6 @@ export class HeroGameLoopClient {
         // initData.package.teams.forEach(team => this.teams.push(team));
 
         initData.package.players.forEach(pInit => {
-            console.log(pInit);
             const player = this.players.get(pInit.id)!
             const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
             player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)

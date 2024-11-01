@@ -62,7 +62,9 @@ export const gameConfig = {
         [Factions.Spirit]: {
             gold: 1000,
         }
-    }
+    },
+
+    latencyTimeout: 2000,
 } as const
 
 export const player1Keys: ControllerMapping = {

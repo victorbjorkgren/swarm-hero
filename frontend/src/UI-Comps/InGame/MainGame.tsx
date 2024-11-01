@@ -95,7 +95,6 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
             0, 0, gameConfig.mapWidth, gameConfig.mapHeight
         );
 
-        console.log('set game')
         gameSceneRef.current = new HeroGameLoopClient(
             pixiRef.current,
             setWinner,
@@ -107,7 +106,6 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
             character,
             connection.peers
         );
-        console.log('start')
         gameSceneRef.current.start();
     };
 

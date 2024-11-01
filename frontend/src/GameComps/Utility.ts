@@ -270,3 +270,13 @@ export const pol2cart = (r: number, theta: number): { x: number; y: number } => 
     const y = r * Math.sin(theta);  // y coordinate
     return { x, y };
 };
+
+export const getMedian = (numbers: number[]): number | null => {
+    if (numbers.length === 0) return null;
+    const sortedNumbers = [...numbers].sort((a, b) => a - b);
+    const middleIndex = Math.floor(sortedNumbers.length / 2);
+    if (sortedNumbers.length % 2 !== 0) {
+        return sortedNumbers[middleIndex];
+    }
+    return (sortedNumbers[middleIndex - 1] + sortedNumbers[middleIndex]) / 2;
+}

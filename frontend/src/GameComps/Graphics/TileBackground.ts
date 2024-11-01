@@ -1,5 +1,5 @@
 import {Application, Assets, Sprite, Spritesheet, SpritesheetData, Texture} from "pixi.js";
-import {HeroGameLoopClient} from "../HeroGameLoopClient";
+import {Game} from "../Game";
 
 export const setupBackground = async (pixi: Application, totalWidth: number, totalHeight: number)=> {
     const texture: Texture = await Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
@@ -40,7 +40,7 @@ export const setupBackground = async (pixi: Application, totalWidth: number, tot
             const sprite = new Sprite(spritesheet.textures[frameName]);
             sprite.x = x * tileSize;
             sprite.y = y * tileSize;
-            sprite.zIndex = HeroGameLoopClient.zIndex.environment
+            sprite.zIndex = Game.zIndex.environment
             pixi.stage.addChild(sprite);
         }
     }

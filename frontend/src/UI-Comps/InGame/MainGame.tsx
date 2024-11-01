@@ -2,14 +2,14 @@ import React, {useEffect, useRef, useState} from 'react';
 import {CityPopup} from "./CityPopup";
 import {Character, popUpEvent} from "../../types/types";
 import {Application, Rectangle} from "pixi.js";
-import {Keyboard} from "../../GameComps/Keyboard";
+import {Keyboard} from "../../GameComps/Controllers/Keyboard";
 import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
 import {gameConfig} from "@shared/config";
-import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
-import {HeroGameLoopClient} from "../../GameComps/HeroGameLoopClient";
+import {Player} from "../../GameComps/Entities/Player";
+import {Game} from "../../GameComps/Game";
 
 import {ClientID} from "@shared/commTypes";
 import {connectMesh} from "../../Hooks/Communication";
@@ -24,8 +24,8 @@ interface Props {
 
 const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
-    const playersRef = useRef<Map<ClientID, PlayerClient>>(new Map());
-    const gameSceneRef = useRef<HeroGameLoopClient | null>(null);
+    const playersRef = useRef<Map<ClientID, Player>>(new Map());
+    const gameSceneRef = useRef<Game | null>(null);
     const pixiRef = useRef<Application | null>(null);
 
     const [gameContainerStyle, setGameContainerStyle] = useState<React.CSSProperties>({});
@@ -95,7 +95,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
             0, 0, gameConfig.mapWidth, gameConfig.mapHeight
         );
 
-        gameSceneRef.current = new HeroGameLoopClient(
+        gameSceneRef.current = new Game(
             pixiRef.current,
             setWinner,
             setPlayerPopUpEvent,

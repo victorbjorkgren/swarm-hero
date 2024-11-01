@@ -23,15 +23,15 @@ import {
     SpellCastMessage
 } from "@shared/commTypes";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
-import {HeroGameLoopClient} from "./HeroGameLoopClient";
+import {Game} from "./Game";
 import {Units} from "../types/unitTypes";
 import {SpellPack} from "../types/spellTypes";
-import {CastleClient} from "./Entities/CastleClient";
-import {PlayerClient} from "./Entities/PlayerClient";
+import {CastleState} from "./Entities/Castle";
+import {Player} from "./Entities/Player";
 
 
 export default class GameHost {
-    public players: Map<string, PlayerClient> = new Map();
+    public players: Map<string, Player> = new Map();
     // public navMesh: NavMesh;
 
     private latencies: Map<ClientID, Map<ClientID, number>> = new Map();
@@ -47,7 +47,7 @@ export default class GameHost {
 
     constructor(
         private clients: PeerMap,
-        private localClientScene: HeroGameLoopClient,
+        private localClientScene: Game,
         isStartOfGame: boolean,
     ) {
         if (!isStartOfGame) {
@@ -134,7 +134,7 @@ export default class GameHost {
         this.resolvePlayerBuysSpell(buyCheck.player, buyCheck.castle, spellRequest.spell);
     }
 
-    resolvePlayerBuysSpell(player: PlayerClient, castle: CastleClient, spell: SpellPack) {
+    resolvePlayerBuysSpell(player: Player, castle: CastleState, spell: SpellPack) {
         // player.gold -= spell.buyCost;
         // player.availableSpells.push(spell);
         this.broadcast(ServerMessageType.SpellBought, {
@@ -171,7 +171,7 @@ export default class GameHost {
         }
     }
 
-    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: PlayerClient, castle: CastleClient} | null {
+    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: Player, castle: CastleState} | null {
         const buyer = this.localClientScene.players.get(playerId);
         if (!buyer || !buyer.isAlive()) return null;
         const castle = buyer.findNearbyCastle();
@@ -193,7 +193,7 @@ export default class GameHost {
         return {player: buyer, castle: castle};
     }
 
-    resolvePlayerBuysDrone(buyer: PlayerClient, castle: CastleClient, unit: Units, n: number) {
+    resolvePlayerBuysDrone(buyer: Player, castle: CastleState, unit: Units, n: number) {
         const newDroneIds = Array.from({length: n}, ()=>uuidv4());
         // this.localClientScene.idTypes.set(newDroneId, EntityTypes.Particle);
         // this.particleSystem?.getNewParticle(buyer, castle, 0, UnitPacks[unit], buyer, newDroneId);

@@ -1,12 +1,12 @@
 import {Vector2D} from "../Utility";
 import {EntityBase, EntityTypes} from "../../types/types";
-import {NavMesh} from "../NavMesh";
+import {NavMesh} from "./NavMesh";
 import {UnitManager} from "../UnitManager";
-import {ParticleClient} from "../Entities/ParticleClient";
-import {PlayerClient} from "../Entities/PlayerClient";
-import {HeroGameLoopClient} from "../HeroGameLoopClient";
+import {Particle} from "../Entities/Particle";
+import {Player} from "../Entities/Player";
+import {Game} from "../Game";
 import {CastleID, ClientID} from "@shared/commTypes";
-import {CastleClient} from "../Entities/CastleClient";
+import {CastleState} from "../Entities/Castle";
 
 enum State {
     Flee,
@@ -36,7 +36,7 @@ export class AIBehavior {
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
-    constructor(private player: PlayerClient, private otherPlayer: PlayerClient, private scene: HeroGameLoopClient) {
+    constructor(private player: Player, private otherPlayer: Player, private scene: Game) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
         this.pathTarget = player.pos.copy();
@@ -48,7 +48,7 @@ export class AIBehavior {
         this.navMesh.updateNavMesh(scene.colliders);
     }
 
-    getUnitManager(): UnitManager<ParticleClient> | undefined {
+    getUnitManager(): UnitManager<Particle> | undefined {
         return this.scene.particleSystem?.getParticles();
     }
 
@@ -300,9 +300,9 @@ export class AIBehavior {
         return difficulty;
     }
 
-    nearestFriendlyCastle(): CastleClient | null {
+    nearestFriendlyCastle(): CastleState | null {
         if (this.player.team!.castleIds.length === 0) return null;
-        let nearestFriendlyCastle: CastleClient | null = null;
+        let nearestFriendlyCastle: CastleState | null = null;
         let minSqD: number = 1000000000;
         for (const castleId of this.player.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);

@@ -2,7 +2,7 @@ import {EntityBase, EntityClient, EntityTypes, Team} from "../../types/types";
 import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
-import {HeroGameLoopClient} from "../HeroGameLoopClient";
+import {Game} from "../Game";
 import {Graphics} from "pixi.js";
 import {EntityID, ParticleID, ServerMessageType} from "@shared/commTypes";
 
@@ -12,7 +12,7 @@ interface FiringLaserAt {
     firingPos: Vector2D;
 }
 
-export class ParticleClient implements EntityClient {
+export class Particle implements EntityClient {
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
     leader: EntityBase | null = null;
@@ -30,7 +30,7 @@ export class ParticleClient implements EntityClient {
     maxAcc: number = .05;
     givesIncome: number = 0;
 
-    targetedBy: ParticleClient[] = [];
+    targetedBy: Particle[] = [];
 
     public entityType: EntityTypes = EntityTypes.Particle;
 
@@ -50,11 +50,11 @@ export class ParticleClient implements EntityClient {
         public team: Team,
         public maxVel: number = 1,
         public color: number,
-        protected scene: HeroGameLoopClient,
+        protected scene: Game,
         public groupID: number,
         public unitInfo: UnitPack,
         public owner: EntityID,
-        protected unitManager: UnitManager<ParticleClient>,
+        protected unitManager: UnitManager<Particle>,
         public id: ParticleID,
     ) {
         this.vel = randomUnitVector().scale(this.maxVel);
@@ -79,7 +79,7 @@ export class ParticleClient implements EntityClient {
     receiveDamage(damage: number): void {
         this.health -= damage;
         if (!this.isAlive()) {
-            this.broadcastDeath();
+            this.scene.broadcastDeath(this.id, EntityTypes.Particle);
         }
     }
 
@@ -160,18 +160,6 @@ export class ParticleClient implements EntityClient {
         return this.health > 0;
     }
 
-    broadcastDeath(): void {
-        if (this.scene.server) {
-            this.scene.server.broadcast(
-                ServerMessageType.EntityDeath,
-                {
-                    departed: this.id,
-                    departedType: EntityTypes.Particle,
-                }
-            )
-        }
-    }
-
     render() {
         if (this.isAlive()) {
             this.renderSelf();
@@ -185,7 +173,7 @@ export class ParticleClient implements EntityClient {
             this.particleSprite = new Graphics()
                 .circle(0, 0, this.radius)
                 .fill({color: this.color, alpha: 1});
-            this.particleSprite.zIndex = HeroGameLoopClient.zIndex.flyers;
+            this.particleSprite.zIndex = Game.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.particleSprite);
         }
         this.particleSprite.x = this.pos.x * this.scene.renderScale;
@@ -216,7 +204,7 @@ export class ParticleClient implements EntityClient {
     renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
-            this.healthSprite.zIndex = HeroGameLoopClient.zIndex.flyers;
+            this.healthSprite.zIndex = Game.zIndex.flyers;
             this.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         this.healthSprite.clear();

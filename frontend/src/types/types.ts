@@ -1,7 +1,7 @@
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
-import {CastleClient} from "../GameComps/Entities/CastleClient";
-import {ParticleClient} from "../GameComps/Entities/ParticleClient";
+import {CastleState} from "../GameComps/Entities/Castle";
+import {Particle} from "../GameComps/Entities/Particle";
 import {CastleID, ClientID, EntityID} from "@shared/commTypes";
 import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
@@ -33,10 +33,10 @@ export interface EntityBase {
 
     entityType: EntityTypes;
 
-    targetedBy: ParticleClient[];
+    targetedBy: Particle[];
 
     isAlive(): boolean;
-    receiveDamage(damage: number): void;
+    // receiveDamage(damage: number): void;
     onDeath(): void;
 
     getFiringPos(from: Vector2D): Vector2D;
@@ -99,7 +99,7 @@ export interface ControllerMapping {
 
 export interface popUpEvent{
     playerID: number;
-    castle: CastleClient;
+    castle: CastleState;
 }
 
 export interface DirectionalSpriteSheet {

@@ -1,28 +1,28 @@
 import {EntityBase, PolygonalCollider, Team} from "../types/types";
-import {HeroGameLoopClient} from "./HeroGameLoopClient";
-import {ParticleClient} from "./Entities/ParticleClient";
+import {Game} from "./Game";
+import {Particle} from "./Entities/Particle";
 import {UnitManager} from "./UnitManager";
 import {closestPointOnPolygon, isInsidePolygon, Vector2D} from "./Utility";
 import {UnitPack} from "../types/unitTypes";
 import {ParticleID} from "@shared/commTypes";
-import {PlayerClient} from "./Entities/PlayerClient";
-import {CastleClient} from "./Entities/CastleClient";
+import {Player} from "./Entities/Player";
+import {CastleState} from "./Entities/Castle";
 
-export class ParticleSystemClient {
+export class ParticleSystem {
     private sqCohedeDist: number = 250 ** 2;
     private sqSeparateDistance: number = 75 ** 2;
     private cohesionFactor: number = .1;
     private separationFactor: number = 2;
     private alignFactor: number = 40;
 
-    protected unitManager: UnitManager<ParticleClient> = new UnitManager();
+    protected unitManager: UnitManager<Particle> = new UnitManager();
     constructor(
-        protected scene: HeroGameLoopClient,
+        protected scene: Game,
         private polygonColliderEntities: PolygonalCollider[] = []
     ) {
     }
 
-    getParticles(): UnitManager<ParticleClient> {
+    getParticles(): UnitManager<Particle> {
         return this.unitManager;
     }
 
@@ -35,7 +35,7 @@ export class ParticleSystemClient {
     }
 
     updatePos(): void {
-        this.unitManager.deepForEach((particle: ParticleClient) => {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.acc.limit(particle.maxAcc);
             particle.vel.add(particle.acc);
             particle.vel.limit(particle.maxVel);
@@ -44,7 +44,7 @@ export class ParticleSystemClient {
     }
 
     particleBehavior(): void {
-        this.unitManager.deepForEach((particle: ParticleClient) => {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.initFrame();
             particle.approachDesiredVel();
             particle.calcDesiredPos();
@@ -67,11 +67,11 @@ export class ParticleSystemClient {
         // }
     }
 
-    sqFiringDistance(me: ParticleClient, other: EntityBase): number {
+    sqFiringDistance(me: Particle, other: EntityBase): number {
         return Vector2D.sqDist(me.pos, other.getFiringPos(me.pos));
     }
 
-    engageIfClose(me: ParticleClient, other: EntityBase) {
+    engageIfClose(me: Particle, other: EntityBase) {
         if (!other.isAlive()) return;
         if (me === other) return
         if (me.team === other.team) return
@@ -81,7 +81,7 @@ export class ParticleSystemClient {
     }
 
     engageFights(): void {
-        this.unitManager.deepForEach((me: ParticleClient) => {
+        this.unitManager.deepForEach((me: Particle) => {
             this.cleanEngagingTargets(me);
             if (me.engaging.length >= me.maxTargets) return;
             this.scene.teams.forEach((team) => {
@@ -92,7 +92,7 @@ export class ParticleSystemClient {
         });
     }
 
-    private cleanEngagingTargets(me: ParticleClient): void {
+    private cleanEngagingTargets(me: Particle): void {
         for (let i = me.engaging.length - 1; i >= 0; i--) {
             const foe = me.engaging[i];
             if (!foe || !foe.isAlive() || this.sqFiringDistance(me, foe) >= me.sqEngageRadius) {
@@ -102,14 +102,14 @@ export class ParticleSystemClient {
         }
     }
 
-    private removeTargetingReference(me: ParticleClient, foe: EntityBase): void {
+    private removeTargetingReference(me: Particle, foe: EntityBase): void {
         const targetIndex = foe.targetedBy.findIndex(target => target === me);
         if (targetIndex !== -1) {
             foe.targetedBy.splice(targetIndex, 1);
         }
     }
 
-    private engageTeamEntities(me: ParticleClient, entityIds: string[], entities: Map<string, any>): void {
+    private engageTeamEntities(me: Particle, entityIds: string[], entities: Map<string, any>): void {
         for (const entityId of entityIds) {
             const entity = entities.get(entityId);
             if (!entity || me.engaging.length >= me.maxTargets) return;
@@ -126,7 +126,7 @@ export class ParticleSystemClient {
     }
 
     fightFights(): void {
-        this.unitManager.deepForEach((me: ParticleClient) => {
+        this.unitManager.deepForEach((me: Particle) => {
             me.firingLaserAt = me.firingLaserAt.filter(foe => foe.target && foe.target.isAlive());
             me.firingLaserAt = me.firingLaserAt.filter(foe => Vector2D.sqDist(me.pos, foe.target.pos) < me.sqFireRadius);
             for (const foe of me.engaging) {
@@ -150,12 +150,12 @@ export class ParticleSystemClient {
     }
 
     updateBoid(): void {
-        this.unitManager.deepForEach((p1: ParticleClient) => {
+        this.unitManager.deepForEach((p1: Particle) => {
             const cohedePoint = Vector2D.zeros();
             const sepPoint = Vector2D.zeros();
             const alignV = Vector2D.zeros();
             let nCoh = 0;
-            this.unitManager.ownerForEach(p1.owner, (p2: ParticleClient) => {
+            this.unitManager.ownerForEach(p1.owner, (p2: Particle) => {
                 if (p1 === p2) return;
 
                 const sqDist = Vector2D.sqDist(p1.pos, p2.pos);
@@ -185,7 +185,7 @@ export class ParticleSystemClient {
         })
     }
 
-    getNewParticle(player: PlayerClient, castle: CastleClient, groupID: number, unitInfo: UnitPack, owner: PlayerClient, droneId: ParticleID): ParticleClient {
+    getNewParticle(player: Player, castle: CastleState, groupID: number, unitInfo: UnitPack, owner: Player, droneId: ParticleID): Particle {
         const randomSpawnOffset = new Vector2D((Math.random()-.5)*30, (Math.random()-.5)*30);
         return this.createParticle(
             Vector2D.add(castle.pos, randomSpawnOffset),
@@ -199,15 +199,15 @@ export class ParticleSystemClient {
         );
     }
 
-    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: PlayerClient, droneId: ParticleID): ParticleClient {
-        const p = new ParticleClient( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner.id, this.unitManager, droneId);
+    createParticle(origin: Vector2D, mass: number, maxVel: number, team: Team, groupID: number, unitInfo: UnitPack, owner: Player, droneId: ParticleID): Particle {
+        const p = new Particle( origin , mass, team, maxVel, team.color, this.scene, groupID, unitInfo, owner.id, this.unitManager, droneId);
         p.setLeader(owner);
         this.unitManager.add(p);
         return p;
     }
 
     render() {
-        this.unitManager.deepForEach((particle: ParticleClient) => {
+        this.unitManager.deepForEach((particle: Particle) => {
             particle.render();
         });
     }
@@ -255,7 +255,7 @@ export class ParticleSystemClient {
     }
 
     static handleBallPolygonCollision_(
-        particle: ParticleClient,
+        particle: Particle,
         polygonHolder: PolygonalCollider,
     ): void {
         const closestPoint = closestPointOnPolygon(polygonHolder.collider.verts, particle.pos);
@@ -295,7 +295,7 @@ export class ParticleSystemClient {
     }
 
     static handleBallPolygonCollision(
-        particle: ParticleClient,
+        particle: Particle,
         polygonHolder: PolygonalCollider,
     ): void {
         // Calculate relative velocity between the particle and the polygon

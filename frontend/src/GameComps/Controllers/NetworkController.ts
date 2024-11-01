@@ -1,12 +1,12 @@
 import {Controller, Controls} from "../../types/types";
 import {Vector2D} from "../Utility";
-import {PlayerClient} from "../Entities/PlayerClient";
+import {Player} from "../Entities/Player";
 
 export class NetworkController implements Controller {
     private keysPressed: Set<Controls> = new Set<Controls>()
 
     constructor(
-        private player: PlayerClient
+        private player: Player
     ) {
     }
 

@@ -40,15 +40,15 @@ import {
     SpellCastID,
     SpellCastMessage
 } from "@shared/commTypes";
-import {PlayerClient} from "./Entities/PlayerClient";
-import {CastleClient} from "./Entities/CastleClient";
-import {ParticleSystemClient} from "./ParticleSystemClient";
+import {Player} from "./Entities/Player";
+import {CastleState} from "./Entities/Castle";
+import {ParticleSystem} from "./ParticleSystem";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
 
 type LatencyObject = {pingStart: number, pingCode: string, latency: number};
 
-export class HeroGameLoopClient {
+export class Game {
     static zIndex = {
         'environment': 0,
         'ground': 1,
@@ -63,10 +63,10 @@ export class HeroGameLoopClient {
     public readonly sceneWidth: number = gameConfig.mapWidth;
     public readonly sceneHeight: number = gameConfig.mapHeight;
 
-    public players: Map<ClientID, PlayerClient> = new Map();
-    public remainingPlayers: Set<PlayerClient> = new Set();
+    public players: Map<ClientID, Player> = new Map();
+    public remainingPlayers: Set<Player> = new Set();
     public teams: Team[] = [];
-    public castles: Map<CastleID, CastleClient> = new Map();
+    public castles: Map<CastleID, CastleState> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
@@ -80,7 +80,7 @@ export class HeroGameLoopClient {
 
     private resolveInitialData: (data: any)=>void = ()=>{};
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
-    public localPlayer: PlayerClient | null = null;
+    public localPlayer: Player | null = null;
 
     public hostchannel: RTCDataChannel | null = null;
     public server: GameHost | null = null;
@@ -89,7 +89,7 @@ export class HeroGameLoopClient {
     private latencyMap: Map<ClientID, LatencyObject> = new Map();
     private hostPriorities: ClientID[] = [];
 
-    public particleSystem: ParticleSystemClient;
+    public particleSystem: ParticleSystem;
     public startTime: number | null = null;
 
     public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void = ()=>{};
@@ -98,7 +98,7 @@ export class HeroGameLoopClient {
         public pixiRef: Application,
         private setWinner: React.Dispatch<React.SetStateAction<string | undefined>>,
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
-        private playersRef: React.MutableRefObject<Map<ClientID, PlayerClient>>,
+        private playersRef: React.MutableRefObject<Map<ClientID, Player>>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
         public localId: ClientID,
         public hostId: ClientID,
@@ -106,7 +106,7 @@ export class HeroGameLoopClient {
         public clients: PeerMap,
     ) {
         this.setHost(hostId, true);
-        this.particleSystem = new ParticleSystemClient(this);
+        this.particleSystem = new ParticleSystem(this);
 
         this.clients.forEach(client => {
             if (client.id === localId) return;
@@ -128,9 +128,9 @@ export class HeroGameLoopClient {
         })
 
         this.clients.forEach(client => {
-            this.players.set(client.id, new PlayerClient(client.id, this))
+            this.players.set(client.id, new Player(client.id, this))
         })
-        this.players.set(localId, new PlayerClient(localId, this))
+        this.players.set(localId, new Player(localId, this))
 
         this.players.forEach(playerInstance => {this.remainingPlayers.add(playerInstance)})
 
@@ -149,14 +149,7 @@ export class HeroGameLoopClient {
                 const nextHost = this.hostPriorities[0];
                 this.setHost(nextHost, false);
             }
-            if (this.server) {
-                console.log('I broadcast the disconnect Eulogy')
-                const payload: EntityDeathMessage = {
-                    departed: clientId,
-                    departedType: EntityTypes.Player,
-                }
-                this.server.broadcast(ServerMessageType.EntityDeath, payload);
-            }
+            this.broadcastDeath(clientId, EntityTypes.Player)
     }
 
     setHost(hostId: ClientID, isStartOfGame: boolean) {
@@ -199,6 +192,19 @@ export class HeroGameLoopClient {
             if (client.id === this.localId) return;
             client.datachannel.send(data);
         })
+    }
+
+    broadcastDeath(entityId: EntityID, entityType: EntityTypes) {
+        // Host Event
+        if (this.server) {
+            this.server.broadcast(
+                ServerMessageType.EntityDeath,
+                {
+                    departed: entityId,
+                    departedType: entityType,
+                }
+            )
+        }
     }
 
     handlePeerMessage(message: ClientMessage<any>, sender: Client) {
@@ -473,7 +479,7 @@ export class HeroGameLoopClient {
         for (const [castleId, castle] of this.castles) {
             if (safeTeam.includes(castle.team!)) continue;
             if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
-            castle.receiveDamage(damage);
+            castle.interface.receiveDamage(damage);
         }
         if (this.particleSystem) {
             this.particleSystem.getParticles().deepForEach((particle) => {
@@ -502,7 +508,7 @@ export class HeroGameLoopClient {
         })
     }
 
-    onDeath(player: PlayerClient) {
+    onPlayerDeath(player: Player) {
         console.log("onDeath", player);
         if (!player.team) return;
         const p = player.team.playerIds.indexOf(player.id)
@@ -550,7 +556,7 @@ export class HeroGameLoopClient {
         blockerSprite.x = this.sceneWidth / 2 - blockerSprite.width / 2;
         blockerSprite.y = this.sceneHeight / 2 - blockerSprite.height / 2;
 
-        blockerSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+        blockerSprite.zIndex = Game.zIndex.ground;
         this.pixiRef.stage.addChild(blockerSprite);
         this.colliders.push(spriteToAABBCollider(blockerSprite));
     }
@@ -640,7 +646,7 @@ export class HeroGameLoopClient {
             this.idTypes.set(pInit.id, EntityTypes.Player);
         });
         initData.package.castles.forEach(cInit => {
-            const castle = new CastleClient(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
+            const castle = new CastleState(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
             this.castles.set(cInit.id, castle)
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
@@ -667,7 +673,7 @@ export class HeroGameLoopClient {
             player.render();
         })
         this.castles.forEach(castle => {
-            castle.render();
+            castle.update();
         })
         this.particleSystem?.render();
 
@@ -693,6 +699,4 @@ export class HeroGameLoopClient {
         this.pixiRef.stage.position.x = this.pixiRef.canvas.width / 2;
         this.pixiRef.stage.position.y = this.pixiRef.canvas.height / 2;
     }
-
-
 }

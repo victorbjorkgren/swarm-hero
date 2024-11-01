@@ -5,12 +5,12 @@ import {UnitButton} from "./UnitButton";
 import {SpellPack} from "../../types/spellTypes";
 import {Units} from "../../types/unitTypes";
 import {MovePopup} from "./MovePopup";
-import {PlayerClient} from "../../GameComps/Entities/PlayerClient";
+import {Player} from "../../GameComps/Entities/Player";
 
 
 interface CityPopupProps {
     anchorPoint: Vector2D | undefined;
-    player: PlayerClient | null | undefined;
+    player: Player | null | undefined;
     recruitFunc: (unit: Units, n: number)=>boolean;
 }
 

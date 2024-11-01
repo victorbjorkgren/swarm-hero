@@ -8,8 +8,8 @@ import {
     Factions,
     Team
 } from "../../types/types";
-import {HeroGameLoopClient} from "../HeroGameLoopClient";
-import {CastleClient} from "./CastleClient";
+import {Game} from "../Game";
+import {CastleState} from "./Castle";
 import {checkAABBCollision, pol2cart, Vector2D} from "../Utility";
 import {
     healthConversion,
@@ -31,13 +31,13 @@ import {Units} from "../../types/unitTypes";
 import { v4 as uuidv4 } from 'uuid';
 import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
-import {ParticleClient} from "./ParticleClient";
+import {Particle} from "./Particle";
 import {SpectatorController} from "../Controllers/SpectatorController";
 
-export class PlayerClient implements EntityBase {
+export class Player implements EntityBase {
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
-    public targetedBy: ParticleClient[] = [];
+    public targetedBy: Particle[] = [];
     public availableSpells: SpellPack[] = [];
 
     public entityType: EntityTypes = EntityTypes.Player;
@@ -59,7 +59,7 @@ export class PlayerClient implements EntityBase {
     public radius: number = 20; // for collider - unused
     public mass: number = 50**3; // for collision - unused
 
-    myCastles: CastleClient[] = [];
+    myCastles: CastleState[] = [];
     isLocal: boolean = false;
 
     public pos: Vector2D = Vector2D.zeros();
@@ -67,7 +67,7 @@ export class PlayerClient implements EntityBase {
     public character: Character | null = null;
 
     aimPos: Vector2D = Vector2D.zeros();
-    public popUpCastle: CastleClient | null = null;
+    public popUpCastle: CastleState | null = null;
 
     private playerSpritePack: DirectionalSpriteSheet | null = null;
     private currentAnimation: AnimatedSprite | null = null;
@@ -87,7 +87,7 @@ export class PlayerClient implements EntityBase {
 
     constructor(
         public id: ClientID,
-        public scene: HeroGameLoopClient,
+        public scene: Game,
     ) {
         if (scene.localId === id) {
             this.controller = new LocalPlayerController(this, player1Keys, scene);
@@ -103,19 +103,7 @@ export class PlayerClient implements EntityBase {
     receiveDamage(damage: number): void {
         this.health -= damage
         if (!this.isAlive()) {
-            this.broadcastDeath()
-        }
-    }
-
-    broadcastDeath(): void {
-        if (this.scene.server) {
-            this.scene.server.broadcast(
-                ServerMessageType.EntityDeath,
-                {
-                    departed: this.id,
-                    departedType: EntityTypes.Player,
-                }
-            )
+            this.scene.broadcastDeath(this.id, EntityTypes.Player)
         }
     }
 
@@ -167,7 +155,7 @@ export class PlayerClient implements EntityBase {
         this.controller.cleanup();
         this.controller = new SpectatorController();
         this.killSprites();
-        this.scene.onDeath(this);
+        this.scene.onPlayerDeath(this);
     }
 
     killSprites() {
@@ -225,7 +213,7 @@ export class PlayerClient implements EntityBase {
         // }
     }
 
-    findNearbyCastle(): CastleClient | null {
+    findNearbyCastle(): CastleState | null {
         for (const castle of this.myCastles) {
             if (castle.nearbyPlayers.find(playerId => playerId === this.id))
                 return castle;
@@ -293,7 +281,7 @@ export class PlayerClient implements EntityBase {
                 animation.loop = true;
                 animation.visible = false;
                 animation.anchor.set(.5);
-                animation.zIndex = HeroGameLoopClient.zIndex.ground;
+                animation.zIndex = Game.zIndex.ground;
                 this.scene.pixiRef.stage.addChild(animation);
             }
         });
@@ -376,7 +364,7 @@ export class PlayerClient implements EntityBase {
         )
     }
 
-    gainCastleControl(castle: CastleClient) {
+    gainCastleControl(castle: CastleState) {
         this.myCastles.push(castle);
         castle.owner = this.id;
     }
@@ -600,7 +588,7 @@ export class PlayerClient implements EntityBase {
                 fontSize: 13,
                 letterSpacing: -0.6
             });
-            this.nameSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+            this.nameSprite.zIndex = Game.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.nameSprite);
         }
         this.nameSprite.position.set(this.pos.x * this.scene.renderScale, this.pos.y * this.scene.renderScale + 25);
@@ -609,12 +597,12 @@ export class PlayerClient implements EntityBase {
     renderStatsBar(): void {
         if (this.healthBarSprite === null) {
             this.healthBarSprite = new Graphics();
-            this.healthBarSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+            this.healthBarSprite.zIndex = Game.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.healthBarSprite);
         }
         if (this.manaBarSprite === null) {
             this.manaBarSprite = new Graphics();
-            this.manaBarSprite.zIndex = HeroGameLoopClient.zIndex.ground;
+            this.manaBarSprite.zIndex = Game.zIndex.ground;
             this.scene.pixiRef.stage.addChild(this.manaBarSprite);
         }
         this.healthBarSprite.clear();
@@ -647,7 +635,7 @@ export class PlayerClient implements EntityBase {
     renderSpellRange(): void {
         if (this.rangeSprite === null) {
             this.rangeSprite = new Graphics();
-            this.rangeSprite.zIndex = HeroGameLoopClient.zIndex.hud;
+            this.rangeSprite.zIndex = Game.zIndex.hud;
             this.scene.pixiRef.stage.addChild(this.rangeSprite);
         }
         if (!this.isCasting || this.activeSpell === null) {
@@ -680,7 +668,7 @@ export class PlayerClient implements EntityBase {
     renderExplosion(position: Vector2D, radius: number) {
         if (this.scene.explosionSprite === null) return
         const explosion = new AnimatedSprite(this.scene.explosionSprite);
-        explosion.zIndex = HeroGameLoopClient.zIndex.hud;
+        explosion.zIndex = Game.zIndex.hud;
         explosion.loop = false;
         explosion.animationSpeed = .5;
         explosion.anchor.set(0.5);

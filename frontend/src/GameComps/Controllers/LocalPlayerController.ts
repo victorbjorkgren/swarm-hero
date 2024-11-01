@@ -1,9 +1,9 @@
 import {Controller, ControllerMapping, Controls} from "../../types/types";
 import {Vector2D} from "../Utility";
-import {Keyboard} from "../Keyboard";
-import {PlayerClient} from "../Entities/PlayerClient";
+import {Keyboard} from "./Keyboard";
+import {Player} from "../Entities/Player";
 import {ClientMessageType} from "@shared/commTypes";
-import {HeroGameLoopClient} from "../HeroGameLoopClient";
+import {Game} from "../Game";
 
 export class LocalPlayerController implements Controller {
     private readonly specialHandler: () => void;
@@ -13,9 +13,9 @@ export class LocalPlayerController implements Controller {
     private movementKeysDown: Set<keyof ControllerMapping> = new Set([])
 
     constructor(
-        private player: PlayerClient,
+        private player: Player,
         private keyBindings: ControllerMapping,
-        private scene: HeroGameLoopClient,
+        private scene: Game,
     ) {
         this.specialHandler = () => this.special()
         this.buyHandler = () => this.buy();

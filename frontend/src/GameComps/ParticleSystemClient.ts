@@ -17,7 +17,6 @@ export class ParticleSystemClient {
 
     protected unitManager: UnitManager<ParticleClient> = new UnitManager();
     constructor(
-        protected teams: Team[],
         protected scene: HeroGameLoopClient,
         private polygonColliderEntities: PolygonalCollider[] = []
     ) {
@@ -83,42 +82,47 @@ export class ParticleSystemClient {
 
     engageFights(): void {
         this.unitManager.deepForEach((me: ParticleClient) => {
-            for (let i = me.engaging.length - 1; i >= 0; i--) {
-                const foe = me.engaging[i];
-                if (!foe || !foe.isAlive() || this.sqFiringDistance(me, foe) >= me.sqEngageRadius) {
-                    me.engaging.splice(i, 1);
-                    const targetIndex = foe.targetedBy.findIndex(target => target === me);
-                    if (targetIndex !== -1) {
-                        foe.targetedBy.splice(targetIndex, 1);
-                    }
-                }
-            }
-
+            this.cleanEngagingTargets(me);
             if (me.engaging.length >= me.maxTargets) return;
-            for (const team of this.teams) {
-                if (team === me.team) continue
-                for (const playerId of team.playerIds) {
-                    const player = this.scene.players.get(playerId);
-                    if(!player) continue;
-                    this.engageIfClose(me, player)
-                    if (me.engaging.length >= me.maxTargets) return;
-                    this.unitManager.ownerForEach(player.id, (other) => {
-                        if (me.engaging.length >= me.maxTargets) return;
-                        this.engageIfClose(me, other);
-                    })
-                }
-                for (const castleId of team.castleIds) {
-                    const castle = this.scene.castles.get(castleId);
-                    if (!castle) continue;
-                    this.engageIfClose(me, castle)
-                    if (me.engaging.length >= me.maxTargets) return;
-                    this.unitManager.ownerForEach(castle.id, (other) => {
-                        if (me.engaging.length >= me.maxTargets) return;
-                        this.engageIfClose(me, other);
-                    })
-                }
+            this.scene.teams.forEach((team) => {
+                if (team === me.team) return;
+                this.engageTeamEntities(me, team.playerIds, this.scene.players);
+                this.engageTeamEntities(me, team.castleIds, this.scene.castles);
+            });
+        });
+    }
+
+    private cleanEngagingTargets(me: ParticleClient): void {
+        for (let i = me.engaging.length - 1; i >= 0; i--) {
+            const foe = me.engaging[i];
+            if (!foe || !foe.isAlive() || this.sqFiringDistance(me, foe) >= me.sqEngageRadius) {
+                me.engaging.splice(i, 1);
+                this.removeTargetingReference(me, foe);
             }
-        })
+        }
+    }
+
+    private removeTargetingReference(me: ParticleClient, foe: EntityBase): void {
+        const targetIndex = foe.targetedBy.findIndex(target => target === me);
+        if (targetIndex !== -1) {
+            foe.targetedBy.splice(targetIndex, 1);
+        }
+    }
+
+    private engageTeamEntities(me: ParticleClient, entityIds: string[], entities: Map<string, any>): void {
+        for (const entityId of entityIds) {
+            const entity = entities.get(entityId);
+            if (!entity || me.engaging.length >= me.maxTargets) return;
+
+            this.engageIfClose(me, entity);
+
+            if (me.engaging.length < me.maxTargets) {
+                this.unitManager.ownerForEach(entity.id, (other) => {
+                    if (me.engaging.length >= me.maxTargets) return;
+                    this.engageIfClose(me, other);
+                });
+            }
+        }
     }
 
     fightFights(): void {

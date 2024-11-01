@@ -107,7 +107,7 @@ export class HeroGameLoopClient {
             this.sendToHost = this._hostRemote;
         }
 
-        this.particleSystem = new ParticleSystemClient(this.teams, this);
+        this.particleSystem = new ParticleSystemClient(this);
 
         this.clients.forEach(client => {
             if (client.id !== localId) {

@@ -26,12 +26,12 @@ import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import {Game} from "./Game";
 import {Units} from "../types/unitTypes";
 import {SpellPack} from "../types/spellTypes";
-import {CastleState} from "./Entities/Castle";
-import {Player} from "./Entities/Player";
+import {CastleInterface} from "./Entities/Castle";
+import {PlayerInterface} from "./Entities/Player";
 
 
 export default class GameHost {
-    public players: Map<string, Player> = new Map();
+    public players: Map<string, PlayerInterface> = new Map();
     // public navMesh: NavMesh;
 
     private latencies: Map<ClientID, Map<ClientID, number>> = new Map();
@@ -134,12 +134,10 @@ export default class GameHost {
         this.resolvePlayerBuysSpell(buyCheck.player, buyCheck.castle, spellRequest.spell);
     }
 
-    resolvePlayerBuysSpell(player: Player, castle: CastleState, spell: SpellPack) {
-        // player.gold -= spell.buyCost;
-        // player.availableSpells.push(spell);
+    resolvePlayerBuysSpell(player: PlayerInterface, castle: CastleInterface, spell: SpellPack) {
         this.broadcast(ServerMessageType.SpellBought, {
-            buyer: player.id,
-            castle: castle.id,
+            buyer: player.state.id,
+            castle: castle.state.id,
             spell: spell,
         })
     }
@@ -171,39 +169,39 @@ export default class GameHost {
         }
     }
 
-    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: Player, castle: CastleState} | null {
+    checkPlayerCanBuyDrone(playerId: ClientID, unit: Units, n: number): {player: PlayerInterface, castle: CastleInterface} | null {
         const buyer = this.localClientScene.players.get(playerId);
-        if (!buyer || !buyer.isAlive()) return null;
+        if (!buyer || !buyer.state.isAlive()) return null;
         const castle = buyer.findNearbyCastle();
-        if (!castle || !castle.isAlive()) return null;
+        if (!castle || !castle.state.isAlive()) return null;
 
-        if (buyer.gold < (UnitPacks[unit].buyCost * n)) return null;
+        if (buyer.state.gold < (UnitPacks[unit].buyCost * n)) return null;
 
         return {player: buyer, castle: castle};
     }
 
     checkPlayerCanBuySpell(clientId: ClientID, castleId: CastleID, spell: SpellPack) {
         const buyer = this.localClientScene.players.get(clientId);
-        if (!buyer || !buyer.isAlive()) return null;
+        if (!buyer || !buyer.state.isAlive()) return null;
         const castle = this.localClientScene.castles.get(castleId)
-        if (!castle || !castle.isAlive()) return null;
-        if (!castle.playerWithinRange(buyer.id)) return null
-        if (buyer.gold < spell.buyCost) return null;
+        if (!castle || !castle.state.isAlive()) return null;
+        if (!castle.playerWithinRange(buyer.state.id)) return null
+        if (buyer.state.gold < spell.buyCost) return null;
 
         return {player: buyer, castle: castle};
     }
 
-    resolvePlayerBuysDrone(buyer: Player, castle: CastleState, unit: Units, n: number) {
+    resolvePlayerBuysDrone(buyer: PlayerInterface, castle: CastleInterface, unit: Units, n: number) {
         const newDroneIds = Array.from({length: n}, ()=>uuidv4());
         // this.localClientScene.idTypes.set(newDroneId, EntityTypes.Particle);
         // this.particleSystem?.getNewParticle(buyer, castle, 0, UnitPacks[unit], buyer, newDroneId);
         this.broadcast(
             ServerMessageType.DroneBought,
             {
-                buyer: buyer.id,
+                buyer: buyer.state.id,
                 unit: unit,
                 n: n,
-                castleId: castle.id,
+                castleId: castle.state.id,
                 droneId: newDroneIds,
             })
     }
@@ -297,40 +295,42 @@ export default class GameHost {
         const particleUpdate: ParticleUpdateData[] = []
         this.localClientScene.players.forEach((player) => {
             playerUpdate.push({
-                clientId: player.id,
-                alive: player.isAlive(),
-                pos: player.pos,
-                vel: player.vel,
-                acc: player.acc,
-                health: player.health,
-                mana: player.mana,
-                gold: player.gold,
+                clientId: player.state.id,
+                alive: player.state.isAlive(),
+                pos: player.state.pos,
+                vel: player.state.vel,
+                acc: player.state.acc,
+                health: player.state.health,
+                mana: player.state.mana,
+                gold: player.state.gold,
             })
 
-            player.myCastles.forEach(castle => {
+            player.state.myCastles.forEach(castleId => {
+                const castle = this.localClientScene.getEntityById(castleId, EntityTypes.Castle) as CastleInterface | undefined;
+                if (!castle) return;
                 castleUpdate.push({
-                    castleId: castle.id,
-                    alive: castle.isAlive(),
-                    owner: castle.owner,
-                    health: castle.health,
+                    castleId: castle.state.id,
+                    alive: castle.state.isAlive(),
+                    owner: castle.state.owner,
+                    health: castle.state.health,
                 })
             })
         })
         this.localClientScene.particleSystem?.getParticles().deepForEach(particle => {
-            const leaderId = particle.leader?.id ?? null;
+            const leaderId = particle.state.leader?.id ?? null;
             let leaderType: EntityTypes | null = null;
             if (leaderId) {
                 leaderType = this.localClientScene.idTypes.get(leaderId) ?? null;
             }
             particleUpdate.push({
-                particleId: particle.id,
-                alive: particle.isAlive(),
-                pos: particle.pos,
-                vel: particle.vel,
-                acc: particle.acc,
-                health: particle.health,
-                owner: particle.owner,
-                ownerType: this.localClientScene.idTypes.get(particle.owner)!,
+                particleId: particle.state.id,
+                alive: particle.state.isAlive(),
+                pos: particle.state.pos,
+                vel: particle.state.vel,
+                acc: particle.state.acc,
+                health: particle.state.health,
+                owner: particle.state.owner,
+                ownerType: this.localClientScene.idTypes.get(particle.state.owner)!,
                 leader: leaderId,
                 leaderType: leaderType,
             })

@@ -5,12 +5,12 @@ import {UnitButton} from "./UnitButton";
 import {SpellPack} from "../../types/spellTypes";
 import {Units} from "../../types/unitTypes";
 import {MovePopup} from "./MovePopup";
-import {Player} from "../../GameComps/Entities/Player";
+import {PlayerInterface} from "../../GameComps/Entities/Player";
 
 
 interface CityPopupProps {
     anchorPoint: Vector2D | undefined;
-    player: Player | null | undefined;
+    player: PlayerInterface | null | undefined;
     recruitFunc: (unit: Units, n: number)=>boolean;
 }
 
@@ -108,8 +108,8 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
 
     if (player === undefined || player === null) return null;
 
-    const playerDrones = Array.from(player.scene.particleSystem.getParticles().getUnitCounts(player.id) || []);
-    const townDrones = Array.from(player.scene.particleSystem.getParticles().getUnitCounts(player.popUpCastle?.id ?? null) || []);
+    const playerDrones = Array.from(player.state.scene.particleSystem.getParticles().getUnitCounts(player.state.id) || []);
+    const townDrones = Array.from(player.state.scene.particleSystem.getParticles().getUnitCounts(player.popUpCastle?.state.id ?? null) || []);
 
     const maxUnitBoxes = Math.max(playerDrones.length, townDrones.length) + 1;
 
@@ -131,7 +131,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
             >
                 {/*General Info*/}
                 <div className="flex flex-row justify-end px-2">
-                    <span className="font-bold">{`Gold: ${player.gold}`}</span>
+                    <span className="font-bold">{`Gold: ${player.state.gold}`}</span>
                 </div>
                 {/*Purchasing*/}
                 <div className="flex flex-row justify-around px-4 gap-x-14">
@@ -145,7 +145,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                     {/*Spells*/}
                     <div className="flex flex-col text-6xl items-start justify-start space-y-2">
                         <span className="text-2xl">Spells</span>
-                        {player.popUpCastle && player.popUpCastle.availableSpells.map((spell: SpellPack, index: number) => (
+                        {player.popUpCastle && player.popUpCastle.state.availableSpells.map((spell: SpellPack, index: number) => (
                             <UnitButton size={spellBoxSize} key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]}/>
                         ))}
                     </div>

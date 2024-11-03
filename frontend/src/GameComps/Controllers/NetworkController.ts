@@ -1,12 +1,12 @@
 import {Controller, Controls} from "../../types/types";
 import {Vector2D} from "../Utility";
-import {Player} from "../Entities/Player";
+import {PlayerInterface} from "../Entities/Player";
 
 export class NetworkController implements Controller {
     private keysPressed: Set<Controls> = new Set<Controls>()
 
     constructor(
-        private player: Player
+        private player: PlayerInterface
     ) {
     }
 
@@ -26,22 +26,23 @@ export class NetworkController implements Controller {
     }
 
     movement(): void {
-        this.player.acc = Vector2D.zeros();
+        // TODO: Write to state buffer
+        this.player.state.acc = Vector2D.zeros();
 
         if (this.keysPressed.has(Controls.left)) {
-            this.player.acc.x -= this.player.maxAcc;
+            this.player.state.acc.x -= this.player.state.maxAcc;
         }
         if (this.keysPressed.has(Controls.right)) {
-            this.player.acc.x += this.player.maxAcc;
+            this.player.state.acc.x += this.player.state.maxAcc;
         }
         if (this.keysPressed.has(Controls.up)) {
-            this.player.acc.y -= this.player.maxAcc;
+            this.player.state.acc.y -= this.player.state.maxAcc;
         }
         if (this.keysPressed.has(Controls.down)) {
-            this.player.acc.y += this.player.maxAcc;
+            this.player.state.acc.y += this.player.state.maxAcc;
         }
 
-        this.player.acc.limit(this.player.maxAcc);
+        this.player.state.acc.limit(this.player.state.maxAcc);
     }
 
     special(): void {

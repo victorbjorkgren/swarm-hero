@@ -1,8 +1,7 @@
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
-import {CastleState} from "../GameComps/Entities/Castle";
-import {Particle} from "../GameComps/Entities/Particle";
-import {CastleID, ClientID, EntityID} from "@shared/commTypes";
+import {CastleInterface} from "../GameComps/Entities/Castle";
+import {CastleID, ClientID, EntityID, ParticleID} from "@shared/commTypes";
 import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
 export interface Polygon {
@@ -15,37 +14,52 @@ export enum EntityTypes {
     Player,
     Castle,
     Particle,
+    Any,
 }
 
-export interface EntityServer extends EntityBase {
+export abstract class EntityInterface {
+    public abstract state: EntityState;
+    protected abstract renderer: EntityRenderer;
+    protected abstract logic: EntityLogic;
 
+    public abstract update(): void;
+    public abstract receiveDamage(damage: number): void;
+    public abstract onDeath(): void;
 }
 
-export interface EntityBase {
-    id: EntityID;
-    pos: Vector2D;
-    vel: Vector2D;
-    radius: number;
-    mass: number;
-    health: number;
-    givesIncome: number;
-    team: Team | null;
+export abstract class EntityState {
+    abstract id: EntityID;
+    abstract pos: Vector2D;
+    abstract vel: Vector2D;
+    abstract radius: number;
+    abstract mass: number;
+    abstract health: number;
+    abstract givesIncome: number;
+    abstract team: Team | null;
 
-    entityType: EntityTypes;
+    abstract entityType: EntityTypes;
 
-    targetedBy: Particle[];
+    abstract targetedBy: ParticleID[];
 
-    isAlive(): boolean;
-    // receiveDamage(damage: number): void;
-    onDeath(): void;
-
-    getFiringPos(from: Vector2D): Vector2D;
+    abstract isAlive(): boolean;
+    abstract getFiringPos(from: Vector2D): Vector2D;
 }
 
-export interface EntityClient extends EntityBase {
-    renderSelf(): void;
-    renderAttack(): void;
-    renderStatsBar(): void;
+export abstract class EntityLogic {
+    protected abstract state: EntityState;
+
+    public abstract update(): void;
+}
+
+export abstract class EntityRenderer {
+    protected abstract state: EntityState;
+
+    protected abstract renderSelf(): void;
+    protected abstract renderAttack(): void;
+    protected abstract renderStatsBar(): void;
+
+    public abstract update(): void;
+    public abstract cleanUp(): void;
 }
 
 export interface PolygonalCollider {
@@ -99,7 +113,7 @@ export interface ControllerMapping {
 
 export interface popUpEvent{
     playerID: number;
-    castle: CastleState;
+    castle: CastleInterface;
 }
 
 export interface DirectionalSpriteSheet {

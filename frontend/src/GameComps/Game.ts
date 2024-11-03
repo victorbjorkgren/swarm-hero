@@ -6,8 +6,7 @@ import {setupBackground} from "./Graphics/TileBackground";
 import {
     AABBCollider,
     Character,
-    Controls,
-    EntityBase,
+    Controls, EntityInterface,
     EntityTypes,
     popUpEvent,
     Team,
@@ -40,8 +39,8 @@ import {
     SpellCastID,
     SpellCastMessage
 } from "@shared/commTypes";
-import {Player} from "./Entities/Player";
-import {CastleState} from "./Entities/Castle";
+import {PlayerInterface} from "./Entities/Player";
+import {CastleInterface} from "./Entities/Castle";
 import {ParticleSystem} from "./ParticleSystem";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
@@ -63,10 +62,10 @@ export class Game {
     public readonly sceneWidth: number = gameConfig.mapWidth;
     public readonly sceneHeight: number = gameConfig.mapHeight;
 
-    public players: Map<ClientID, Player> = new Map();
-    public remainingPlayers: Set<Player> = new Set();
+    public players: Map<ClientID, PlayerInterface> = new Map();
+    public remainingPlayers: Set<PlayerInterface> = new Set();
     public teams: Team[] = [];
-    public castles: Map<CastleID, CastleState> = new Map();
+    public castles: Map<CastleID, CastleInterface> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
@@ -80,7 +79,7 @@ export class Game {
 
     private resolveInitialData: (data: any)=>void = ()=>{};
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
-    public localPlayer: Player | null = null;
+    public localPlayer: PlayerInterface | null = null;
 
     public hostchannel: RTCDataChannel | null = null;
     public server: GameHost | null = null;
@@ -98,7 +97,7 @@ export class Game {
         public pixiRef: Application,
         private setWinner: React.Dispatch<React.SetStateAction<string | undefined>>,
         public setPlayerPopOpen: React.Dispatch<React.SetStateAction<popUpEvent | undefined>>,
-        private playersRef: React.MutableRefObject<Map<ClientID, Player>>,
+        private playersRef: React.MutableRefObject<Map<ClientID, PlayerInterface>>,
         private setDayTime: React.Dispatch<React.SetStateAction<number>>,
         public localId: ClientID,
         public hostId: ClientID,
@@ -128,9 +127,9 @@ export class Game {
         })
 
         this.clients.forEach(client => {
-            this.players.set(client.id, new Player(client.id, this))
+            this.players.set(client.id, new PlayerInterface(client.id, this))
         })
-        this.players.set(localId, new Player(localId, this))
+        this.players.set(localId, new PlayerInterface(localId, this))
 
         this.players.forEach(playerInstance => {this.remainingPlayers.add(playerInstance)})
 
@@ -282,7 +281,7 @@ export class Game {
         this.observedSpellCasts.add(castData.castId);
         if (clientId !== castData.instigator) return;
         const instigator = this.players.get(clientId);
-        if (!instigator || !instigator.isAlive()) return;
+        if (!instigator || !instigator.state.isAlive()) return;
         instigator.castSpell(castData.position, castData.spell);
     }
 
@@ -353,15 +352,15 @@ export class Game {
         const player = this.players.get(message.buyer);
         const castle = this.castles.get(message.castle);
         if (!player || !castle) return;
-        player.gold -= message.spell.buyCost;
-        player.availableSpells.push(message.spell);
+        player.payGold(message.spell.buyCost)
+        player.getSpell(message.spell);
     }
 
     handleDroneBought(message: DroneBoughtMessage) {
         const player = this.players.get(message.buyer);
         const castle = this.castles.get(message.castleId);
         if (!player || !castle) return;
-        player.gold -= UnitPacks[message.unit].buyCost * message.n;
+        player.payGold(UnitPacks[message.unit].buyCost * message.n)
         for (let i = 0; i < message.n; i++) {
             console.log('Creating drone')
             this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId[i])
@@ -374,61 +373,20 @@ export class Game {
         this.hostPriorities = data.hostPriorities;
         data.playerUpdate?.forEach((playerUpdate: PlayerUpdateData)=>{
             const player = this.players.get(playerUpdate.clientId);
-            if (!player) return;
-            if (playerUpdate.pos !== null)
-                player.pos = Vector2D.cast(playerUpdate.pos);
-            if (playerUpdate.vel !== null)
-                player.vel = Vector2D.cast(playerUpdate.vel);
-            if (playerUpdate.acc !== null)
-                player.acc = Vector2D.cast(playerUpdate.acc);
-
-            if (playerUpdate.health !== null)
-                player.health = playerUpdate.health;
-            if (playerUpdate.mana !== null)
-                player.mana = playerUpdate.mana;
-            if (playerUpdate.gold !== null)
-                player.gold = playerUpdate.gold;
+            player?.updateFromHost(playerUpdate)
         })
         data.castleUpdate?.forEach((castleUpdate: CastleUpdateData) => {
             const castle = this.castles.get(castleUpdate.castleId);
-            if (!castle) return;
-            if (castleUpdate.health !== null)
-                castle.health = castleUpdate.health
-            if (castleUpdate.owner !== null)
-                castle.owner = castleUpdate.owner; // TODO: Switch for player as well
+            castle?.updateFromHost(castleUpdate);
         })
         data.particleUpdate?.forEach((particleUpdate: ParticleUpdateData) => {
             const uMgr = this.particleSystem?.getParticles();
-            if (!uMgr) return;
-            const particle = uMgr.getById(particleUpdate.particleId);
-            if (!particle) return;
-            if (particleUpdate.pos !== null)
-                particle.pos = Vector2D.cast(particleUpdate.pos);
-            if (particleUpdate.vel !== null)
-                particle.vel = Vector2D.cast(particleUpdate.vel);
-            if (particleUpdate.acc !== null)
-                particle.acc = Vector2D.cast(particleUpdate.acc);
-            if (particleUpdate.health !== null)
-                particle.health = particleUpdate.health
-            if (particleUpdate.owner !== null) {
-                if (particle.owner !== particleUpdate.owner) {
-                    const newOwnerEntity = this.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
-                    if (!newOwnerEntity) return;
-                    uMgr.switchOwner(particle, newOwnerEntity.id);
-                }
-            }
-            if (particleUpdate.leader !== null) {
-                if (!particle.leader || particle.leader.id !== particleUpdate.leader) {
-                    const newOwnerEntity = this.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
-                    if (!newOwnerEntity) return;
-                    uMgr.switchOwner(particle, newOwnerEntity.id);
-                }
-            }
-
+            const particle = uMgr?.getById(particleUpdate.particleId);
+            particle?.updateFromHost(particleUpdate);
         })
     }
 
-    getEntityById(id: EntityID, type: EntityTypes): EntityBase | undefined {
+    getEntityById(id: EntityID, type: EntityTypes): EntityInterface | undefined {
         switch (type) {
             case EntityTypes.Castle:
                 return this.castles.get(id);
@@ -436,6 +394,8 @@ export class Game {
                 return this.players.get(id);
             case EntityTypes.Particle:
                 return this.particleSystem?.getParticles().getById(id);
+            case EntityTypes.Any:
+                return this.castles.get(id) ?? this.players.get(id) ?? this.particleSystem?.getParticles().getById(id);
             default:
                 throw new Error(`Unsupported Entity type: ${type}`);
         }
@@ -443,7 +403,7 @@ export class Game {
 
     requestInitialData(): void {
         if (!this.localPlayer) throw new Error("No local player!");
-        if (!this.localPlayer.character) throw new Error("No local character!");
+        if (!this.localPlayer.state.character) throw new Error("No local character!");
 
         this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
@@ -456,7 +416,7 @@ export class Game {
             };
         });
 
-        this.sendToHost(ClientMessageType.ReadyToJoin, this.localPlayer.character);
+        this.sendToHost(ClientMessageType.ReadyToJoin, this.localPlayer.state.character);
 
     }
 
@@ -471,20 +431,21 @@ export class Game {
     }
 
     areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
+        // TODO: To logic buffer
         for (const [playerId, player] of this.players) {
-            if (safeTeam.includes(player.team!)) continue;
-            if (Vector2D.sqDist(position, player.pos) > sqRange) continue;
+            if (safeTeam.includes(player.state.team!)) continue;
+            if (Vector2D.sqDist(position, player.state.pos) > sqRange) continue;
             player.receiveDamage(damage);
         }
         for (const [castleId, castle] of this.castles) {
-            if (safeTeam.includes(castle.team!)) continue;
-            if (Vector2D.sqDist(position, castle.pos) > sqRange) continue;
-            castle.interface.receiveDamage(damage);
+            if (safeTeam.includes(castle.state.team!)) continue;
+            if (Vector2D.sqDist(position, castle.state.pos) > sqRange) continue;
+            castle.receiveDamage(damage);
         }
         if (this.particleSystem) {
             this.particleSystem.getParticles().deepForEach((particle) => {
-                if (safeTeam.includes(particle.team!)) return;
-                if (Vector2D.sqDist(position, particle.pos) > sqRange) return;
+                if (safeTeam.includes(particle.state.team!)) return;
+                if (Vector2D.sqDist(position, particle.state.pos) > sqRange) return;
                 particle.receiveDamage(damage);
             })
         }
@@ -508,12 +469,12 @@ export class Game {
         })
     }
 
-    onPlayerDeath(player: Player) {
+    onPlayerDeath(player: PlayerInterface) {
         console.log("onDeath", player);
-        if (!player.team) return;
-        const p = player.team.playerIds.indexOf(player.id)
+        if (!player.state.team) return;
+        const p = player.state.team.playerIds.indexOf(player.state.id)
         if (p !== -1) {
-            player.team.playerIds.splice(p, 1)
+            player.state.team.playerIds.splice(p, 1)
         }
         this.server?.checkWinner();
     }
@@ -523,15 +484,16 @@ export class Game {
         if (!player) throw new Error("No player at localID!");
 
         this.localPlayer = player;
-        player.isLocal = true;
-        player.character = localCharacter;
-        this.cameraPivot = player.pos.copy();
+        player.setLocal(localCharacter)
+        this.cameraPivot = player.state.pos.copy();
 
         this.pixiRef.stage.on('pointermove', (event) => {
             const mousePosition = event.global;
             const worldPosition = this.pixiRef.stage.toLocal(mousePosition);
-            player.aimPos.x = worldPosition.x / this.renderScale;
-            player.aimPos.y = worldPosition.y / this.renderScale;
+            player.setAimPos(
+                worldPosition.x / this.renderScale,
+                worldPosition.y / this.renderScale
+            );
         });
         this.pixiRef.stage.on('click', () => {player.attemptSpellCast()})
     }
@@ -642,15 +604,15 @@ export class Game {
             const player = this.players.get(pInit.id)!
             const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
             player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)
-            this.teams[pInit.teamIdx].playerIds.push(player.id);
+            this.teams[pInit.teamIdx].playerIds.push(player.state.id);
             this.idTypes.set(pInit.id, EntityTypes.Player);
         });
         initData.package.castles.forEach(cInit => {
-            const castle = new CastleState(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
+            const castle = new CastleInterface(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
             this.castles.set(cInit.id, castle)
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
-            this.teams[cInit.teamIdx].castleIds.push(castle.id);
+            this.teams[cInit.teamIdx].castleIds.push(castle.state.id);
             this.idTypes.set(cInit.id, EntityTypes.Castle);
         })
 
@@ -668,14 +630,12 @@ export class Game {
         this.particleSystem?.update();
 
         this.players.forEach(player => {
-            player.controller.movement();
-            player.updateMovement();
-            player.render();
+            player.update();
         })
         this.castles.forEach(castle => {
             castle.update();
         })
-        this.particleSystem?.render();
+        this.particleSystem?.update();
 
         this.updateCamera();
 
@@ -688,8 +648,8 @@ export class Game {
 
         const alpha = gameConfig.cameraElasticAlpha;
         const margin = gameConfig.cameraElasticMargin;
-        this.cameraPivot.x = alpha * this.localPlayer.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
-        this.cameraPivot.y = alpha * this.localPlayer.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
+        this.cameraPivot.x = alpha * this.localPlayer.state.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
+        this.cameraPivot.y = alpha * this.localPlayer.state.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
         this.cameraPivot.x = Math.max(this.cameraPivot.x, this.sceneWidth * margin)
         this.cameraPivot.x = Math.min(this.cameraPivot.x, this.sceneWidth * (1 - margin))
         this.cameraPivot.y = Math.max(this.cameraPivot.y, this.sceneHeight * margin)

@@ -1,12 +1,12 @@
 import {Vector2D} from "../Utility";
-import {EntityBase, EntityTypes} from "../../types/types";
+import {EntityState, EntityTypes} from "../../types/types";
 import {NavMesh} from "./NavMesh";
 import {UnitManager} from "../UnitManager";
-import {Particle} from "../Entities/Particle";
-import {Player} from "../Entities/Player";
+import {PlayerInterface} from "../Entities/Player";
 import {Game} from "../Game";
 import {CastleID, ClientID} from "@shared/commTypes";
-import {CastleState} from "../Entities/Castle";
+import {ParticleInterface} from "../Entities/Particle";
+import {CastleInterface} from "../Entities/Castle";
 
 enum State {
     Flee,
@@ -24,7 +24,7 @@ export class AIBehavior {
     public readonly framesBetweenBehaviorCalls: number = 10;
     public readonly framesBetweenNavmeshCalls: number = 60;
     private state: State = State.RaiseArmy;
-    private engaging: EntityBase | null = null;
+    private engaging: EntityState | null = null;
     private fleeDir: Vector2D;
     private navMesh: NavMesh;
 
@@ -36,10 +36,10 @@ export class AIBehavior {
     public doBuy: boolean = false;
     public doSpecial: boolean = false;
 
-    constructor(private player: Player, private otherPlayer: Player, private scene: Game) {
+    constructor(private player: PlayerInterface, private otherPlayer: PlayerInterface, private scene: Game) {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
-        this.pathTarget = player.pos.copy();
+        this.pathTarget = player.state.pos.copy();
         this.visibleDistance = Math.max(scene.sceneWidth, scene.sceneHeight);
         this.safeSeparationDistancePlayer = scene.sceneWidth / 2;
         this.safeSeparationDistanceCastle = scene.sceneWidth / 3;
@@ -48,7 +48,7 @@ export class AIBehavior {
         this.navMesh.updateNavMesh(scene.colliders);
     }
 
-    getUnitManager(): UnitManager<Particle> | undefined {
+    getUnitManager(): UnitManager<ParticleInterface> | undefined {
         return this.scene.particleSystem?.getParticles();
     }
 
@@ -106,19 +106,19 @@ export class AIBehavior {
 
     updateTargetPath(target: Vector2D) {
         if (this.targetPath.length > 0) {
-            if (Vector2D.sqDist(this.targetPath[0], this.player.pos) <= ((NavMesh.scale / 2) ** 2)) {
+            if (Vector2D.sqDist(this.targetPath[0], this.player.state.pos) <= ((NavMesh.scale / 2) ** 2)) {
                 this.targetPath.shift();
             }
         }
         if ((this.frameCounter % this.framesBetweenNavmeshCalls === 0) || this.targetPath.length === 0) {
             if (!Vector2D.isEqual(target, this.pathTarget)) {
-                this.targetPath = this.navMesh.aStar(this.player.pos, target);
+                this.targetPath = this.navMesh.aStar(this.player.state.pos, target);
             }
         }
         if (this.targetPath.length === 0) {
-            this.targetDir = Vector2D.subtract(target, this.player.pos);
+            this.targetDir = Vector2D.subtract(target, this.player.state.pos);
         } else {
-            this.targetDir = Vector2D.subtract(this.targetPath[0], this.player.pos);
+            this.targetDir = Vector2D.subtract(this.targetPath[0], this.player.state.pos);
         }
         this.pathTarget = target.copy();
     }
@@ -128,7 +128,7 @@ export class AIBehavior {
         if (nearestCastle === null) {
             this.targetDir = this.fleeDir.scale(this.framesBetweenConditionCalls);
         } else {
-            this.updateTargetPath(nearestCastle.pos.copy());
+            this.updateTargetPath(nearestCastle.state.pos.copy());
             this.doBuy = true;
         }
     }
@@ -136,10 +136,15 @@ export class AIBehavior {
     fleeCondition(): boolean {
         let difficulty = 0;
         const dir = Vector2D.zeros();
-        const targetedByDrones = this.player.targetedBy.filter(drone => drone.isAlive());
+        const targetedByDrones = this.player.state.targetedBy.filter(droneId => {
+            const drone = this.scene.getEntityById(droneId, EntityTypes.Particle)
+            return drone?.state.isAlive() || false;
+        });
         if (targetedByDrones.length > 0) {
-            for (const drone of targetedByDrones) {
-                dir.add(Vector2D.subtract(drone.pos, this.player.pos).scale(-1))
+            for (const droneId of targetedByDrones) {
+                const drone = this.scene.getEntityById(droneId, EntityTypes.Particle);
+                if (drone?.state.isAlive())
+                    dir.add(Vector2D.subtract(drone.state.pos, this.player.state.pos).scale(-1))
             }
             this.fleeDir = dir;
             return true;
@@ -149,15 +154,15 @@ export class AIBehavior {
         for (const castleId of castles) {
             const castle = this.scene.castles.get(castleId);
             if (!castle) continue;
-            const d = this.estimateFoeStrength(castle, this.player);
-            dir.add(Vector2D.subtract(castle.pos, this.player.pos).scale(-d));
+            const d = this.estimateFoeStrength(castle.state, this.player.state);
+            dir.add(Vector2D.subtract(castle.state.pos, this.player.state.pos).scale(-d));
             difficulty += d;
         }
         for (const foeId of foes) {
             const foe = this.scene.players.get(foeId);
             if (!foe) continue;
-            const d = this.estimateFoeStrength(foe, this.player);
-            dir.add(Vector2D.subtract(foe.pos, this.player.pos).scale(-d));
+            const d = this.estimateFoeStrength(foe.state, this.player.state);
+            dir.add(Vector2D.subtract(foe.state.pos, this.player.state.pos).scale(-d));
             difficulty += d;
         }
         this.fleeDir = dir;
@@ -178,9 +183,9 @@ export class AIBehavior {
         for (const foeId of foes) {
             const foe = this.scene.players.get(foeId);
             if (!foe) continue;
-            const difficulty = this.reinforcedStrength(foe, this.nearbyFoeCastles(this.visibleDistance), EntityTypes.Castle, this.player);
+            const difficulty = this.reinforcedStrength(foe.state, this.nearbyFoeCastles(this.visibleDistance), EntityTypes.Castle, this.player.state);
             if (difficulty < minDifficulty) {
-                this.engaging = foe;
+                this.engaging = foe.state;
                 minDifficulty = difficulty;
             }
         }
@@ -202,9 +207,9 @@ export class AIBehavior {
         for (const castleId of castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (!castle) continue;
-            const difficulty = this.reinforcedStrength(castle, this.nearbyFoes(this.visibleDistance), EntityTypes.Player, this.player);
+            const difficulty = this.reinforcedStrength(castle.state, this.nearbyFoes(this.visibleDistance), EntityTypes.Player, this.player.state);
             if (difficulty < minDifficulty) {
-                this.engaging = castle;
+                this.engaging = castle.state;
                 minDifficulty = difficulty;
             }
         }
@@ -220,7 +225,7 @@ export class AIBehavior {
     }
 
     reinforceCastleCondition(): boolean {
-        const castleIds = this.player.team!.castleIds;
+        const castleIds = this.player.state.team!.castleIds;
         if (castleIds.length === 0) return false;
         let minVul = 1;
         for (const castleId of castleIds) {
@@ -229,10 +234,10 @@ export class AIBehavior {
             for (const foeId of this.nearbyFoes(this.visibleDistance)) {
                 const foe = this.scene.players.get(foeId);
                 if (!foe) continue;
-                const vulnerability = this.reinforcedStrength(castle, this.player.team!.playerIds, EntityTypes.Player, foe);
+                const vulnerability = this.reinforcedStrength(castle.state, this.player.state.team!.playerIds, EntityTypes.Player, foe.state);
                 if (vulnerability < minVul) {
                     minVul = vulnerability;
-                    this.engaging = castle;
+                    this.engaging = castle.state;
                 }
             }
         }
@@ -241,8 +246,8 @@ export class AIBehavior {
 
     raiseArmyBehavior() {
         const castle = this.nearestFriendlyCastle();
-        if (castle && castle.isAlive() && castle.pos.sqDistanceTo(this.player.pos) > castle.sqActivationDist) {
-            this.updateTargetPath(castle.pos.copy());
+        if (castle && castle.state.isAlive() && castle.state.pos.sqDistanceTo(this.player.state.pos) > castle.state.sqActivationDist) {
+            this.updateTargetPath(castle.state.pos.copy());
             // this.targetDir = Vector2D.subtract(castle.pos, this.player.pos);
         } else {
             this.targetDir = Vector2D.zeros();
@@ -250,7 +255,7 @@ export class AIBehavior {
         this.doBuy = true;
     }
 
-    estimateFoeStrength(foe: EntityBase, attacker: EntityBase): number {
+    estimateFoeStrength(foe: EntityState, attacker: EntityState): number {
         const foeDrones = this.getUnitManager()?.flatOwnerCount(foe.id) || 0
         const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker.id) || 0
         if (attackerDrones === 0) return 1000;
@@ -259,18 +264,18 @@ export class AIBehavior {
 
     nearbyFoes(dist: number): ClientID[] {
         const nearbyPlayers = [];
-        const sqDist = Vector2D.subtract(this.player.pos, this.otherPlayer.pos).sqMagnitude();
-        if (sqDist <= (dist*dist)) nearbyPlayers.push(this.otherPlayer.id);
+        const sqDist = Vector2D.subtract(this.player.state.pos, this.otherPlayer.state.pos).sqMagnitude();
+        if (sqDist <= (dist*dist)) nearbyPlayers.push(this.otherPlayer.state.id);
         return nearbyPlayers;
     }
 
     nearbyFoeCastles(dist: number): CastleID[] {
         const nearbyFoeCastles = [];
-        for (const castleId of this.otherPlayer.team!.castleIds) {
+        for (const castleId of this.otherPlayer.state.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
-            if (castle && castle.isAlive()) {
-                const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
-                if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle.id);
+            if (castle && castle.state.isAlive()) {
+                const sqDist = Vector2D.subtract(this.player.state.pos, castle.state.pos).sqMagnitude();
+                if (sqDist <= (dist*dist)) nearbyFoeCastles.push(castle.state.id);
             }
         }
         return nearbyFoeCastles;
@@ -287,27 +292,27 @@ export class AIBehavior {
         }
     }
 
-    reinforcedStrength(defendent: EntityBase, protection: ClientID[], protectionType: EntityTypes, attacker: EntityBase): number {
+    reinforcedStrength(defendent: EntityState, protection: ClientID[], protectionType: EntityTypes, attacker: EntityState): number {
         let difficulty = this.estimateFoeStrength(defendent, attacker);
         const protectorMap = this.getProtectorMap(protectionType);
         for (const protectorId of protection) {
             const protector = protectorMap.get(protectorId);
             if (!protector) continue;
-            if (defendent.pos.sqDistanceTo(protector.pos) < defendent.pos.sqDistanceTo(attacker.pos)) {
-                difficulty += this.estimateFoeStrength(protector, attacker);
+            if (defendent.pos.sqDistanceTo(protector.state.pos) < defendent.pos.sqDistanceTo(attacker.pos)) {
+                difficulty += this.estimateFoeStrength(protector.state, attacker);
             }
         }
         return difficulty;
     }
 
-    nearestFriendlyCastle(): CastleState | null {
-        if (this.player.team!.castleIds.length === 0) return null;
-        let nearestFriendlyCastle: CastleState | null = null;
+    nearestFriendlyCastle(): CastleInterface | null {
+        if (this.player.state.team!.castleIds.length === 0) return null;
+        let nearestFriendlyCastle: CastleInterface | null = null;
         let minSqD: number = 1000000000;
-        for (const castleId of this.player.team!.castleIds) {
+        for (const castleId of this.player.state.team!.castleIds) {
             const castle = this.scene.castles.get(castleId);
             if (!castle) continue;
-            const sqDist = Vector2D.subtract(this.player.pos, castle.pos).sqMagnitude();
+            const sqDist = Vector2D.subtract(this.player.state.pos, castle.state.pos).sqMagnitude();
             if (sqDist <= minSqD) {
                 nearestFriendlyCastle = castle;
                 minSqD = sqDist;
@@ -319,6 +324,6 @@ export class AIBehavior {
     distanceToNearestFriendlyCastle(): number | null {
         const nearestCastle = this.nearestFriendlyCastle();
         if (nearestCastle === null) return null;
-        return Vector2D.subtract(this.player.pos, nearestCastle.pos).magnitude();
+        return Vector2D.subtract(this.player.state.pos, nearestCastle.state.pos).magnitude();
     }
 }

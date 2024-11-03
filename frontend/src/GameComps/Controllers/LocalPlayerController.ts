@@ -1,7 +1,7 @@
 import {Controller, ControllerMapping, Controls} from "../../types/types";
 import {Vector2D} from "../Utility";
 import {Keyboard} from "./Keyboard";
-import {Player} from "../Entities/Player";
+import {PlayerInterface} from "../Entities/Player";
 import {ClientMessageType} from "@shared/commTypes";
 import {Game} from "../Game";
 
@@ -13,7 +13,7 @@ export class LocalPlayerController implements Controller {
     private movementKeysDown: Set<keyof ControllerMapping> = new Set([])
 
     constructor(
-        private player: Player,
+        private player: PlayerInterface,
         private keyBindings: ControllerMapping,
         private scene: Game,
     ) {
@@ -73,38 +73,39 @@ export class LocalPlayerController implements Controller {
     }
 
     movement() {
+        // TODO: Write to state buffer
         if (!this.keyBindings) return;
 
-        this.player.acc = Vector2D.zeros();
+        this.player.state.acc = Vector2D.zeros();
 
         if (Keyboard.state.get(this.keyBindings[Controls.left])) {
             this.networkSignal(Controls.left, true);
-            this.player.acc.x -= this.player.maxAcc;
+            this.player.state.acc.x -= this.player.state.maxAcc;
         } else {
             this.networkSignal(Controls.left, false);
         }
 
         if (Keyboard.state.get(this.keyBindings[Controls.right])) {
             this.networkSignal(Controls.right, true);
-            this.player.acc.x += this.player.maxAcc;
+            this.player.state.acc.x += this.player.state.maxAcc;
         } else {
             this.networkSignal(Controls.right, false);
         }
 
         if (Keyboard.state.get(this.keyBindings[Controls.up])) {
             this.networkSignal(Controls.up, true);
-            this.player.acc.y -= this.player.maxAcc;
+            this.player.state.acc.y -= this.player.state.maxAcc;
         } else {
             this.networkSignal(Controls.up, false);
         }
         if (Keyboard.state.get(this.keyBindings[Controls.down])) {
             this.networkSignal(Controls.down, true);
-            this.player.acc.y += this.player.maxAcc;
+            this.player.state.acc.y += this.player.state.maxAcc;
         } else {
             this.networkSignal(Controls.down, false);
         }
 
-        this.player.acc.limit(this.player.maxAcc);
+        this.player.state.acc.limit(this.player.state.maxAcc);
     }
 
     buy(): void {

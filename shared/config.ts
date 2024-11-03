@@ -42,6 +42,8 @@ export const gameConfig = {
     playerMaxAcc: .1,
     playerSelfIncome: 0,
 
+    sqPlayerVelCutoff: 0.075 * 0.075,
+
     dayLength: 20,
 
     healthLevels: [250, 600, 1000, 1500, 2000],

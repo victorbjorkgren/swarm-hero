@@ -1,5 +1,5 @@
 import {Graphics, Sprite} from "pixi.js";
-import {AABBCollider, CollisionResult, EntityBase, PolygonalCollider} from "../types/types";
+import {AABBCollider, CollisionResult, EntityState, PolygonalCollider} from "../types/types";
 
 export class Vector2D {
     constructor(public x: number, public y: number) {

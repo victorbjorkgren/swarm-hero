@@ -1,29 +1,30 @@
 import {Controller, Controls} from "../../types/types";
 import {Vector2D} from "../Utility";
 import {AIBehavior} from "../AI/AIBehavior";
-import {Player} from "../Entities/Player";
+import {PlayerInterface} from "../Entities/Player";
 import {Game} from "../Game";
-import {CastleState} from "../Entities/Castle";
+import {CastleInterface} from "../Entities/Castle";
 
 export class AIController implements Controller {
     private target: Vector2D
     private behavior: AIBehavior
     private behaviorCallCooldown: number = 0;
-    private activeCastle: CastleState | null = null;
+    private activeCastle: CastleInterface | null = null;
 
     constructor(
-        private player: Player,
-        otherPlayer: Player,
+        private player: PlayerInterface,
+        otherPlayer: PlayerInterface,
         scene: Game,
         )
     {
         this.behavior = new AIBehavior(player, otherPlayer, scene);
-        this.target = player.pos.copy();
+        this.target = player.state.pos.copy();
     }
 
     movement(): void {
+        //  TODO: Write to state buffer
         this.behavior.update();
-        this.player.acc = this.behavior.targetDir.copy().toUnit().scale(this.player.maxAcc);
+        this.player.state.acc = this.behavior.targetDir.copy().toUnit().scale(this.player.state.maxAcc);
 
         if (this.behavior.doBuy) {
             this.behavior.doBuy = false;

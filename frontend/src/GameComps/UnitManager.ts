@@ -1,24 +1,24 @@
-import {Particle} from "./Entities/Particle";
+import {ParticleInterface} from "./Entities/Particle";
 import {Units} from "../types/unitTypes";
 import {EntityID, ParticleID} from "@shared/commTypes";
 
 
-export type UnitMap<TParticle extends Particle> = Map<Units, Set<TParticle>>;
-export type EntityUnitMap<TParticle extends Particle> = Map<EntityID, UnitMap<TParticle>>;
-export type IdMap<TParticle extends Particle> = Map<ParticleID, TParticle>;
+export type UnitMap<TParticle extends ParticleInterface> = Map<Units, Set<TParticle>>;
+export type EntityUnitMap<TParticle extends ParticleInterface> = Map<EntityID, UnitMap<TParticle>>;
+export type IdMap<TParticle extends ParticleInterface> = Map<ParticleID, TParticle>;
 export type UnitCount = {unit: Units, count: number};
 
-export class UnitManager<TParticle extends Particle> {
+export class UnitManager<TParticle extends ParticleInterface> {
     private unitMap: EntityUnitMap<TParticle> = new Map();
     private idMap: IdMap<TParticle> = new Map();
 
     add(obj: TParticle) {
-        if (!obj.isAlive()) return;
+        if (!obj.state.isAlive()) return;
 
-        this.idMap.set(obj.id, obj);
+        this.idMap.set(obj.state.id, obj);
 
-        const element: Units = obj.unitInfo.element;
-        const owner: EntityID = obj.owner;
+        const element: Units = obj.state.unitInfo.element;
+        const owner: EntityID = obj.state.owner;
 
         let ownerParticles = this.unitMap.get(owner);
         if (!ownerParticles) {
@@ -36,10 +36,10 @@ export class UnitManager<TParticle extends Particle> {
     }
 
     remove(obj: TParticle) {
-        this.idMap.delete(obj.id);
+        this.idMap.delete(obj.state.id);
 
-        const element: Units = obj.unitInfo.element;
-        const owner: EntityID = obj.owner;
+        const element: Units = obj.state.unitInfo.element;
+        const owner: EntityID = obj.state.owner;
 
         const ownerParticles = this.unitMap.get(owner);
         const elementSet = ownerParticles?.get(element);
@@ -115,7 +115,7 @@ export class UnitManager<TParticle extends Particle> {
 
     switchOwner(particle: TParticle, newOwner: EntityID) {
         this.remove(particle);
-        particle.owner = newOwner;
+        particle.state.owner = newOwner;
         this.add(particle);
     }
 }

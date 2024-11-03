@@ -1,24 +1,82 @@
-import {EntityBase, EntityTypes, Team, TexturePack} from "../../types/types";
+import {
+    EntityInterface,
+    EntityLogic,
+    EntityRenderer,
+    EntityState,
+    EntityTypes,
+    Team,
+    TexturePack
+} from "../../types/types";
 import {Game} from "../Game";
 import {Vector2D} from "../Utility";
 import {Graphics, Sprite} from "pixi.js";
-import {CastleID, ClientID} from "@shared/commTypes";
+import {CastleID, CastleUpdateData, ClientID, ParticleID} from "@shared/commTypes";
 import {gameConfig, SpellPacks} from "@shared/config";
-import {Particle} from "./Particle";
 import {SpellPack, Spells} from "../../types/spellTypes";
 
-export class CastleState implements EntityBase {
-    private renderer: CastleRenderer;
-    private logic: CastleLogic;
-    public interface: CastleInterface;
+const playerWithinRange = (playerId: ClientID, state: CastleState): boolean => {
+    const player = state.scene.players.get(playerId);
+    if (!player || !player.state.isAlive()) return false;
+    if (!state.isAlive()) return false;
+    return Vector2D.sqDist(player.state.pos, state.pos) < state.sqActivationDist
+}
 
+export class CastleInterface extends EntityInterface{
+    public state: CastleState;
+    protected logic: CastleLogic;
+    protected renderer: CastleRenderer;
+
+    constructor(
+        id: CastleID,
+        pos: Vector2D,
+        team: Team,
+        owner: ClientID,
+        scene: Game
+    ) {
+        super();
+        team!.castleIds.push(id);
+
+        this.state = new CastleState(id, pos, team, owner, scene);
+        this.renderer = new CastleRenderer(this.state);
+        this.logic = new CastleLogic(this.state);
+    }
+
+    update() {
+        this.logic.update();
+        this.renderer.update();
+    }
+
+    updateFromHost(castleUpdate: CastleUpdateData) {
+        if (castleUpdate.health !== null)
+            this.state.health = castleUpdate.health
+        if (castleUpdate.owner !== null)
+            this.state.owner = castleUpdate.owner; // TODO: Switch for player as well
+    }
+
+    receiveDamage(damage: number): void {
+        this.state.health = this.state.health - damage;
+        if (!this.state.isAlive()) {
+            this.state.scene.broadcastDeath(this.state.id, EntityTypes.Castle);
+        }
+    }
+
+    onDeath(): void {
+        this.renderer.cleanUp();
+    }
+
+    playerWithinRange(playerId: ClientID): boolean {
+        return playerWithinRange(playerId, this.state);
+    }
+}
+
+class CastleState implements EntityState {
     vel: Vector2D = Vector2D.zeros();
     radius: number = 20;
     mass: number = Infinity;
     maxHealth: number = gameConfig.castleHealth;
     health: number = gameConfig.castleHealth;
     givesIncome: number = gameConfig.castleIncome;
-    targetedBy: Particle[] = [];
+    targetedBy: ParticleID[] = [];
 
     public entityType: EntityTypes = EntityTypes.Castle;
 
@@ -36,11 +94,6 @@ export class CastleState implements EntityBase {
         public owner: ClientID,
         public scene: Game
     ) {
-        this.team!.castleIds.push(id);
-
-        this.renderer = new CastleRenderer(this);
-        this.logic = new CastleLogic(this);
-        this.interface = new CastleInterface(this);
     }
 
     isAlive(): boolean {
@@ -51,67 +104,42 @@ export class CastleState implements EntityBase {
         return this.pos;
     }
 
-    playerWithinRange(playerId: ClientID): boolean {
-        const player = this.scene.players.get(playerId);
-        if (!player || !player.isAlive()) return false;
-        if (!this.isAlive()) return false;
-        return Vector2D.sqDist(player.pos, this.pos) < this.sqActivationDist
-    }
-
     hasNearbyPlayers() {
         return this.nearbyPlayers.length > 0
     }
 
-    update() {
-        this.logic.update();
-        this.renderer.update();
-    }
-
-    onDeath(): void {
-        this.renderer.cleanUp();
-    }
 }
 
-class CastleInterface {
-    constructor(private state: CastleState) {}
-
-    receiveDamage(damage: number): void {
-        this.state.health = this.state.health - damage;
-        if (!this.state.isAlive()) {
-            this.state.scene.broadcastDeath(this.state.id, EntityTypes.Castle);
-        }
-    }
-}
-
-class CastleLogic {
-    constructor(private state: CastleState) {}
+class CastleLogic extends EntityLogic{
+    constructor(protected state: CastleState) {super();}
 
     update() {
         this.checkPlayers();
     }
 
     private checkPlayers() {
-        this.state.nearbyPlayers = this.state.nearbyPlayers.filter(playerId => this.state.playerWithinRange(playerId));
+        this.state.nearbyPlayers = this.state.nearbyPlayers.filter(playerId => playerWithinRange(playerId, this.state));
         for (const playerId of this.state.team!.playerIds) {
             const player = this.state.scene.players.get(playerId);
             if (!player) continue;
-            if (Vector2D.sqDist(player.pos, this.state.pos) < this.state.sqActivationDist) {
-                this.state.nearbyPlayers.push(player.id);
+            if (Vector2D.sqDist(player.state.pos, this.state.pos) < this.state.sqActivationDist) {
+                this.state.nearbyPlayers.push(player.state.id);
             }
         }
     }
 }
 
-class CastleRenderer {
+class CastleRenderer extends EntityRenderer {
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
     private texture: TexturePack;
 
     constructor(
-        private parent: CastleState
+        protected state: CastleState
     ) {
-        if (!parent.scene.castleTexturePack) throw new Error("Could not find a castleTexturePack");
-        this.texture = parent.scene.castleTexturePack
+        super();
+        if (!state.scene.castleTexturePack) throw new Error("Could not find a castleTexturePack");
+        this.texture = state.scene.castleTexturePack
     }
 
     update() {
@@ -122,7 +150,7 @@ class CastleRenderer {
 
     cleanUp(): void {
         if (this.castleSprite) {
-            this.parent.scene.pixiRef.stage.removeChild(this.castleSprite);
+            this.state.scene.pixiRef.stage.removeChild(this.castleSprite);
             this.castleSprite.destroy();
         }
     }
@@ -131,18 +159,18 @@ class CastleRenderer {
         this.castleSprite = new Sprite(this.texture.normal);
         this.castleSprite.anchor.set(0.5);
         this.castleSprite.zIndex = Game.zIndex.ground;
-        this.parent.scene.pixiRef.stage.addChild(this.castleSprite);
+        this.state.scene.pixiRef.stage.addChild(this.castleSprite);
     }
 
-    private renderSelf(): void {
-        if (this.parent.isAlive()) {
+    protected renderSelf(): void {
+        if (this.state.isAlive()) {
             if (!this.castleSprite) {
                 this.initCastleSprite()
             }
-            this.castleSprite!.x = this.parent.pos.x * this.parent.scene.renderScale;
-            this.castleSprite!.y = this.parent.pos.y * this.parent.scene.renderScale;
-            this.castleSprite!.scale.set(.1 * this.parent.scene.renderScale);
-            if (this.parent.hasNearbyPlayers()) {
+            this.castleSprite!.x = this.state.pos.x * this.state.scene.renderScale;
+            this.castleSprite!.y = this.state.pos.y * this.state.scene.renderScale;
+            this.castleSprite!.scale.set(.1 * this.state.scene.renderScale);
+            if (this.state.hasNearbyPlayers()) {
                 this.castleSprite!.texture = this.texture.highlight;
             } else {
                 this.castleSprite!.texture = this.texture.normal;
@@ -154,38 +182,38 @@ class CastleRenderer {
         }
     }
 
-    private renderStatsBar(): void {
+    protected renderStatsBar(): void {
         if (this.healthSprite === null) {
             this.healthSprite = new Graphics();
             this.healthSprite.zIndex = Game.zIndex.ground;
-            this.parent.scene.pixiRef.stage.addChild(this.healthSprite);
+            this.state.scene.pixiRef.stage.addChild(this.healthSprite);
         }
         if (!this.castleSprite) {
             this.castleSprite = new Sprite(this.texture.normal);
             this.castleSprite.anchor.set(0.5);
             this.castleSprite.zIndex = Game.zIndex.ground;
-            this.parent.scene.pixiRef.stage.addChild(this.castleSprite);
+            this.state.scene.pixiRef.stage.addChild(this.castleSprite);
         }
         this.healthSprite.clear();
-        if (!this.parent.isAlive()) return;
+        if (!this.state.isAlive()) return;
 
-        const healthRatio = this.parent.health / this.parent.maxHealth;
+        const healthRatio = this.state.health / this.state.maxHealth;
 
         this.healthSprite
             .moveTo(
-                this.parent.pos.x * this.parent.scene.renderScale - this.castleSprite.width / 2,
-                this.parent.pos.y * this.parent.scene.renderScale  - this.castleSprite.height / 2 - 5)
+                this.state.pos.x * this.state.scene.renderScale - this.castleSprite.width / 2,
+                this.state.pos.y * this.state.scene.renderScale  - this.castleSprite.height / 2 - 5)
             .lineTo(
-                this.parent.pos.x * this.parent.scene.renderScale - this.castleSprite.width / 2 + (this.castleSprite.width * healthRatio),
-                this.parent.pos.y * this.parent.scene.renderScale - this.castleSprite.height / 2 - 5)
+                this.state.pos.x * this.state.scene.renderScale - this.castleSprite.width / 2 + (this.castleSprite.width * healthRatio),
+                this.state.pos.y * this.state.scene.renderScale - this.castleSprite.height / 2 - 5)
             .stroke({
-                color: this.parent.team!.color,
+                color: this.state.team!.color,
                 alpha: .8,
                 width: 2
             })
     }
 
-    private renderAttack() {
+    protected renderAttack() {
 
     }
 }

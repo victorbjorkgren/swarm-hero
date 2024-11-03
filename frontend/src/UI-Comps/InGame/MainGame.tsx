@@ -8,7 +8,7 @@ import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
 import {gameConfig} from "@shared/config";
-import {Player} from "../../GameComps/Entities/Player";
+import {PlayerInterface} from "../../GameComps/Entities/Player";
 import {Game} from "../../GameComps/Game";
 
 import {ClientID} from "@shared/commTypes";
@@ -24,7 +24,7 @@ interface Props {
 
 const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
-    const playersRef = useRef<Map<ClientID, Player>>(new Map());
+    const playersRef = useRef<Map<ClientID, PlayerInterface>>(new Map());
     const gameSceneRef = useRef<Game | null>(null);
     const pixiRef = useRef<Application | null>(null);
 
@@ -167,7 +167,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
                         `}
                     ></div>
                     <CityPopup
-                        anchorPoint={playerPopUpEvent?.castle.pos}
+                        anchorPoint={playerPopUpEvent?.castle.state.pos}
                         player={gameSceneRef.current?.localPlayer}
                         recruitFunc={handleRecruit}
                     />

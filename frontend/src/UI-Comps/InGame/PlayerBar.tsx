@@ -1,11 +1,11 @@
 import React from "react";
 import {SpellPicker} from "./SpellPicker";
 import {SpellPack} from "../../types/spellTypes";
-import {Player} from "../../GameComps/Entities/Player";
+import {PlayerInterface} from "../../GameComps/Entities/Player";
 
 interface SpellPickerProps {
     pickerCallback: (spell: SpellPack, castingDoneCallback: (didCast: boolean)=>void) => void;
-    player: Player | null;
+    player: PlayerInterface | null;
 }
 
 export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, player}) => {
@@ -18,7 +18,7 @@ export const PlayerBar: React.FC<SpellPickerProps> = ({pickerCallback, player}) 
                 {/*    <span>Gold: {player && player.gold}</span>*/}
                 {/*    <span>Mana: {player && player.mana}</span>*/}
                 {/*</div>*/}
-                <SpellPicker pickerCallback={pickerCallback} spellSlots={player ? player.availableSpells : []}/>
+                <SpellPicker pickerCallback={pickerCallback} spellSlots={player ? player.state.availableSpells : []}/>
         </div>
     );
 };

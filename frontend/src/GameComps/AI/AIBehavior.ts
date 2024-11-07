@@ -26,7 +26,6 @@ export class AIBehavior {
     private state: State = State.RaiseArmy;
     private engaging: EntityState | null = null;
     private fleeDir: Vector2D;
-    private navMesh: NavMesh;
 
     private frameCounter: number = 0;
 
@@ -40,12 +39,9 @@ export class AIBehavior {
         this.targetDir = Vector2D.zeros();
         this.fleeDir = Vector2D.zeros();
         this.pathTarget = player.state.pos.copy();
-        this.visibleDistance = Math.max(scene.sceneWidth, scene.sceneHeight);
-        this.safeSeparationDistancePlayer = scene.sceneWidth / 2;
-        this.safeSeparationDistanceCastle = scene.sceneWidth / 3;
-
-        this.navMesh = new NavMesh(scene);
-        this.navMesh.updateNavMesh(scene.colliders);
+        this.visibleDistance = Math.max(scene.level.mapWidth, scene.level.mapHeight);
+        this.safeSeparationDistancePlayer = scene.level.mapWidth / 2;
+        this.safeSeparationDistanceCastle = scene.level.mapWidth / 3;
     }
 
     getUnitManager(): UnitManager<ParticleInterface> | undefined {
@@ -106,13 +102,13 @@ export class AIBehavior {
 
     updateTargetPath(target: Vector2D) {
         if (this.targetPath.length > 0) {
-            if (Vector2D.sqDist(this.targetPath[0], this.player.state.pos) <= ((NavMesh.scale / 2) ** 2)) {
+            if (Vector2D.sqDist(this.targetPath[0], this.player.state.pos) <= ((this.scene.level.navScale / 2) ** 2)) {
                 this.targetPath.shift();
             }
         }
         if ((this.frameCounter % this.framesBetweenNavmeshCalls === 0) || this.targetPath.length === 0) {
-            if (!Vector2D.isEqual(target, this.pathTarget)) {
-                this.targetPath = this.navMesh.aStar(this.player.state.pos, target);
+            if (this.scene.navMesh && !Vector2D.isEqual(target, this.pathTarget)) {
+                this.targetPath = this.scene.navMesh.aStar(this.player.state.pos, target);
             }
         }
         if (this.targetPath.length === 0) {

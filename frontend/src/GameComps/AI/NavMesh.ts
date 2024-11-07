@@ -1,8 +1,7 @@
-import {AABBCollider} from "../../types/types";
 import {Vector2D} from "../Utility";
-import {Game} from "../Game";
+import {Level} from "../Levels/Level";
 
-type Grid = boolean[][];
+type Grid = number[][];
 
 class Node {
     position: Vector2D;
@@ -21,48 +20,21 @@ class Node {
 }
 
 export  class NavMesh {
-    private _mesh: Grid = [[]];
-
-    static scale = 32;
     private static directions: Vector2D[] = [
         new Vector2D(0, -1), new Vector2D(0, 1), new Vector2D(-1, 0), new Vector2D(1, 0),
         new Vector2D(-1, -1), new Vector2D(1, -1), new Vector2D(-1, 1), new Vector2D(1, 1)
     ];
 
-    constructor(private scene: Game) {}
-
-    updateNavMesh(colliders: AABBCollider[]): void {
-        const rows = Math.ceil(this.scene.sceneHeight / NavMesh.scale);
-        const cols = Math.ceil(this.scene.sceneWidth / NavMesh.scale);
-
-        // Initialize the navmesh array with all values set to true
-        this._mesh = Array.from({ length: cols }, () => Array(rows).fill(true));
-
-        for (const collider of colliders) {
-            if (collider.inverted) continue;
-
-            // Calculate the min/max indices for the collider, clamped within bounds
-            const minX = Math.max(0, Math.floor(collider.minX / NavMesh.scale));
-            const maxX = Math.min(cols - 1, Math.ceil(collider.maxX / NavMesh.scale));
-            const minY = Math.max(0, Math.floor(collider.minY / NavMesh.scale));
-            const maxY = Math.min(rows - 1, Math.ceil(collider.maxY / NavMesh.scale));
-
-            // Mark the corresponding points as false
-            for (let i = minX; i <= maxX; i++) {
-                for (let j = minY; j <= maxY; j++) {
-                    this._mesh[i][j] = false;
-                }
-            }
-        }
+    constructor(private level: Level) {
     }
 
     aStar(start_: Vector2D, goal_: Vector2D): Vector2D[] {
-        if (this._mesh === null) return [];
+        if (this.level.groundNavMesh === null) return [];
         const openList: Node[] = [];
         const closedList: Set<string> = new Set();
 
-        const start = new Vector2D(Math.round(start_.x / NavMesh.scale), Math.round(start_.y / NavMesh.scale));
-        const goal = new Vector2D(Math.round(goal_.x / NavMesh.scale), Math.round(goal_.y / NavMesh.scale));
+        const start = new Vector2D(Math.round(start_.x / this.level.navScale), Math.round(start_.y / this.level.navScale));
+        const goal = new Vector2D(Math.round(goal_.x / this.level.navScale), Math.round(goal_.y / this.level.navScale));
 
         const startNode = new Node(start, 0, NavMesh.heuristic(start, goal));
         openList.push(startNode);
@@ -77,7 +49,7 @@ export  class NavMesh {
             // Check if reached goal
             if (Vector2D.isEqual(currentNode.position, goal)) {
                 const finalPath = this.reconstructPath(currentNode);
-                finalPath.forEach(node => node.scale(NavMesh.scale));
+                finalPath.forEach(node => node.scale(this.level.navScale));
                 finalPath.shift();
                 return finalPath;
             }
@@ -118,8 +90,8 @@ export  class NavMesh {
     // Check if a Vector2D is within grid bounds and walkable
     private isWalkable(point: Vector2D): boolean {
         return point.x >= 0 && point.y >= 0 &&
-            point.x < this._mesh.length && point.y < this._mesh[0].length &&
-            this._mesh[Math.floor(point.x)][Math.floor(point.y)]; // true means walkable
+            point.x < this.level.groundNavMesh.length && point.y < this.level.groundNavMesh[0].length &&
+            this.level.groundNavMesh[Math.floor(point.x)][Math.floor(point.y)] > 0; // true means walkable
     };
 
     private getNeighbors(node: Node): Vector2D[] {
@@ -142,30 +114,10 @@ export  class NavMesh {
             const neighbor = { x: point.x + dir.x, y: point.y + dir.y };
             return neighbor.x >= 0
                 && neighbor.y >= 0
-                && neighbor.x < this._mesh.length
-                && neighbor.y < this._mesh[0].length
-                && !this._mesh[neighbor.x][neighbor.y];
+                && neighbor.x < this.level.groundNavMesh.length
+                && neighbor.y < this.level.groundNavMesh[0].length
+                && !this.level.groundNavMesh[neighbor.x][neighbor.y];
         });
-    };
-
-    // Smooth the path by filtering unnecessary waypoints
-    private smoothPath(path: Vector2D[]): Vector2D[] {
-        if (path.length < 3) return path; // No smoothing needed if there are fewer than 3 points
-
-        const smoothedPath: Vector2D[] = [path[0]]; // Keep the start point
-
-        for (let i = 1; i < path.length - 1; i++) {
-            const prev = smoothedPath[smoothedPath.length - 1];
-            const curr = path[i];
-            const next = path[i + 1];
-
-            if (!NavMesh.isStraightLine(prev, curr, next) || this.isAdjacentToObstacle(curr)) {
-                smoothedPath.push(curr); // Keep waypoints that break straight lines or are near obstacles
-            }
-        }
-
-        smoothedPath.push(path[path.length - 1]); // Keep the goal point
-        return smoothedPath;
     };
 
     private reconstructPath(node: Node | null): Vector2D[] {

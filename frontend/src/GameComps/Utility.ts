@@ -27,6 +27,12 @@ export class Vector2D {
         return this;
     }
 
+    floor(): Vector2D {
+        this.x = Math.floor(this.x);
+        this.y = Math.floor(this.y);
+        return this;
+    }
+
     limit(limit: number): Vector2D {
         const sqMag = this.x * this.x + this.y * this.y;
         if ((limit * limit) < sqMag) {
@@ -48,10 +54,12 @@ export class Vector2D {
         return Vector2D.subtract(this, other).sqMagnitude();
     }
 
+
     isZero(): boolean {
         return this.x === 0 && this.y === 0;
 
     }
+
 
     magnitude(): number {
         return Math.sqrt(this.x * this.x + this.y * this.y);

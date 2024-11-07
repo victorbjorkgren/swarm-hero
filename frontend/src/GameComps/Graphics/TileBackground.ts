@@ -1,7 +1,7 @@
 import {Application, Assets, Sprite, Spritesheet, SpritesheetData, Texture} from "pixi.js";
 import {Game} from "../Game";
 
-export const setupBackground = async (pixi: Application, totalWidth: number, totalHeight: number)=> {
+export const setupRandomBackground = async (pixi: Application, totalWidth: number, totalHeight: number)=> {
     const texture: Texture = await Assets.load('/sprites/PixelArtTopDownTextures/TX Tileset Grass.png');
 
     const tileSize: number = 64;

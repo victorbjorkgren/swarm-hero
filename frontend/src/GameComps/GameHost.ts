@@ -275,7 +275,7 @@ export default class GameHost {
             if (!character) throw new Error(`Client ${clientId} has no character at creation`);
             const teamIdx = index % gameConfig.nTeamGame;
             const castleId = uuidv4();
-            const castleSpawn = gameConfig.castlePositions[index];
+            const castleSpawn = this.localClientScene.level.playerStart[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
 
             playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamIdx: teamIdx})

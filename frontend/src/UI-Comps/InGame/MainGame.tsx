@@ -14,6 +14,7 @@ import {Game} from "../../GameComps/Game";
 import {ClientID} from "@shared/commTypes";
 import {connectMesh} from "../../Hooks/Communication";
 import {GameConnection, PeerMap} from "../CharacterCreation/MainCharacterCreation";
+import {Level, Levels} from "../../GameComps/Levels/Level";
 
 
 interface Props {
@@ -89,10 +90,11 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
         const debouncedResizePixiApp = debounce(resizeApp, 100);
         window.addEventListener('resize', debouncedResizePixiApp);
 
+        const level = new Level(Levels.Ruins2v2, pixiRef.current);
 
         pixiRef.current.stage.eventMode = 'static';
         pixiRef.current.stage.hitArea = pixiRef.current.stage.hitArea = new Rectangle(
-            0, 0, gameConfig.mapWidth, gameConfig.mapHeight
+            0, 0, level.mapWidth, level.mapHeight
         );
 
         gameSceneRef.current = new Game(
@@ -104,6 +106,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
             connection.localId,
             connection.hostId,
             character,
+            level,
             connection.peers
         );
         gameSceneRef.current.start();

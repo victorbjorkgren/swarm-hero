@@ -2,7 +2,7 @@ import {FactionSelection} from "./FactionSelection";
 import React, {useEffect, useRef, useState} from "react";
 import {CharacterStats, StatSelection} from "./StatSelection";
 import {Application} from "pixi.js";
-import {setupBackground} from "../../GameComps/Graphics/TileBackground";
+import {setupRandomBackground} from "../../GameComps/Graphics/TileBackground";
 import {TitleScreen} from "./TitleScreen";
 import {Character, Factions} from "../../types/types";
 import {MatchMaking} from "./MatchMaking";
@@ -54,7 +54,7 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCha
             sceneContainerRef.current.appendChild(pixiRef.current.canvas);
         }
 
-        await setupBackground(pixiRef.current, window.innerWidth, window.innerHeight);
+        await setupRandomBackground(pixiRef.current, window.innerWidth, window.innerHeight);
     }
 
     const cleanUpScene = () => {

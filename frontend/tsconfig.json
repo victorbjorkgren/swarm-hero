@@ -20,7 +20,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "typeRoots": ["node_modules/@types"],
-    "types": ["uuid"],
+    "types": ["uuid", "papaparse"],
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["../shared/*"]

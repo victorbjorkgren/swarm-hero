@@ -2,11 +2,11 @@ import {v4 as uuidv4} from 'uuid';
 
 import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture} from "pixi.js";
 import React from "react";
-import {setupBackground} from "./Graphics/TileBackground";
 import {
     AABBCollider,
     Character,
-    Controls, EntityInterface,
+    Controls,
+    EntityInterface,
     EntityTypes,
     popUpEvent,
     Team,
@@ -44,6 +44,8 @@ import {CastleInterface} from "./Entities/Castle";
 import {ParticleSystem} from "./ParticleSystem";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
+import {Level, Levels} from "./Levels/Level";
+import {NavMesh} from "./AI/NavMesh";
 
 type LatencyObject = {pingStart: number, pingCode: string, latency: number};
 
@@ -59,8 +61,6 @@ export class Game {
     dayLength: number = gameConfig.dayLength; // seconds
 
     gameOn: boolean = true;
-    public readonly sceneWidth: number = gameConfig.mapWidth;
-    public readonly sceneHeight: number = gameConfig.mapHeight;
 
     public players: Map<ClientID, PlayerInterface> = new Map();
     public remainingPlayers: Set<PlayerInterface> = new Set();
@@ -90,6 +90,7 @@ export class Game {
 
     public particleSystem: ParticleSystem;
     public startTime: number | null = null;
+    navMesh: NavMesh | null = null;
 
     public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void = ()=>{};
 
@@ -102,6 +103,7 @@ export class Game {
         public localId: ClientID,
         public hostId: ClientID,
         character: Character,
+        public level: Level,
         public clients: PeerMap,
     ) {
         this.setHost(hostId, true);
@@ -515,8 +517,8 @@ export class Game {
         const sheet = await wallSpriteSheet;
         const texture: Texture = sheet.textures['TX Tileset Wall-0.png'];
         const blockerSprite: Sprite = new Sprite(texture);
-        blockerSprite.x = this.sceneWidth / 2 - blockerSprite.width / 2;
-        blockerSprite.y = this.sceneHeight / 2 - blockerSprite.height / 2;
+        blockerSprite.x = this.level.mapWidth / 2 - blockerSprite.width / 2;
+        blockerSprite.y = this.level.mapHeight / 2 - blockerSprite.height / 2;
 
         blockerSprite.zIndex = Game.zIndex.ground;
         this.pixiRef.stage.addChild(blockerSprite);
@@ -526,7 +528,9 @@ export class Game {
     async preload() {
         this.requestInitialData();
 
-        const walls = Assets.load('/sprites/PixelArtTopDownTextures/Walls/wall-sheet.json');
+        const levelReady = this.level.load();
+        this.navMesh = new NavMesh(this.level);
+
         const explosion = Assets.load('/sprites/explosion_toon.json');
 
         const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
@@ -535,8 +539,8 @@ export class Game {
 
         // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
 
-        const backgroundReady = setupBackground(this.pixiRef, this.sceneWidth, this.sceneHeight);
-        const blockersReady = this.setupBlockers(walls);
+        // const backgroundReady = setupRandomBackground(this.pixiRef, this.sceneWidth, this.sceneHeight);
+        // const blockersReady = this.setupBlockers(walls);
         const explosionReady = this.setupExplosion(explosion)
 
         this.castleTexturePack = {
@@ -545,8 +549,9 @@ export class Game {
         }
         await cat;
         await explosionReady;
-        await backgroundReady;
-        await blockersReady;
+        await levelReady;
+        // await backgroundReady;
+        // await blockersReady;
     };
 
     start() {
@@ -587,14 +592,14 @@ export class Game {
             }
         ]
 
-        const boundaryCollider: AABBCollider = {
-            minX: 0,
-            minY: 0,
-            maxX: this.sceneWidth,
-            maxY: this.sceneHeight,
-            inverted: true,
-        }
-        this.colliders.push(boundaryCollider);
+        // const boundaryCollider: AABBCollider = {
+        //     minX: 0,
+        //     minY: 0,
+        //     maxX: this.level.mapWidth+this.level.mapX*2,
+        //     maxY: this.level.mapHeight+this.level.mapY*2,
+        //     inverted: true,
+        // }
+        // this.colliders.push(boundaryCollider);
 
         const initData: InitialDataMessage = await this.initialDataPromise;
 
@@ -623,6 +628,7 @@ export class Game {
         DebugDrawer.reset();
         if (!this.gameOn) return
         this.renderScale = this.pixiRef.renderer.width / gameConfig.baseRenderScale;
+        this.level.setScale(this.renderScale);
 
         this.updateDayTime();
 
@@ -650,10 +656,10 @@ export class Game {
         const margin = gameConfig.cameraElasticMargin;
         this.cameraPivot.x = alpha * this.localPlayer.state.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
         this.cameraPivot.y = alpha * this.localPlayer.state.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
-        this.cameraPivot.x = Math.max(this.cameraPivot.x, this.sceneWidth * margin)
-        this.cameraPivot.x = Math.min(this.cameraPivot.x, this.sceneWidth * (1 - margin))
-        this.cameraPivot.y = Math.max(this.cameraPivot.y, this.sceneHeight * margin)
-        this.cameraPivot.y = Math.min(this.cameraPivot.y, this.sceneHeight * (1 - margin))
+        this.cameraPivot.x = Math.max(this.cameraPivot.x, this.level.mapWidth * margin)
+        this.cameraPivot.x = Math.min(this.cameraPivot.x, this.level.mapWidth * (1 - margin))
+        this.cameraPivot.y = Math.max(this.cameraPivot.y, this.level.mapHeight * margin)
+        this.cameraPivot.y = Math.min(this.cameraPivot.y, this.level.mapHeight * (1 - margin))
         this.pixiRef.stage.pivot.x = this.cameraPivot.x;
         this.pixiRef.stage.pivot.y = this.cameraPivot.y;
         this.pixiRef.stage.position.x = this.pixiRef.canvas.width / 2;

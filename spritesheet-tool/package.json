@@ -48,6 +48,7 @@
     ]
   },
   "devDependencies": {
+    "@types/papaparse": "^5.3.15",
     "@types/uuid": "^10.0.0",
     "@types/uuidv4": "^5.0.0",
     "autoprefixer": "^10.4.20",

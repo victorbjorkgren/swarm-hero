@@ -1,0 +1,64 @@
+{
+	"identifier": "Level_0",
+	"uniqueIdentifer": "2efcde20-9b00-11ef-a441-53a25bad75d6",
+	"x": 0,
+	"y": 0,
+	"width": 960,
+	"height": 640,
+	"bgColor": "#696A79",
+	"neighbourLevels": [],
+	"customFields" : {},
+	"layers": [
+		"Ground.png",
+		"Tiles.png",
+		"Walls.png"
+	],
+	"entities": {
+		"Castle": [
+			{
+				"id": "Castle",
+				"iid": "e327efe0-9b00-11ef-a597-d9ef600c0eb4",
+				"layer": "PlayerStart",
+				"x": 176,
+				"y": 112,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields" : {}
+			},
+			{
+				"id": "Castle",
+				"iid": "349b8370-9b00-11ef-9cbd-a769cfa52c92",
+				"layer": "PlayerStart",
+				"x": 176,
+				"y": 496,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields" : {}
+			},
+			{
+				"id": "Castle",
+				"iid": "43ea1f80-9b00-11ef-9cbd-b7515b788203",
+				"layer": "PlayerStart",
+				"x": 784,
+				"y": 496,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields" : {}
+			},
+			{
+				"id": "Castle",
+				"iid": "4943e790-9b00-11ef-9cbd-cd90d73a7f6e",
+				"layer": "PlayerStart",
+				"x": 784,
+				"y": 112,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields" : {}
+			}
+		]
+	}
+}

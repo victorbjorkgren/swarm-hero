@@ -454,7 +454,7 @@ class PlayerLogic extends EntityLogic {
         this.updateMovement();
     }
 
-    checkCollisions(): CollisionResult {
+    checkAABBCollisions(): CollisionResult {
         const myCollider = this.state.collider;
         for (const collider of this.state.scene.colliders) {
             const collisionTest = checkAABBCollision(myCollider, collider);
@@ -463,18 +463,7 @@ class PlayerLogic extends EntityLogic {
         return {collides: false};
     }
 
-    updateMovement() {
-        if (this.state.acc.isZero()) {
-            this.state.vel.scale(.9)
-        } else {
-            this.state.vel.add(this.state.acc);
-            this.state.vel.limit(this.state.maxVel);
-        }
-        if (this.state.vel.sqMagnitude() < gameConfig.sqPlayerVelCutoff) {
-            this.state.vel.x = 0;
-            this.state.vel.y = 0;
-        }
-        const collisionTest = this.checkCollisions();
+    handleAABBCollision(collisionTest: CollisionResult) {
         if (collisionTest.collides) {
             const normal = collisionTest.normal1!;
             if (normal.x > 0 && this.state.vel.x > 0) this.state.vel.x = 0;
@@ -482,10 +471,55 @@ class PlayerLogic extends EntityLogic {
             if (normal.y > 0 && this.state.vel.y > 0) this.state.vel.y = 0;
             else if (normal.y < 0 && this.state.vel.y < 0) this.state.vel.y = 0;
         }
-
-        this.state.pos.add(this.state.vel);
     }
 
+    gridCollision() {
+        const scene = this.state.scene;
+        const grid = scene.level.groundNavMesh;
+        const navScale = scene.level.navScale;
+        const pos = this.state.pos;
+        const vel = this.state.vel;
+
+        const nextX = Math.floor((pos.x + vel.x) / navScale);
+        const nextY = Math.floor((pos.y + vel.y) / navScale);
+
+        if (grid[nextY][nextX] > 0) return;
+
+        const currX = Math.floor(pos.x / navScale);
+        const currY = Math.floor(pos.y / navScale);
+
+        // Inline collision checks for both x and y axes
+        const xCol = grid[currY][nextX] === 0;
+        const yCol = grid[nextY][currX] === 0;
+
+        if (xCol && ((nextX > currX && vel.x > 0) || (nextX < currX && vel.x < 0))) {
+            vel.x = 0;
+        }
+        if (yCol && ((nextY > currY && vel.y > 0) || (nextY < currY && vel.y < 0))) {
+            vel.y = 0;
+        }
+    }
+
+    updateMovement() {
+        const acc = this.state.acc;
+        const vel = this.state.vel;
+        const pos = this.state.pos;
+
+        if (acc.isZero()) {
+            vel.scale(.9)
+        } else {
+            vel.add(acc);
+            vel.limit(this.state.maxVel);
+        }
+
+        this.gridCollision();
+
+        if (vel.sqMagnitude() < gameConfig.sqPlayerVelCutoff) {
+            vel.x = 0;
+            vel.y = 0;
+        }
+        pos.add(vel);
+    }
 }
 
 class PlayerRenderer extends EntityRenderer {

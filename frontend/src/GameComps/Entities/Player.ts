@@ -62,9 +62,9 @@ export class PlayerInterface extends EntityInterface {
         }
     }
 
-    update() {
+    update(delta: number) {
         this.controller.movement();
-        this.logic.update();
+        this.logic.update(delta);
         this.renderer.update();
         this.playerLeavingCastleMenu()
     }
@@ -450,8 +450,8 @@ class PlayerLogic extends EntityLogic {
 
     constructor(protected state: PlayerState) {super();}
 
-    update() {
-        this.updateMovement();
+    update(delta: number) {
+        this.updateMovement(delta);
     }
 
     checkAABBCollisions(): CollisionResult {
@@ -500,25 +500,23 @@ class PlayerLogic extends EntityLogic {
         }
     }
 
-    updateMovement() {
+    updateMovement(deltaScale: number) {
         const acc = this.state.acc;
         const vel = this.state.vel;
         const pos = this.state.pos;
 
-        if (acc.isZero()) {
-            vel.scale(.9)
-        } else {
-            vel.add(acc);
-            vel.limit(this.state.maxVel);
-        }
+        acc.isZero()
+        && acc.add(vel.copy().scale(-.08));
+
+        vel.add(acc.copy().scale(deltaScale));
+        vel.limit(this.state.maxVel);
 
         this.gridCollision();
 
-        if (vel.sqMagnitude() < gameConfig.sqPlayerVelCutoff) {
-            vel.x = 0;
-            vel.y = 0;
-        }
-        pos.add(vel);
+        vel.sqMagnitude() < gameConfig.sqPlayerVelCutoff
+        && vel.scale(0);
+
+        pos.add(vel.copy().scale(deltaScale));
     }
 }
 

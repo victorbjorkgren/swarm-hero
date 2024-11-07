@@ -1,6 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture} from "pixi.js";
+import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture, Ticker} from "pixi.js";
 import React from "react";
 import {
     AABBCollider,
@@ -558,7 +558,7 @@ export class Game {
         this.stopGame();
         this.preload().then(() => {
             this.create().then(()=>{
-                this.pixiRef.ticker.add(this.update, this);
+                this.pixiRef.ticker.add((ticker) => this.update(ticker));
                 // setInterval(()=>this.update(), 1000/60);
                 this.resumeGame();
             });
@@ -624,7 +624,9 @@ export class Game {
         this.playersRef.current = this.players;
     };
 
-    update() {
+    update(ticker: Ticker) {
+        const delta = ticker.deltaTime;
+
         DebugDrawer.reset();
         if (!this.gameOn) return
         this.renderScale = this.pixiRef.renderer.width / gameConfig.baseRenderScale;
@@ -633,15 +635,14 @@ export class Game {
         this.updateDayTime();
 
         // Updates
-        this.particleSystem?.update();
+        this.particleSystem?.update(delta);
 
         this.players.forEach(player => {
-            player.update();
+            player.update(delta);
         })
         this.castles.forEach(castle => {
-            castle.update();
+            castle.update(delta);
         })
-        this.particleSystem?.update();
 
         this.updateCamera();
 

@@ -21,9 +21,9 @@ export class ParticleSystem {
         return this.unitManager;
     }
 
-    update(): void {
+    update(delta: number): void {
         this.unitManager.deepForEach(
-            particle => particle.update()
+            particle => particle.update(delta)
         )
     }
 

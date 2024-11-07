@@ -22,7 +22,7 @@ export abstract class EntityInterface {
     protected abstract renderer: EntityRenderer;
     protected abstract logic: EntityLogic;
 
-    public abstract update(): void;
+    public abstract update(delta: number): void;
     public abstract receiveDamage(damage: number): void;
     public abstract onDeath(): void;
 }
@@ -48,7 +48,7 @@ export abstract class EntityState {
 export abstract class EntityLogic {
     protected abstract state: EntityState;
 
-    public abstract update(): void;
+    public abstract update(deltaScale: number): void;
 }
 
 export abstract class EntityRenderer {

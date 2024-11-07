@@ -41,8 +41,8 @@ export class CastleInterface extends EntityInterface{
         this.logic = new CastleLogic(this.state);
     }
 
-    update() {
-        this.logic.update();
+    update(delta: number) {
+        this.logic.update(delta);
         this.renderer.update();
     }
 
@@ -113,7 +113,7 @@ class CastleState implements EntityState {
 class CastleLogic extends EntityLogic{
     constructor(protected state: CastleState) {super();}
 
-    update() {
+    update(deltaScale: number) {
         this.checkPlayers();
     }
 

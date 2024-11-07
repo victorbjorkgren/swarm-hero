@@ -36,8 +36,8 @@ export class ParticleInterface extends EntityInterface {
         this.renderer = new ParticleRenderer(this.state);
     }
 
-    update() {
-        this.logic.update()
+    update(delta: number): void {
+        this.logic.update(delta)
         this.renderer.update()
     }
 
@@ -102,7 +102,7 @@ class ParticleState implements EntityState {
     firingLaserAt: FiringLaserAt[] = [];
     desiredPos: Vector2D | null = null;
     desiredSpeed: number = .75;
-    desiredLeaderDist: { min: number, max: number } = {min: 50, max: 60};
+    desiredLeaderDist: { min: number, max: number } = {min: 0, max: 60};
     maxAcc: number = .05;
     givesIncome: number = 0;
 
@@ -113,15 +113,13 @@ class ParticleState implements EntityState {
     maxHealth: number = 100;
     public health: number = this.maxHealth;
 
-    public damageQueue: Map<EntityID, number> = new Map();
-
     static price: number = 100;
 
     constructor(
         public pos: Vector2D,
         public mass: number,
         public team: Team,
-        public maxVel: number = 1,
+        public maxVel: number = .5,
         public color: number,
         public scene: Game,
         public groupID: number,
@@ -158,7 +156,7 @@ class ParticleLogic extends EntityLogic {
 
     constructor(protected state: ParticleState) {super();}
 
-    update(): void {
+    update(delta: number): void {
         this.cleanEngagingTargets();
         this.cleanFiringAtTargets();
         this.engageFights();
@@ -168,14 +166,19 @@ class ParticleLogic extends EntityLogic {
         this.calcDesiredPos();
         this.approachDesiredPos();
         this.updateBoid();
-        this.updatePos();
+        this.updatePos(delta);
     }
 
-    updatePos(): void {
-        this.state.acc.limit(this.state.maxAcc);
-        this.state.vel.add(this.state.acc);
-        this.state.vel.limit(this.state.maxVel);
-        this.state.pos.add(this.state.vel);
+    updatePos(deltaScale: number): void {
+        const state = this.state;
+        const acc = state.acc;
+        const vel = state.vel;
+
+        acc.limit(state.maxAcc);
+        vel.add(acc.copy().scale(deltaScale));
+
+        vel.limit(state.maxVel);
+        state.pos.add(vel.copy().scale(deltaScale));
     }
 
     updateBoid(): void {
@@ -213,7 +216,13 @@ class ParticleLogic extends EntityLogic {
     }
 
     private approachDesiredVel() {
-        this.state.vel.scale(1 + this.state.desiredSpeed - this.state.vel.magnitude());
+        const state = this.state;
+        const vel = state.vel;
+        const scale = 1 + state.desiredSpeed - vel.magnitude();
+
+        const delta = vel.copy().scale(40*scale);
+
+        state.acc.add(delta)
     }
 
     private calcDesiredPos() {
@@ -226,7 +235,7 @@ class ParticleLogic extends EntityLogic {
 
     private setDesiredPosToLeader() {
         const leaderPosition = this.state.getLeaderPosition();
-        if (leaderPosition !== null) {
+        if (leaderPosition) {
             const leaderDelta = Vector2D.subtract(leaderPosition, this.state.pos);
             const leaderDist = leaderDelta.magnitude();
             if (leaderDist < this.state.desiredLeaderDist.min) {
@@ -265,7 +274,7 @@ class ParticleLogic extends EntityLogic {
             const foe = this.state.scene.getEntityById(foeId, EntityTypes.Any);
             if (!foe || !foe.state.isAlive() || this.sqFiringDistance(foe.state) > this.state.sqEngageRadius) {
                 this.state.engaging.splice(i, 1);
-                this.removeTargetingReference(foe!.state);
+                foe && this.removeTargetingReference(foe.state);
             }
         }
     }
@@ -287,7 +296,7 @@ class ParticleLogic extends EntityLogic {
         }
     }
 
-    private engageTeamEntities(entityIds: string[], entities: Map<string, any>): void {
+    private engageTeamEntities(entityIds: string[], entities: Map<string, EntityInterface>): void {
         for (const entityId of entityIds) {
             const entity = entities.get(entityId);
             if (!entity || this.state.engaging.length >= this.state.maxTargets) return;
@@ -295,7 +304,7 @@ class ParticleLogic extends EntityLogic {
             this.engageIfClose(entity);
 
             if (this.state.engaging.length < this.state.maxTargets) {
-                this.state.unitManager.ownerForEach(entity.id, (other) => {
+                this.state.unitManager.ownerForEach(entity.state.id, (other) => {
                     if (this.state.engaging.length >= this.state.maxTargets) return;
                     this.engageIfClose(other);
                 });
@@ -321,7 +330,7 @@ class ParticleLogic extends EntityLogic {
             const firingPos = foeEntity.state.getFiringPos(this.state.pos);
 
             if (firingAt) {
-                this.updateFiring(firingAt, foeId, firingPos);
+                this.updateFiring(firingAt, foeEntity, firingPos);
             } else if (this.isWithinFireRadius(firingPos)) {
                 this.startFiringAt(foeId, firingPos);
             }
@@ -336,9 +345,9 @@ class ParticleLogic extends EntityLogic {
         return this.state.firingLaserAt.find(foeItem => foeItem.target === foeId);
     }
 
-    private updateFiring(firingAt: FiringLaserAt, foeId: string, firingPos: Vector2D): void {
+    private updateFiring(firingAt: FiringLaserAt, foe: EntityInterface, firingPos: Vector2D): void {
         firingAt.intensity = Math.min(firingAt.intensity + 0.01, 1);
-        this.state.damageQueue.set(foeId, firingAt.intensity);
+        foe.receiveDamage(firingAt.intensity)
         firingAt.firingPos = firingPos;
     }
 

@@ -77,6 +77,10 @@ export const gameRoomSignalServer = (networkIP: string, port: number, nPlayerGam
 
         const cleanUp = () => {
             console.log('Cleaning up game room resources...');
+
+            process.off('SIGINT', cleanUp);
+            process.off('SIGTERM', cleanUp);
+
             players.forEach((ws, playerId) => {
                 ws.close();
             });

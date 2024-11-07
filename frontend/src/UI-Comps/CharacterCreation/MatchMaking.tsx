@@ -8,11 +8,12 @@ import {gameConfig} from "@shared/config";
 interface Props {
     handleBack: () => void;
     doneCallback: (connectionData: GameConnection) => void;
+    gameOn: boolean;
 }
 let leaveQueue: ()=>void = ()=>{}
 let notConnected: boolean = true;
 
-export const MatchMaking: React.FC<Props> = ({handleBack, doneCallback}) => {
+export const MatchMaking: React.FC<Props> = ({handleBack, doneCallback, gameOn}) => {
     const [nConnected, setNConnected] = useState<number>(0);
 
     const handleLeave = () => {
@@ -21,10 +22,16 @@ export const MatchMaking: React.FC<Props> = ({handleBack, doneCallback}) => {
         handleBack();
     }
 
+    const handleConnected = (connectionData: GameConnection) => {
+        doneCallback(connectionData);
+        notConnected = true;
+    }
+
     useEffect(() => {
+        console.log('attempting connect', notConnected);
         if (notConnected) {
             notConnected = false;
-            leaveQueue = connectMesh(gameConfig.nPlayerGame, setNConnected, doneCallback);
+            leaveQueue = connectMesh(gameConfig.nPlayerGame, setNConnected, handleConnected);
         }
     }, []);
 

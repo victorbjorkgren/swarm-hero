@@ -7,6 +7,7 @@ import {TitleScreen} from "./TitleScreen";
 import {Character, Factions} from "../../types/types";
 import {MatchMaking} from "./MatchMaking";
 import {Client, ClientID} from "@shared/commTypes";
+import {Game} from "../../GameComps/Game";
 
 enum Steps {
     TitleScreen,
@@ -26,11 +27,12 @@ export type GameConnection = {
 interface Props {
     doneCallback: (character: Character, connectionData: GameConnection) => void;
     defaultCharacter: Character | null;
+    gameOn: boolean;
 }
 
 let character: Character | null = null;
 
-export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCharacter}) => {
+export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCharacter, gameOn}) => {
     const [currentStep, setCurrentStep] = useState<Steps>(Steps.TitleScreen);
     const [name, setName] = useState<string>(defaultCharacter?.playerName || "");
     const [faction, setFaction] = useState<Factions | null>(defaultCharacter?.faction || null);
@@ -125,6 +127,7 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, defaultCha
                     <MatchMaking
                         handleBack={handleBackToMain}
                         doneCallback={matchMakingDone}
+                        gameOn={gameOn}
                     />}
             </div>
         </div>

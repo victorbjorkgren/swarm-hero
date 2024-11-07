@@ -21,6 +21,7 @@ const devCharacter: Character = {
 
 export const Main = () => {
     const [currentScene, setCurrentScene] = useState<Scenes>(Scenes.CharacterCreation)
+    const [gameOn, setGameOn] = useState<boolean>(false)
 
     const characterRef = useRef<Character | null>(devCharacter);
     const connectionData = useRef<GameConnection | null>(null);
@@ -29,17 +30,19 @@ export const Main = () => {
     const characterCreationDone = (newCharacter: Character, incomingConnection: GameConnection) => {
         characterRef.current = newCharacter;
         connectionData.current = incomingConnection;
+        setGameOn(true);
         setCurrentScene(Scenes.MainGame);
     }
 
     const gameDone = () => {
+        setGameOn(false);
         setCurrentScene(Scenes.CharacterCreation);
     }
 
     return (
         <>
             {currentScene === Scenes.CharacterCreation
-                && <MainCharacterCreation doneCallback={characterCreationDone} defaultCharacter={characterRef.current}/>}
+                && <MainCharacterCreation doneCallback={characterCreationDone} defaultCharacter={characterRef.current} gameOn={gameOn} />}
             {currentScene === Scenes.MainGame
                 && <MainGame character={characterRef.current} connection={connectionData.current} doneCallback={gameDone}/>}
         </>

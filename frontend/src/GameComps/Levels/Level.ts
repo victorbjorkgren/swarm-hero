@@ -61,7 +61,9 @@ export class Level {
         this.mapHeight = this.data.height;
 
         this.playerStart = ruins2v2.entities.Castle.map(
-            (castleData) => Vector2D.cast(castleData));
+            (castleData) =>
+                Vector2D.cast(castleData)
+        );
     }
 
     async load() {
@@ -76,17 +78,10 @@ export class Level {
             throw new Error("Unknown level");
         }
         this.groundNavMesh = await groundNavPromise;
-        console.log(this.groundNavMesh);
         this.navScale = this.mapHeight / this.groundNavMesh.length
 
         this.groundSprite = new Sprite(await groundTexPromise);
         this.nonColSprite = new Sprite(await nonColTexPromise);
-
-        // this.groundSprite.anchor.x = -this.data.x / this.data.width;
-        // this.groundSprite.anchor.y = -this.data.y / this.data.height;
-        // this.nonColSprite.anchor.x = -this.data.x / this.data.width;
-        // this.nonColSprite.anchor.y = -this.data.y / this.data.height;
-
 
         this.pixi.stage.addChild(this.groundSprite);
         this.pixi.stage.addChild(this.nonColSprite);

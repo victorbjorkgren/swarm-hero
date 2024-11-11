@@ -16,6 +16,9 @@
 # Level binaries
 **/levels/**/*.png
 
+# Level scratch
+**/simplified/Level*/*
+
 # misc
 .DS_Store
 .env.local

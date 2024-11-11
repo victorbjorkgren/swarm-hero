@@ -4,15 +4,15 @@ import {ParticleInterface} from "./Entities/Particle";
 import {UnitManager} from "./UnitManager";
 import {closestPointOnPolygon, isInsidePolygon, Vector2D} from "./Utility";
 import {UnitPack} from "../types/unitTypes";
-import {ParticleID} from "@shared/commTypes";
+import {EntityID, ParticleID} from "@shared/commTypes";
 import {PlayerInterface} from "./Entities/Player";
 import {CastleInterface} from "./Entities/Castle";
 
 export class ParticleSystem {
-    protected unitManager: UnitManager<ParticleInterface> = new UnitManager();
+    unitManager: UnitManager<ParticleInterface> = new UnitManager();
 
     constructor(
-        protected scene: Game,
+        public scene: Game,
         private polygonColliderEntities: PolygonalCollider[] = []
     ) {
     }
@@ -27,11 +27,24 @@ export class ParticleSystem {
         )
     }
 
-    getNewParticle(player: PlayerInterface, castle: CastleInterface, groupID: number, unitInfo: UnitPack, owner: PlayerInterface, droneId: ParticleID): ParticleInterface {
+    getNewParticle(
+        team: Team,
+        origin: Vector2D,
+        unitInfo: UnitPack,
+        ownerId: EntityID,
+        droneId: ParticleID
+    ): ParticleInterface {
         const randomSpawnOffset = new Vector2D((Math.random()-.5)*30, (Math.random()-.5)*30);
-        const origin = Vector2D.add(castle.state.pos, randomSpawnOffset);
-        const p = new ParticleInterface( origin , 10, player.state.team!, 1, player.state.team!.color, this.scene, groupID, unitInfo, owner.state.id, this.unitManager, droneId);
-        p.setLeader(owner.state);
+        origin.add(randomSpawnOffset);
+        const p = new ParticleInterface(
+            origin ,
+            10,
+            team,
+            1,
+            this,
+            unitInfo,
+            ownerId,
+            droneId);
         this.unitManager.add(p);
         return p;
     }

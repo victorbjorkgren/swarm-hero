@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 
-import ruins2v2 from './Level_0/data.json';
+import ruins2v2 from './ruins2v2/data.json';
 import {Application, Assets, Sprite, Texture} from "pixi.js";
 import {Vector2D} from "../Utility";
 
@@ -15,7 +15,12 @@ export const LevelData = {
 }
 
 export const levelDir = {
-    [Levels.Ruins2v2]: "/sprites/PixelArtTopDownTextures/TopDownRuins_1.0/simplified/Level_0",
+    [Levels.Ruins2v2]: "/levels/ruins2v2",
+}
+
+export type NeutralSwarm = {
+    position: Vector2D,
+    n: number
 }
 
 
@@ -44,6 +49,8 @@ export class Level {
     public readonly mapHeight: number;
 
     public playerStart: Vector2D[];
+    public neutralParticleStart: NeutralSwarm[];
+
     public groundNavMesh: number[][] = [[]];
     public navScale: number = 1
 
@@ -54,16 +61,19 @@ export class Level {
         private level: Levels,
         private pixi: Application
     ) {
-        this.data = ruins2v2;
+        this.data = LevelData[level];
         this.mapOffset = Vector2D.cast(this.data)
 
         this.mapWidth = this.data.width;
         this.mapHeight = this.data.height;
 
-        this.playerStart = ruins2v2.entities.Castle.map(
+        this.playerStart = this.data.entities.Castle.map(
             (castleData) =>
                 Vector2D.cast(castleData)
         );
+        this.neutralParticleStart = this.data.entities.NeutralSwarm.map((swarm) => {
+            return {position: Vector2D.cast(swarm), n: swarm.customFields.NParticles}
+        })
     }
 
     async load() {

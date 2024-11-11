@@ -1,12 +1,15 @@
 import {Character, Controls, EntityTypes, Team} from "../frontend/src/types/types";
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
-import {Units} from "../frontend/src/types/unitTypes";
+import {UnitPack, Units} from "../frontend/src/types/unitTypes";
 
 export type EntityID = string;
 export type ClientID = EntityID;
 export type CastleID = EntityID;
 export type ParticleID = EntityID;
+export type EmptyID = EntityID;
+
+export type TeamName = string;
 
 export type EventID = string
 export type SpellCastID = EventID;
@@ -76,33 +79,31 @@ export type InitialDataMessage = {
 }
 
 export type InitialDataPackage = {
-    // teams: Team[],
     players: PlayerInitData[],
-    castles: CastleInitData[]
+    castles: CastleInitData[],
+    neutralParticles: ParticleInitData[],
 }
 
 export type PlayerInitData = {
     id: ClientID,
     pos: Vector2D,
     character: Character,
-    teamIdx: number,
+    teamName: TeamName,
 }
 
 export type CastleInitData = {
     id: CastleID,
-    teamIdx: number,
     pos: Vector2D,
     owner: ClientID
+    teamName: TeamName,
 }
 
 export type ParticleInitData = {
-    id: ParticleID,
-    teamIdx: number,
+    particleId: ParticleID,
     pos: Vector2D,
-    owner: EntityID
-    ownerType: EntityTypes,
-    leader: EntityID,
-    leaderType: EntityTypes
+    unitData: UnitPack,
+    ownerId: EntityID,
+    teamName: TeamName,
 }
 
 export type GameUpdateMessage = {
@@ -144,9 +145,6 @@ export type ParticleUpdateData = {
     acc: Vector2D,
     health: number,
     owner: EntityID
-    ownerType: EntityTypes,
-    leader: EntityID | null,
-    leaderType: EntityTypes | null
 }
 
 

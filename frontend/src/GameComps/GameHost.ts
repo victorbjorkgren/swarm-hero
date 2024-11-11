@@ -12,7 +12,7 @@ import {
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
-    InitialDataPackage, LatencyReport,
+    InitialDataPackage, LatencyReport, ParticleInitData,
     ParticleUpdateData,
     PlayerInitData,
     PlayerUpdateData,
@@ -38,9 +38,6 @@ export default class GameHost {
 
     private initialData: InitialDataPackage | null = null;
     private readyForCreation: Map<ClientID, Character> = new Map();
-
-
-    // private wss = new WebSocketServer({ port: 8080 });
 
     private updateInterval: number | NodeJS.Timeout | null = null;
     private nextUpdateMessage: GameUpdateMessage | null = null;
@@ -224,9 +221,14 @@ export default class GameHost {
     }
 
     checkWinner() {
-        const remainingTeams = this.localClientScene.teams.filter(team => team.playerIds.length > 0)
+        const teams = this.localClientScene.teams;
+        console.log(`Remaining teams map:`, teams);
+
+        const remainingTeams = Array.from(teams.entries()).filter(team => team[1].playerIds.length > 0 && team[0] !== "Neutral");
+
+        console.log(`Remaining teams:`, remainingTeams);
         if (remainingTeams.length > 1) return;
-        const winner = remainingTeams.length === 1 ? remainingTeams[0].name : "Tie"
+        const winner = remainingTeams.length === 1 ? remainingTeams[0][0] : "Tie";
         this.broadcast(ServerMessageType.Winner, winner);
         this.stopGame();
     }
@@ -269,22 +271,40 @@ export default class GameHost {
 
         const playerInitData: PlayerInitData[] = []
         const castleInitData: CastleInitData[] = []
+        const particleInitData: ParticleInitData[] = []
+
+        this.localClientScene.level.neutralParticleStart.forEach((swarm) => {
+            const emptyOwner = uuidv4();
+            for (let i = 0; i<swarm.n; i++) {
+                particleInitData.push({
+                    particleId: uuidv4(),
+                    pos: swarm.position.copy(),
+                    unitData: UnitPacks[Units.LaserDrone],
+                    ownerId: emptyOwner,
+                    teamName: 'Neutral'
+                })
+
+            }
+        })
+
+        let teamNames = Array.from(this.localClientScene.teams.keys());
+        teamNames = teamNames.filter(teamName => teamName !== "Neutral");
 
         let index = 0;
         this.readyForCreation.forEach((character, clientId) => {
             if (!character) throw new Error(`Client ${clientId} has no character at creation`);
-            const teamIdx = index % gameConfig.nTeamGame;
+            const teamName = teamNames[index % teamNames.length];
             const castleId = uuidv4();
             const castleSpawn = this.localClientScene.level.playerStart[index];
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
 
-            playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamIdx: teamIdx})
-            castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamIdx: teamIdx})
+            playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamName: teamName})
+            castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamName: teamName})
 
             index++;
         })
 
-        this.initialData = {players: playerInitData, castles: castleInitData};
+        this.initialData = {players: playerInitData, castles: castleInitData, neutralParticles: particleInitData};
         this.sendInitialData();
     };
 
@@ -317,11 +337,9 @@ export default class GameHost {
             })
         })
         this.localClientScene.particleSystem?.getParticles().deepForEach(particle => {
-            const leaderId = particle.state.leader?.id ?? null;
-            let leaderType: EntityTypes | null = null;
-            if (leaderId) {
-                leaderType = this.localClientScene.idTypes.get(leaderId) ?? null;
-            }
+            // const ownerType = this.localClientScene.idTypes.get(particle.state.owner)
+            // if (!ownerType) throw new Error(`Unknown owner type for "${particle.state.owner}"`);
+
             particleUpdate.push({
                 particleId: particle.state.id,
                 alive: particle.state.isAlive(),
@@ -330,9 +348,7 @@ export default class GameHost {
                 acc: particle.state.acc,
                 health: particle.state.health,
                 owner: particle.state.owner,
-                ownerType: this.localClientScene.idTypes.get(particle.state.owner)!,
-                leader: leaderId,
-                leaderType: leaderType,
+                // ownerType: ownerType,
             })
         })
 

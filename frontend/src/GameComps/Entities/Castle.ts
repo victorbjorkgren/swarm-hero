@@ -34,7 +34,8 @@ export class CastleInterface extends EntityInterface{
         scene: Game
     ) {
         super();
-        team!.castleIds.push(id);
+        if (!team) throw new Error("No team specified for castle to join");
+        team.castleIds.push(id);
 
         this.state = new CastleState(id, pos, team, owner, scene);
         this.renderer = new CastleRenderer(this.state);
@@ -77,6 +78,8 @@ class CastleState implements EntityState {
     health: number = gameConfig.castleHealth;
     givesIncome: number = gameConfig.castleIncome;
     targetedBy: ParticleID[] = [];
+
+    attackable: boolean = true;
 
     public entityType: EntityTypes = EntityTypes.Castle;
 

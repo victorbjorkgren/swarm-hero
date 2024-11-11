@@ -14,6 +14,7 @@ export enum EntityTypes {
     Player,
     Castle,
     Particle,
+    Null,
     Any,
 }
 
@@ -40,6 +41,7 @@ export abstract class EntityState {
     abstract entityType: EntityTypes;
 
     abstract targetedBy: ParticleID[];
+    abstract attackable: boolean;
 
     abstract isAlive(): boolean;
     abstract getFiringPos(from: Vector2D): Vector2D;
@@ -77,13 +79,8 @@ export interface AABBCollider {
 
 export interface Team {
     color: number,
-    id: number,
-    name: string,
-    // playerCentroid: Vector2D,
-    // castleCentroid: Vector2D,
-    // controllerMapping: ControllerMapping | null,
     playerIds: ClientID[],
-    castleIds: CastleID[]
+    castleIds: CastleID[],
 }
 
 export interface TexturePack {
@@ -112,7 +109,7 @@ export interface ControllerMapping {
 }
 
 export interface popUpEvent{
-    playerID: number;
+    playerID: ClientID;
     castle: CastleInterface;
 }
 

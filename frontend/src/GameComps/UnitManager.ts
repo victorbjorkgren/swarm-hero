@@ -4,7 +4,7 @@ import {EntityID, ParticleID} from "@shared/commTypes";
 
 
 export type UnitMap<TParticle extends ParticleInterface> = Map<Units, Set<TParticle>>;
-export type EntityUnitMap<TParticle extends ParticleInterface> = Map<EntityID, UnitMap<TParticle>>;
+export type EntityUnitMap<TParticle extends ParticleInterface> = Map<EntityID | null, UnitMap<TParticle>>;
 export type IdMap<TParticle extends ParticleInterface> = Map<ParticleID, TParticle>;
 export type UnitCount = {unit: Units, count: number};
 
@@ -18,7 +18,7 @@ export class UnitManager<TParticle extends ParticleInterface> {
         this.idMap.set(obj.state.id, obj);
 
         const element: Units = obj.state.unitInfo.element;
-        const owner: EntityID = obj.state.owner;
+        const owner: EntityID | null = obj.state.owner;
 
         let ownerParticles = this.unitMap.get(owner);
         if (!ownerParticles) {
@@ -39,7 +39,7 @@ export class UnitManager<TParticle extends ParticleInterface> {
         this.idMap.delete(obj.state.id);
 
         const element: Units = obj.state.unitInfo.element;
-        const owner: EntityID = obj.state.owner;
+        const owner: EntityID | null = obj.state.owner;
 
         const ownerParticles = this.unitMap.get(owner);
         const elementSet = ownerParticles?.get(element);
@@ -95,7 +95,7 @@ export class UnitManager<TParticle extends ParticleInterface> {
         return this.unitMap.get(owner) || new Map();
     }
 
-    ownerForEach(owner: EntityID, callback: (particle: TParticle) => void): void {
+    ownerForEach(owner: EntityID | null, callback: (particle: TParticle) => void): void {
         const m = this.unitMap.get(owner)
         if (m) {
             m.forEach((set) => {

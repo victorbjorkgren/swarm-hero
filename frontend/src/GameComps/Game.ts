@@ -24,7 +24,7 @@ import {
     ClientMessage,
     ClientMessageType,
     ClientPayloads,
-    DroneBoughtMessage,
+    DroneBoughtMessage, EmptyID,
     EntityDeathMessage,
     EntityID,
     GameUpdateMessage,
@@ -37,7 +37,7 @@ import {
     ServerMessageType,
     SpellBoughtMessage,
     SpellCastID,
-    SpellCastMessage
+    SpellCastMessage, TeamName
 } from "@shared/commTypes";
 import {PlayerInterface} from "./Entities/Player";
 import {CastleInterface} from "./Entities/Castle";
@@ -46,6 +46,7 @@ import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
 import {Level, Levels} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
+import {EmptyInterface} from "./Entities/Empty";
 
 type LatencyObject = {pingStart: number, pingCode: string, latency: number};
 
@@ -64,8 +65,9 @@ export class Game {
 
     public players: Map<ClientID, PlayerInterface> = new Map();
     public remainingPlayers: Set<PlayerInterface> = new Set();
-    public teams: Team[] = [];
+    public teams: Map<TeamName, Team> = new Map();
     public castles: Map<CastleID, CastleInterface> = new Map();
+    public emptyEntities: Map<EmptyID, EmptyInterface> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
@@ -136,6 +138,22 @@ export class Game {
         this.players.forEach(playerInstance => {this.remainingPlayers.add(playerInstance)})
 
         this.setLocalPlayer(character)
+
+        this.teams.set('Neutral', {
+            color: 0xeed9c4,
+            playerIds: [],
+            castleIds: [],
+        })
+        this.teams.set('Red', {
+            color: 0xff0000,
+            playerIds: [],
+            castleIds: [],
+        })
+        this.teams.set('Blue', {
+            color: 0x0000ff,
+            playerIds: [],
+            castleIds: [],
+        })
     }
 
     disconnectPlayer(clientId: ClientID): void {
@@ -364,8 +382,13 @@ export class Game {
         if (!player || !castle) return;
         player.payGold(UnitPacks[message.unit].buyCost * message.n)
         for (let i = 0; i < message.n; i++) {
-            console.log('Creating drone')
-            this.particleSystem.getNewParticle(player, castle, 0, UnitPacks[message.unit], player, message.droneId[i])
+            console.log('Creating drone');
+            this.particleSystem.getNewParticle(
+                player.state.team!,
+                castle.state.pos.copy(),
+                UnitPacks[message.unit],
+                player.state.id,
+                message.droneId[i])
             this.idTypes.set(message.droneId[i], EntityTypes.Particle)
         }
     }
@@ -397,7 +420,7 @@ export class Game {
             case EntityTypes.Particle:
                 return this.particleSystem?.getParticles().getById(id);
             case EntityTypes.Any:
-                return this.castles.get(id) ?? this.players.get(id) ?? this.particleSystem?.getParticles().getById(id);
+                return this.castles.get(id) ?? this.players.get(id) ?? this.emptyEntities.get(id) ?? this.particleSystem?.getParticles().getById(id);
             default:
                 throw new Error(`Unsupported Entity type: ${type}`);
         }
@@ -569,56 +592,45 @@ export class Game {
         DebugDrawer.setPixi(this.pixiRef);
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
 
-        this.teams = [
-            {
-                id: 0,
-                name: 'Yellow',
-                color: 0xffff00,
-                // playerCentroid: Vector2D.add(gameConfig.castlePositions[0], gameConfig.playerStartOffset),
-                // castleCentroid: gameConfig.castlePositions[0],
-                // controllerMapping: player1Keys,
-                playerIds: [],
-                castleIds: []
-            },
-            {
-                id: 1,
-                name: 'White',
-                color: 0xffffff,
-                // playerCentroid: Vector2D.add(gameConfig.castlePositions[1], gameConfig.playerStartOffset),
-                // castleCentroid: gameConfig.castlePositions[1],
-                // controllerMapping: null,
-                playerIds: [],
-                castleIds: []
-            }
-        ]
-
-        // const boundaryCollider: AABBCollider = {
-        //     minX: 0,
-        //     minY: 0,
-        //     maxX: this.level.mapWidth+this.level.mapX*2,
-        //     maxY: this.level.mapHeight+this.level.mapY*2,
-        //     inverted: true,
-        // }
-        // this.colliders.push(boundaryCollider);
-
         const initData: InitialDataMessage = await this.initialDataPromise;
 
-        // initData.package.teams.forEach(team => this.teams.push(team));
-
         initData.package.players.forEach(pInit => {
+            const team = this.teams.get(pInit.teamName)
+            if (!team) throw new Error(`Unknown team: ${pInit.teamName}`)
             const player = this.players.get(pInit.id)!
-            const pos = new Vector2D(pInit.pos.x, pInit.pos.y);
-            player.gameInit(pos, this.teams[pInit.teamIdx], pInit.character)
-            this.teams[pInit.teamIdx].playerIds.push(player.state.id);
+            const pos = Vector2D.cast(pInit.pos);
+            player.gameInit(pos, team, pInit.character)
+            team.playerIds.push(player.state.id);
             this.idTypes.set(pInit.id, EntityTypes.Player);
         });
+
         initData.package.castles.forEach(cInit => {
-            const castle = new CastleInterface(cInit.id, cInit.pos, this.teams[cInit.teamIdx], cInit.owner, this);
+            const team = this.teams.get(cInit.teamName)
+            if (!team) throw new Error(`Unknown team: ${cInit.teamName}`)
+            const castle = new CastleInterface(cInit.id, Vector2D.cast(cInit.pos), team, cInit.owner, this);
             this.castles.set(cInit.id, castle)
             const owner = this.players.get(cInit.owner);
             owner?.gainCastleControl(castle);
-            this.teams[cInit.teamIdx].castleIds.push(castle.state.id);
+            team.castleIds.push(castle.state.id);
             this.idTypes.set(cInit.id, EntityTypes.Castle);
+        })
+
+        initData.package.neutralParticles.forEach(pInit => {
+            const pos = Vector2D.cast(pInit.pos);
+            if (pInit.ownerId && !this.emptyEntities.has(pInit.ownerId)) {
+                this.emptyEntities.set(pInit.ownerId, new EmptyInterface(pInit.ownerId, pos, this));
+                this.idTypes.set(pInit.ownerId, EntityTypes.Null);
+            }
+            const team = this.teams.get(pInit.teamName);
+            if (!team) throw new Error(`Unknown team: ${pInit.teamName}`);
+            this.particleSystem.getNewParticle(
+                team,
+                pos.copy(),
+                pInit.unitData,
+                pInit.ownerId,
+                pInit.particleId
+            )
+            this.idTypes.set(pInit.particleId, EntityTypes.Particle)
         })
 
         this.playersRef.current = this.players;

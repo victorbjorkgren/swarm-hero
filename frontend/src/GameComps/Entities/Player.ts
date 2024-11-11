@@ -250,7 +250,6 @@ export class PlayerInterface extends EntityInterface {
         let movedDrones = 0;
         for (const drone of droneSet) {
             uMgr.switchOwner(drone, castle.state.id)
-            drone.setLeader(castle.state);
             if (++movedDrones >= n) break;
         }
         return true;
@@ -270,7 +269,6 @@ export class PlayerInterface extends EntityInterface {
         let movedDrones = 0;
         for (const drone of droneSet) {
             uMgr.switchOwner(drone, this.state.id)
-            drone.setLeader(this.state);
             if (++movedDrones >= n) break;
         }
         return true;
@@ -315,7 +313,7 @@ export class PlayerInterface extends EntityInterface {
             if (castle.state.nearbyPlayers.includes(this.state.id)) {
                 this.state.scene.setPlayerPopOpen(
                     {
-                        playerID: this.state.team!.id,
+                        playerID: this.state.id,
                         castle: castle
                     });
                 this.popUpCastle = castle;
@@ -359,6 +357,7 @@ class PlayerState implements EntityState {
     public vel: Vector2D = Vector2D.zeros();
     public acc: Vector2D = Vector2D.zeros();
     public targetedBy: ParticleID[] = [];
+    public attackable: boolean = true;
     public availableSpells: SpellPack[] = [];
 
     public team: Team | null = null;

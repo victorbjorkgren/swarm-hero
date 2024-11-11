@@ -13,6 +13,8 @@
 /backend-services/public/*
 **/dist
 
+# Level binaries
+**/levels/**/*.png
 
 # misc
 .DS_Store
@@ -24,4 +26,3 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/frontend/public/sprites/PixelArtTopDownTextures/TopDownRuins_1.0/**/*.png

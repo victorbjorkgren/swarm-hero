@@ -5,6 +5,7 @@ import {UnitManager} from "../UnitManager";
 import {Game} from "../Game";
 import {Graphics} from "pixi.js";
 import {EntityID, ParticleID, ParticleUpdateData} from "@shared/commTypes";
+import {ParticleSystem} from "../ParticleSystem";
 
 interface FiringLaserAt {
     target: EntityID;
@@ -22,16 +23,13 @@ export class ParticleInterface extends EntityInterface {
         mass: number,
         team: Team,
         maxVel: number = 1,
-        color: number,
-        scene: Game,
-        groupID: number,
+        particleSystem: ParticleSystem,
         unitInfo: UnitPack,
         owner: EntityID,
-        unitManager: UnitManager<ParticleInterface>,
         id: ParticleID)
     {
         super();
-        this.state = new ParticleState(pos, mass, team, maxVel, color, scene, groupID, unitInfo, owner, unitManager, id)
+        this.state = new ParticleState(pos, mass, team, maxVel, particleSystem.scene, unitInfo, owner, particleSystem.unitManager, id)
         this.logic = new ParticleLogic(this.state);
         this.renderer = new ParticleRenderer(this.state);
     }
@@ -52,14 +50,7 @@ export class ParticleInterface extends EntityInterface {
             this.state.health = particleUpdate.health
         if (particleUpdate.owner !== null) {
             if (this.state.owner !== particleUpdate.owner) {
-                const newOwnerEntity = this.state.scene.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
-                if (!newOwnerEntity) return;
-                this.state.unitManager.switchOwner(this, newOwnerEntity.state.id);
-            }
-        }
-        if (particleUpdate.leader !== null) {
-            if (!this.state.leader || this.state.leader.id !== particleUpdate.leader) {
-                const newOwnerEntity = this.state.scene.getEntityById(particleUpdate.owner, particleUpdate.ownerType);
+                const newOwnerEntity = this.state.scene.getEntityById(particleUpdate.owner, EntityTypes.Any);
                 if (!newOwnerEntity) return;
                 this.state.unitManager.switchOwner(this, newOwnerEntity.state.id);
             }
@@ -78,20 +69,15 @@ export class ParticleInterface extends EntityInterface {
         this.renderer.cleanUp();
     }
 
-    setGroupID(groupID: number): void {
-        this.state.groupID = groupID;
-    }
-
-    setLeader(leader: EntityState) {
-        // Should the leader really be state and not EntityID? Leaving it for now though.
-        this.state.leader = leader;
-    }
+    // setLeaderPos(leaderPos: Vector2D | null) {
+    //     this.state.leaderPos = leaderPos;
+    // }
 }
 
 class ParticleState implements EntityState {
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
-    leader: EntityState | null = null;
+    // leaderPos: Vector2D | null = null;
     radius: number;
     isBoiding: boolean = true;
     isEngaging: boolean = false;
@@ -102,16 +88,18 @@ class ParticleState implements EntityState {
     firingLaserAt: FiringLaserAt[] = [];
     desiredPos: Vector2D | null = null;
     desiredSpeed: number = .75;
-    desiredLeaderDist: { min: number, max: number } = {min: 0, max: 60};
+    desiredOwnerDist: { min: number, max: number } = {min: 0, max: 60};
     maxAcc: number = .05;
     givesIncome: number = 0;
 
     targetedBy: ParticleID[] = [];
+    attackable: boolean = true;
 
     public entityType: EntityTypes = EntityTypes.Particle;
 
     maxHealth: number = 100;
     public health: number = this.maxHealth;
+    public color: number;
 
     static price: number = 100;
 
@@ -120,24 +108,25 @@ class ParticleState implements EntityState {
         public mass: number,
         public team: Team,
         public maxVel: number = .5,
-        public color: number,
         public scene: Game,
-        public groupID: number,
         public unitInfo: UnitPack,
         public owner: EntityID,
         public unitManager: UnitManager<ParticleInterface>,
         public id: ParticleID,
     ) {
+        this.color = team.color;
         this.vel = randomUnitVector().scale(this.maxVel);
         this.radius = massToRadius(mass);
     }
 
-    getLeaderPosition() {
-        if (this.leader === null) return null
-        return this.leader.pos;
+    getOwnerPosition() {
+        if (this.owner === null) return null
+        const ownerInterface = this.scene.getEntityById(this.owner, EntityTypes.Any);
+        if (!ownerInterface) return null;
+        return ownerInterface.state.pos;
     }
 
-    getFiringPos(from: Vector2D): Vector2D {
+    getFiringPos(): Vector2D {
         return this.pos;
     }
 
@@ -169,7 +158,7 @@ class ParticleLogic extends EntityLogic {
         this.updatePos(delta);
     }
 
-    updatePos(deltaScale: number): void {
+    private updatePos(deltaScale: number): void {
         const state = this.state;
         const acc = state.acc;
         const vel = state.vel;
@@ -181,7 +170,7 @@ class ParticleLogic extends EntityLogic {
         state.pos.add(vel.copy().scale(deltaScale));
     }
 
-    updateBoid(): void {
+    private updateBoid(): void {
         const cohedePoint = Vector2D.zeros();
         const sepPoint = Vector2D.zeros();
         const alignV = Vector2D.zeros();
@@ -226,22 +215,22 @@ class ParticleLogic extends EntityLogic {
     }
 
     private calcDesiredPos() {
-        if (this.state.engaging.length === 0) return this.setDesiredPosToLeader();
+        if (this.state.engaging.length === 0) return this.setDesiredPosToOwner();
         const foe = this.getFoeEntity(this.state.engaging[0]);
-        if (!foe) return this.setDesiredPosToLeader();
+        if (!foe) return this.setDesiredPosToOwner();
 
         this.state.desiredPos = foe.state.getFiringPos(this.state.pos);
     }
 
-    private setDesiredPosToLeader() {
-        const leaderPosition = this.state.getLeaderPosition();
-        if (leaderPosition) {
-            const leaderDelta = Vector2D.subtract(leaderPosition, this.state.pos);
-            const leaderDist = leaderDelta.magnitude();
-            if (leaderDist < this.state.desiredLeaderDist.min) {
-                this.state.desiredPos = Vector2D.add(this.state.pos, leaderDelta.scale(-1));
-            } else if (leaderDist > this.state.desiredLeaderDist.max) {
-                this.state.desiredPos = Vector2D.add(this.state.pos, leaderDelta.scale(1));
+    private setDesiredPosToOwner() {
+        const ownerPosition = this.state.getOwnerPosition();
+        if (ownerPosition) {
+            const ownerDelta = Vector2D.subtract(ownerPosition, this.state.pos);
+            const ownerDist = ownerDelta.magnitude();
+            if (ownerDist < this.state.desiredOwnerDist.min) {
+                this.state.desiredPos = Vector2D.add(this.state.pos, ownerDelta.scale(-1));
+            } else if (ownerDist > this.state.desiredOwnerDist.max) {
+                this.state.desiredPos = Vector2D.add(this.state.pos, ownerDelta.scale(1));
             } else {
                 this.state.desiredPos = null;
             }
@@ -296,9 +285,9 @@ class ParticleLogic extends EntityLogic {
         }
     }
 
-    private engageTeamEntities(entityIds: string[], entities: Map<string, EntityInterface>): void {
+    private engageEntityCollection(entityIds: EntityID[], entityMap: Map<EntityID, EntityInterface>): void {
         for (const entityId of entityIds) {
-            const entity = entities.get(entityId);
+            const entity = entityMap.get(entityId);
             if (!entity || this.state.engaging.length >= this.state.maxTargets) return;
 
             this.engageIfClose(entity);
@@ -316,9 +305,11 @@ class ParticleLogic extends EntityLogic {
         if (this.state.engaging.length >= this.state.maxTargets) return;
         this.state.scene.teams.forEach((team) => {
             if (team === this.state.team) return;
-            this.engageTeamEntities(team.playerIds, this.state.scene.players);
-            this.engageTeamEntities(team.castleIds, this.state.scene.castles);
+            this.engageEntityCollection(team.playerIds, this.state.scene.players);
+            this.engageEntityCollection(team.castleIds, this.state.scene.castles);
         });
+        const emptyIds = Array.from(this.state.scene.emptyEntities.keys());
+        this.engageEntityCollection(emptyIds, this.state.scene.emptyEntities);
     }
 
     fightFights(): void {
@@ -364,6 +355,7 @@ class ParticleLogic extends EntityLogic {
     }
 
     engageIfClose(other: EntityInterface) {
+        if (!other.state.attackable) return;
         if (!other.state.isAlive()) return;
         if (this.state === other.state) return
         if (this.state.team === other.state.team) return
@@ -381,7 +373,6 @@ class ParticleRenderer extends EntityRenderer {
     particleSprite: Graphics | null = null;
     attackSprite: Graphics | null = null;
     healthSprite: Graphics | null = null;
-    debugSprite: Graphics | null = null;
 
     constructor(protected state: ParticleState) {super()}
 

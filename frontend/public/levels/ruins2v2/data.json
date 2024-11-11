@@ -18,7 +18,7 @@
 			{
 				"id": "Castle",
 				"iid": "e327efe0-9b00-11ef-a597-d9ef600c0eb4",
-				"layer": "PlayerStart",
+				"layer": "GameObjects",
 				"x": 176,
 				"y": 112,
 				"width": 32,
@@ -29,7 +29,7 @@
 			{
 				"id": "Castle",
 				"iid": "349b8370-9b00-11ef-9cbd-a769cfa52c92",
-				"layer": "PlayerStart",
+				"layer": "GameObjects",
 				"x": 176,
 				"y": 496,
 				"width": 32,
@@ -40,7 +40,7 @@
 			{
 				"id": "Castle",
 				"iid": "43ea1f80-9b00-11ef-9cbd-b7515b788203",
-				"layer": "PlayerStart",
+				"layer": "GameObjects",
 				"x": 784,
 				"y": 496,
 				"width": 32,
@@ -51,13 +51,41 @@
 			{
 				"id": "Castle",
 				"iid": "4943e790-9b00-11ef-9cbd-cd90d73a7f6e",
-				"layer": "PlayerStart",
+				"layer": "GameObjects",
 				"x": 784,
 				"y": 112,
 				"width": 32,
 				"height": 32,
 				"color": 15330617,
 				"customFields" : {}
+			}
+		],
+		"NeutralSwarm": [
+			{
+				"id": "NeutralSwarm",
+				"iid": "29651880-9b00-11ef-96ce-6f1f6b455dd3",
+				"layer": "GameObjects",
+				"x": 272,
+				"y": 336,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 10
+				}
+			},
+			{
+				"id": "NeutralSwarm",
+				"iid": "2ec57040-9b00-11ef-96ce-5741e161b902",
+				"layer": "GameObjects",
+				"x": 592,
+				"y": 432,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
 			}
 		]
 	}

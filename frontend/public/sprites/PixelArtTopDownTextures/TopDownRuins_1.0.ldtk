@@ -11,9 +11,9 @@
 	"iid": "2efc9000-9b00-11ef-a441-658d2ba3d094",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473703,
-	"nextUid": 94,
+	"nextUid": 96,
 	"identifierStyle": "Capitalize",
-	"toc": [{
+	"toc": [ {
 		"identifier": "Castle",
 		"instances": [],
 		"instancesData": [
@@ -42,7 +42,24 @@
 				"entityIid": "4943e790-9b00-11ef-9cbd-cd90d73a7f6e"
 			}, "worldX": 784, "worldY": 112, "widPx": 32, "heiPx": 32, "fields" : {} }
 		]
-	}],
+	}, {
+		"identifier": "NeutralSwarm",
+		"instances": [],
+		"instancesData": [
+			{ "iids": {
+				"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
+				"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
+				"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
+				"entityIid": "29651880-9b00-11ef-96ce-6f1f6b455dd3"
+			}, "worldX": 272, "worldY": 336, "widPx": 16, "heiPx": 16, "fields" : {} },
+			{ "iids": {
+				"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
+				"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
+				"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
+				"entityIid": "2ec57040-9b00-11ef-96ce-5741e161b902"
+			}, "worldX": 592, "worldY": 432, "widPx": 16, "heiPx": 16, "fields" : {} }
+		]
+	} ],
 	"worldLayout": "Free",
 	"worldGridWidth": 256,
 	"worldGridHeight": 256,
@@ -145,7 +162,7 @@
 		},
 		{
 			"__type": "Entities",
-			"identifier": "PlayerStart",
+			"identifier": "GameObjects",
 			"type": "Entities",
 			"uid": 91,
 			"doc": null,
@@ -1368,12 +1385,85 @@
 			"tileRect": { "tilesetUid": 87, "x": 0, "y": 0, "w": 512, "h": 512 },
 			"uiTileRect": null,
 			"nineSliceBorders": [],
+			"maxCount": 4,
+			"limitScope": "PerLevel",
+			"limitBehavior": "PreventAdding",
+			"pivotX": 0.5,
+			"pivotY": 0.5,
+			"fieldDefs": []
+		},
+		{
+			"identifier": "NeutralSwarm",
+			"uid": 94,
+			"tags": [],
+			"exportToToc": true,
+			"allowOutOfBounds": false,
+			"doc": null,
+			"width": 16,
+			"height": 16,
+			"resizableX": false,
+			"resizableY": false,
+			"minWidth": null,
+			"maxWidth": null,
+			"minHeight": null,
+			"maxHeight": null,
+			"keepAspectRatio": false,
+			"tileOpacity": 1,
+			"fillOpacity": 1,
+			"lineOpacity": 1,
+			"hollow": false,
+			"color": "#BE4A2F",
+			"renderMode": "Cross",
+			"showName": true,
+			"tilesetId": null,
+			"tileRenderMode": "FitInside",
+			"tileRect": null,
+			"uiTileRect": null,
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
 			"pivotX": 0.5,
 			"pivotY": 0.5,
-			"fieldDefs": []
+			"fieldDefs": [
+				{
+					"identifier": "NParticles",
+					"doc": null,
+					"__type": "Int",
+					"uid": 95,
+					"type": "F_Int",
+					"isArray": false,
+					"canBeNull": false,
+					"arrayMinLength": null,
+					"arrayMaxLength": null,
+					"editorDisplayMode": "ValueOnly",
+					"editorDisplayScale": 1,
+					"editorDisplayPos": "Center",
+					"editorLinkStyle": "StraightArrow",
+					"editorDisplayColor": null,
+					"editorAlwaysShow": false,
+					"editorShowInWorld": true,
+					"editorCutLongValues": true,
+					"editorTextSuffix": null,
+					"editorTextPrefix": null,
+					"useForSmartColor": false,
+					"exportToToc": false,
+					"searchable": false,
+					"min": null,
+					"max": null,
+					"regex": null,
+					"acceptFileTypes": null,
+					"defaultOverride": { "id": "V_Int", "params": [0] },
+					"textLanguageMode": null,
+					"symmetricalRef": false,
+					"autoChainRef": true,
+					"allowOutOfLevelRef": true,
+					"allowedRefs": "OnlySame",
+					"allowedRefsEntityUid": null,
+					"allowedRefTags": [],
+					"tilesetUid": null
+				}
+			]
 		}
 	], "tilesets": [
 		{
@@ -2314,7 +2404,7 @@
 					"entityInstances": []
 				},
 				{
-					"__identifier": "PlayerStart",
+					"__identifier": "GameObjects",
 					"__type": "Entities",
 					"__cWid": 30,
 					"__cHei": 20,
@@ -2400,6 +2490,38 @@
 							"fieldInstances": [],
 							"__worldX": 784,
 							"__worldY": 112
+						},
+						{
+							"__identifier": "NeutralSwarm",
+							"__grid": [8,10],
+							"__pivot": [0.5,0.5],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#BE4A2F",
+							"iid": "29651880-9b00-11ef-96ce-6f1f6b455dd3",
+							"width": 16,
+							"height": 16,
+							"defUid": 94,
+							"px": [272,336],
+							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
+							"__worldX": 272,
+							"__worldY": 336
+						},
+						{
+							"__identifier": "NeutralSwarm",
+							"__grid": [18,13],
+							"__pivot": [0.5,0.5],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#BE4A2F",
+							"iid": "2ec57040-9b00-11ef-96ce-5741e161b902",
+							"width": 16,
+							"height": 16,
+							"defUid": 94,
+							"px": [592,432],
+							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 5, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [5] }] }],
+							"__worldX": 592,
+							"__worldY": 432
 						}
 					]
 				},

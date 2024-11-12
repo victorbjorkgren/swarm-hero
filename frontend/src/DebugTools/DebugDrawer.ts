@@ -6,9 +6,13 @@ export default class DebugDrawer {
     private static lines: Graphics[] = [];
     private static dots: Graphics[] = [];
     private static pixi: Application | null = null;
+    private static scene: Game | null = null;
     
     static setPixi(pixi: Application) {
         DebugDrawer.pixi = pixi;
+    }
+    static setScene(scene: Game) {
+        DebugDrawer.scene = scene;
     }
     
     static reset() {
@@ -23,9 +27,10 @@ export default class DebugDrawer {
     }
     
     static addLine(origin: Vector2D, destination: Vector2D, color: number) {
+        const s = this.scene ? this.scene.renderScale : 1
         const line = new Graphics()
-            .moveTo(origin.x, origin.y)
-            .lineTo(destination.x, destination.y)
+            .moveTo(origin.x * s, origin.y * s)
+            .lineTo(destination.x * s, destination.y * s)
             .stroke({color: color, width: 2});
         line.zIndex = Game.zIndex.hud;
         DebugDrawer.pixi?.stage.addChild(line);
@@ -33,8 +38,9 @@ export default class DebugDrawer {
     }
     
     static addDot(origin: Vector2D, color: number) {
+        const s = this.scene ? this.scene.renderScale : 1
         const dot = new Graphics()
-            .circle(origin.x, origin.y, 2)
+            .circle(origin.x * s, origin.y * s, 2)
             .fill({color: color});
         dot.zIndex = Game.zIndex.hud;
         DebugDrawer.pixi?.stage.addChild(dot);

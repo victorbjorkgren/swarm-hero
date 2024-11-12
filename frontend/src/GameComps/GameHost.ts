@@ -88,13 +88,20 @@ export default class GameHost {
             case ClientMessageType.RequestBuySpell:
                 this.handleBuySpellRequest(clientId, message.payload);
                 break;
+            case ClientMessageType.Ping:
+                // Not handled here
+                break;
+            case ClientMessageType.Pong:
+                // Not handled here
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
     }
 
     handleLatencyReport(reportingId: ClientID, report: LatencyReport) {
-        report.forEach((latency, evaluatedId) => {
+        const reportMap = new Map(report);
+        report.forEach(([evaluatedId, latency]) => {
             let subMap = this.latencies.get(evaluatedId)
             if (!subMap) {
                 subMap = new Map();
@@ -273,13 +280,14 @@ export default class GameHost {
         const castleInitData: CastleInitData[] = []
         const particleInitData: ParticleInitData[] = []
 
-        this.localClientScene.level.neutralParticleStart.forEach((swarm) => {
+        this.localClientScene.level.neutralSwarms.concat().forEach((swarm) => {
             const emptyOwner = uuidv4();
             for (let i = 0; i<swarm.n; i++) {
                 particleInitData.push({
                     particleId: uuidv4(),
                     pos: swarm.position.copy(),
                     unitData: UnitPacks[Units.LaserDrone],
+                    wayPoints: swarm.wayPoints,
                     ownerId: emptyOwner,
                     teamName: 'Neutral'
                 })

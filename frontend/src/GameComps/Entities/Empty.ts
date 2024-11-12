@@ -2,6 +2,7 @@ import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes, 
 import {EmptyID, ParticleID} from "@shared/commTypes";
 import {Vector2D} from "../Utility";
 import {Game} from "../Game";
+import {gameConfig} from "@shared/config";
 
 export class EmptyInterface extends EntityInterface{
     public state: EmptyState;
@@ -11,10 +12,11 @@ export class EmptyInterface extends EntityInterface{
     constructor(
         id: EmptyID,
         pos: Vector2D,
+        wayPoints: Vector2D[],
         scene: Game
     ) {
         super();
-        this.state = new EmptyState(id, pos, scene);
+        this.state = new EmptyState(id, pos, wayPoints, scene);
         this.logic = new EmptyLogic(this.state);
         this.renderer = new EmptyRenderer(this.state);
     }
@@ -28,7 +30,7 @@ export class EmptyInterface extends EntityInterface{
     }
 
     update(delta: number): void {
-        throw new Error("Not implemented");
+        this.logic.update(delta);
     }
 }
 
@@ -39,15 +41,22 @@ class EmptyState implements EntityState {
     mass: number = Infinity;
     radius: number = 1;
     targetedBy: ParticleID[] = [];
-    attackable: boolean = false;
-    team: Team | null = null;
     vel: Vector2D = Vector2D.zeros();
+
+    maxVel: number = gameConfig.rovingSwarmVel;
+
+    team: Team | null = null;
+    attackable: boolean = false;
+    currentWaypointIndex: number = 0;
+    wayPointInter: number = 0;
 
     constructor(
         public id: EmptyID,
         public pos: Vector2D,
+        public wayPoints: Vector2D[],
         public scene: Game
     ) {
+
     }
 
     getFiringPos(from: Vector2D): Vector2D {
@@ -60,13 +69,28 @@ class EmptyState implements EntityState {
 }
 
 class EmptyLogic extends EntityLogic{
-    constructor(protected state: EntityState) {
+    constructor(protected state: EmptyState) {
         super();
     }
     public update(deltaScale: number): void {
-        throw new Error("Method not implemented.");
+        if (this.state.wayPoints.length === 0) return;
+
+        const currentWaypoint = this.state.wayPoints[this.state.currentWaypointIndex]
+        const pos = this.state.pos;
+
+        if (pos.sqDistanceTo(currentWaypoint) < 1) {
+            this.state.currentWaypointIndex = (this.state.currentWaypointIndex + 1) % this.state.wayPoints.length;
+            const nextWaypoint = this.state.wayPoints[this.state.currentWaypointIndex];
+            this.state.vel = Vector2D.subtract(nextWaypoint, pos).limit(this.state.maxVel);
+        } else if (this.state.vel.isZero()) {
+            this.state.vel = Vector2D.subtract(currentWaypoint, pos).limit(this.state.maxVel);
+        }
+        this.state.pos.add(this.state.vel.copy().scale(deltaScale));
     }
 
+    grid2world() {
+
+    }
 }
 
 class EmptyRenderer extends EntityRenderer {

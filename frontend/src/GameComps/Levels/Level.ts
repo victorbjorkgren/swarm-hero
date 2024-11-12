@@ -20,9 +20,9 @@ export const levelDir = {
 
 export type NeutralSwarm = {
     position: Vector2D,
+    wayPoints: Vector2D[],
     n: number
 }
-
 
 export const loadCSVAsIntArray = async (filePath: string): Promise<number[][]> => {
     const response = await fetch(filePath);
@@ -49,7 +49,7 @@ export class Level {
     public readonly mapHeight: number;
 
     public playerStart: Vector2D[];
-    public neutralParticleStart: NeutralSwarm[];
+    public neutralSwarms: NeutralSwarm[];
 
     public groundNavMesh: number[][] = [[]];
     public navScale: number = 1
@@ -71,9 +71,22 @@ export class Level {
             (castleData) =>
                 Vector2D.cast(castleData)
         );
-        this.neutralParticleStart = this.data.entities.NeutralSwarm.map((swarm) => {
-            return {position: Vector2D.cast(swarm), n: swarm.customFields.NParticles}
+        const neutralStaticSwarms: NeutralSwarm[] = this.data.entities.NeutralStaticSwarm.map((swarm) => {
+            return {
+                position: Vector2D.cast(swarm),
+                n: swarm.customFields.NParticles,
+                wayPoints: []
+            };
         })
+        const neutralRovingSwarms: NeutralSwarm[] = this.data.entities.NeutralRovingSwarm.map((swarm) => {
+            return {
+                position: Vector2D.cast(swarm),
+                n: swarm.customFields.NParticles,
+                wayPoints: swarm.customFields.WayPoints.map(p => new Vector2D(p.cx * swarm.width * 2, p.cy * swarm.height * 2)),
+            }
+        })
+
+        this.neutralSwarms = neutralStaticSwarms.concat(neutralRovingSwarms);
     }
 
     async load() {
@@ -89,6 +102,23 @@ export class Level {
         }
         this.groundNavMesh = await groundNavPromise;
         this.navScale = this.mapHeight / this.groundNavMesh.length
+
+        const neutralStaticSwarms: NeutralSwarm[] = this.data.entities.NeutralStaticSwarm.map((swarm) => (
+            {
+                position: Vector2D.cast(swarm),
+                n: swarm.customFields.NParticles,
+                wayPoints: []
+            }
+        ))
+        const neutralRovingSwarms: NeutralSwarm[] = this.data.entities.NeutralRovingSwarm.map((swarm) => (
+            {
+                position: Vector2D.cast(swarm),
+                n: swarm.customFields.NParticles,
+                wayPoints: swarm.customFields.WayPoints.map(p => new Vector2D(p.cx * this.navScale, p.cy * this.navScale)),
+            }
+        ))
+
+        this.neutralSwarms = neutralStaticSwarms.concat(neutralRovingSwarms);
 
         this.groundSprite = new Sprite(await groundTexPromise);
         this.nonColSprite = new Sprite(await nonColTexPromise);

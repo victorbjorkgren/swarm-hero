@@ -22,6 +22,8 @@ export const gameConfig = {
     playerMaxAcc: .1,
     playerSelfIncome: 0,
 
+    rovingSwarmVel: .5,
+
     sqPlayerVelCutoff: 0.075 * 0.075,
 
     dayLength: 20,

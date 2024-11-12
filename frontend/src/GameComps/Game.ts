@@ -1,6 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture, Ticker} from "pixi.js";
+import {AnimatedSpriteFrames, Application, Assets, Spritesheet, Texture, Ticker} from "pixi.js";
 import React from "react";
 import {
     AABBCollider,
@@ -12,7 +12,7 @@ import {
     Team,
     TexturePack
 } from "../types/types";
-import {spriteToAABBCollider, Vector2D} from "./Utility";
+import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
 import {gameConfig, UnitPacks} from "@shared/config";
 import {LocalPlayerController} from "./Controllers/LocalPlayerController";
@@ -24,12 +24,12 @@ import {
     ClientMessage,
     ClientMessageType,
     ClientPayloads,
-    DroneBoughtMessage, EmptyID,
+    DroneBoughtMessage,
+    EmptyID,
     EntityDeathMessage,
     EntityID,
     GameUpdateMessage,
     InitialDataMessage,
-    LatencyReport,
     ParticleUpdateData,
     PingCode,
     PlayerUpdateData,
@@ -37,18 +37,19 @@ import {
     ServerMessageType,
     SpellBoughtMessage,
     SpellCastID,
-    SpellCastMessage, TeamName
+    SpellCastMessage,
+    TeamName
 } from "@shared/commTypes";
 import {PlayerInterface} from "./Entities/Player";
 import {CastleInterface} from "./Entities/Castle";
 import {ParticleSystem} from "./ParticleSystem";
 import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
-import {Level, Levels} from "./Levels/Level";
+import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
 import {EmptyInterface} from "./Entities/Empty";
 
-type LatencyObject = {pingStart: number, pingCode: string, latency: number};
+type LatencyObject = { pingStart: number, pingCode: string, latency: number };
 
 export class Game {
     static zIndex = {
@@ -79,7 +80,8 @@ export class Game {
 
     public renderScale: number = 1
 
-    private resolveInitialData: (data: any)=>void = ()=>{};
+    private resolveInitialData: (data: any) => void = () => {
+    };
     private initialDataPromise: Promise<InitialDataMessage> | null = null;
     public localPlayer: PlayerInterface | null = null;
 
@@ -94,7 +96,9 @@ export class Game {
     public startTime: number | null = null;
     navMesh: NavMesh | null = null;
 
-    public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T])=>void = ()=>{};
+    public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) => void = () => {
+    };
+    private pingInterval: number | NodeJS.Timeout | null = null;
 
     constructor(
         public pixiRef: Application,
@@ -135,7 +139,11 @@ export class Game {
         })
         this.players.set(localId, new PlayerInterface(localId, this))
 
-        this.players.forEach(playerInstance => {this.remainingPlayers.add(playerInstance)})
+        this.players.forEach(playerInstance => {
+            this.remainingPlayers.add(playerInstance)
+        })
+
+        this.pingInterval = setInterval(() => this.measureLatenciesAndReportToHost(), 5000);
 
         this.setLocalPlayer(character)
 
@@ -157,18 +165,18 @@ export class Game {
     }
 
     disconnectPlayer(clientId: ClientID): void {
-            console.log(`Client disconnect from ${clientId}`);
-            if (!this.clients.has(clientId)) {
-                console.log(`Client already disconnected ${clientId}`);
-                return;
-            }
-            this.clients.delete(clientId);
-            if (clientId === this.hostId) {
-                console.log('Host has disconnected');
-                const nextHost = this.hostPriorities[0];
-                this.setHost(nextHost, false);
-            }
-            this.broadcastDeath(clientId, EntityTypes.Player)
+        console.log(`Client disconnect from ${clientId}`);
+        if (!this.clients.has(clientId)) {
+            console.log(`Client already disconnected ${clientId}`);
+            return;
+        }
+        this.clients.delete(clientId);
+        if (clientId === this.hostId) {
+            console.log('Host has disconnected');
+            const nextHost = this.hostPriorities[0];
+            this.setHost(nextHost, false);
+        }
+        this.broadcastDeath(clientId, EntityTypes.Player)
     }
 
     setHost(hostId: ClientID, isStartOfGame: boolean) {
@@ -251,6 +259,9 @@ export class Game {
             case ClientMessageType.RequestBuyDrone:
                 // this.handleBuyDroneRequest(clientId, message.payload);
                 break;
+            case ClientMessageType.LatencyReport:
+                // Not handled here:
+                break;
             default:
                 console.warn('Unhandled message type:', message.type);
         }
@@ -263,7 +274,7 @@ export class Game {
         sender.datachannel.send(JSON.stringify(message));
     }
 
-    public measureLatenciesAndReportToHost() {
+    measureLatenciesAndReportToHost() {
         this.clients.forEach((client) => {
             const pingCode: PingCode = uuidv4();
             this.latencyMap.set(client.id, {
@@ -279,11 +290,11 @@ export class Game {
         });
 
         setTimeout(() => {
-            const latencyReport: LatencyReport = new Map();
+            const latencyReport = new Map();
             this.latencyMap.forEach((obj, clientId) => {
                 latencyReport.set(clientId, obj.latency);
             })
-            this.sendToHost(ClientMessageType.LatencyReport, latencyReport);
+            this.sendToHost(ClientMessageType.LatencyReport, Array.from(latencyReport.entries()));
             this.latencyMap.clear();
         }, gameConfig.latencyTimeout);
     }
@@ -396,7 +407,7 @@ export class Game {
     handleGameUpdate(data: GameUpdateMessage) {
         this.dayTime = data.dayTime;
         this.hostPriorities = data.hostPriorities;
-        data.playerUpdate?.forEach((playerUpdate: PlayerUpdateData)=>{
+        data.playerUpdate?.forEach((playerUpdate: PlayerUpdateData) => {
             const player = this.players.get(playerUpdate.clientId);
             player?.updateFromHost(playerUpdate)
         })
@@ -433,7 +444,7 @@ export class Game {
         this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
                 () => reject('Timeout waiting for initial data'),
-                10*1000
+                10 * 1000
             );
             this.resolveInitialData = (data: InitialDataMessage) => {
                 clearTimeout(timeout);
@@ -447,12 +458,12 @@ export class Game {
 
     stopGame() {
         this.gameOn = false;
-        this.pixiRef?.ticker.stop();
+        this.pixiRef && this.pixiRef.ticker.stop();
     }
 
     resumeGame() {
         this.gameOn = true;
-        this.pixiRef.ticker.start();
+        this.pixiRef.ticker && this.pixiRef.ticker.start();
     }
 
     areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
@@ -520,14 +531,20 @@ export class Game {
                 worldPosition.y / this.renderScale
             );
         });
-        this.pixiRef.stage.on('click', () => {player.attemptSpellCast()})
+        this.pixiRef.stage.on('click', () => {
+            player.attemptSpellCast()
+        })
     }
 
     resetControllers() {
         this.players.forEach(player => {
             player.controller.cleanup()
-            // player.controller = null;
         })
+    }
+
+    cleanUp() {
+        this.resetControllers()
+        this.pingInterval && clearInterval(this.pingInterval);
     }
 
     async setupExplosion(explosionSheet: Promise<Spritesheet>) {
@@ -536,35 +553,18 @@ export class Game {
         this.explosionSprite = sheet.animations.animation0;
     }
 
-    async setupBlockers(wallSpriteSheet: Promise<Spritesheet>) {
-        const sheet = await wallSpriteSheet;
-        const texture: Texture = sheet.textures['TX Tileset Wall-0.png'];
-        const blockerSprite: Sprite = new Sprite(texture);
-        blockerSprite.x = this.level.mapWidth / 2 - blockerSprite.width / 2;
-        blockerSprite.y = this.level.mapHeight / 2 - blockerSprite.height / 2;
-
-        blockerSprite.zIndex = Game.zIndex.ground;
-        this.pixiRef.stage.addChild(blockerSprite);
-        this.colliders.push(spriteToAABBCollider(blockerSprite));
-    }
-
     async preload() {
         this.requestInitialData();
 
         const levelReady = this.level.load();
         this.navMesh = new NavMesh(this.level);
 
-        const explosion = Assets.load('/sprites/explosion_toon.json');
-
+        const explosion: Promise<Spritesheet> = Assets.load('/sprites/explosion_toon.json');
+        const cat: Promise<Spritesheet> = Assets.load('/sprites/black_cat_run.json');
         const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
         const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
-        const cat = Assets.load('/sprites/black_cat_run.json');
 
-        // const defaultCursor: Promise<Texture> = Assets.load('/sprites/kenney_cursor-pack/Vector/Basic/Double/pointer_c.svg');
-
-        // const backgroundReady = setupRandomBackground(this.pixiRef, this.sceneWidth, this.sceneHeight);
-        // const blockersReady = this.setupBlockers(walls);
-        const explosionReady = this.setupExplosion(explosion)
+        const explosionReady: Promise<void> = this.setupExplosion(explosion)
 
         this.castleTexturePack = {
             'normal': await castle,
@@ -573,16 +573,13 @@ export class Game {
         await cat;
         await explosionReady;
         await levelReady;
-        // await backgroundReady;
-        // await blockersReady;
     };
 
     start() {
         this.stopGame();
         this.preload().then(() => {
-            this.create().then(()=>{
+            this.create().then(() => {
                 this.pixiRef.ticker.add((ticker) => this.update(ticker));
-                // setInterval(()=>this.update(), 1000/60);
                 this.resumeGame();
             });
         });
@@ -590,6 +587,8 @@ export class Game {
 
     async create() {
         DebugDrawer.setPixi(this.pixiRef);
+        DebugDrawer.setScene(this);
+
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
 
         const initData: InitialDataMessage = await this.initialDataPromise;
@@ -617,8 +616,9 @@ export class Game {
 
         initData.package.neutralParticles.forEach(pInit => {
             const pos = Vector2D.cast(pInit.pos);
+            const wayPoints = pInit.wayPoints.map(p => Vector2D.cast(p));
             if (pInit.ownerId && !this.emptyEntities.has(pInit.ownerId)) {
-                this.emptyEntities.set(pInit.ownerId, new EmptyInterface(pInit.ownerId, pos, this));
+                this.emptyEntities.set(pInit.ownerId, new EmptyInterface(pInit.ownerId, pos, wayPoints, this));
                 this.idTypes.set(pInit.ownerId, EntityTypes.Null);
             }
             const team = this.teams.get(pInit.teamName);
@@ -638,8 +638,8 @@ export class Game {
 
     update(ticker: Ticker) {
         const delta = ticker.deltaTime;
-
         DebugDrawer.reset();
+
         if (!this.gameOn) return
         this.renderScale = this.pixiRef.renderer.width / gameConfig.baseRenderScale;
         this.level.setScale(this.renderScale);
@@ -655,6 +655,9 @@ export class Game {
         this.castles.forEach(castle => {
             castle.update(delta);
         })
+        this.emptyEntities.forEach(empty => {
+            empty.update(delta);
+        })
 
         this.updateCamera();
 
@@ -667,8 +670,8 @@ export class Game {
 
         const alpha = gameConfig.cameraElasticAlpha;
         const margin = gameConfig.cameraElasticMargin;
-        this.cameraPivot.x = alpha * this.localPlayer.state.pos.x * this.renderScale + (1-alpha) * this.cameraPivot.x
-        this.cameraPivot.y = alpha * this.localPlayer.state.pos.y * this.renderScale + (1-alpha) * this.cameraPivot.y
+        this.cameraPivot.x = alpha * this.localPlayer.state.pos.x * this.renderScale + (1 - alpha) * this.cameraPivot.x
+        this.cameraPivot.y = alpha * this.localPlayer.state.pos.y * this.renderScale + (1 - alpha) * this.cameraPivot.y
         this.cameraPivot.x = Math.max(this.cameraPivot.x, this.level.mapWidth * margin)
         this.cameraPivot.x = Math.min(this.cameraPivot.x, this.level.mapWidth * (1 - margin))
         this.cameraPivot.y = Math.max(this.cameraPivot.y, this.level.mapHeight * margin)

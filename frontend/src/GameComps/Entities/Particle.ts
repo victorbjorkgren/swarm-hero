@@ -77,7 +77,6 @@ export class ParticleInterface extends EntityInterface {
 class ParticleState implements EntityState {
     vel: Vector2D;
     acc: Vector2D = Vector2D.zeros();
-    // leaderPos: Vector2D | null = null;
     radius: number;
     isBoiding: boolean = true;
     isEngaging: boolean = false;

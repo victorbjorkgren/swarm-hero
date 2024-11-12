@@ -482,7 +482,7 @@ class PlayerLogic extends EntityLogic {
         const nextX = Math.floor((pos.x + vel.x) / navScale);
         const nextY = Math.floor((pos.y + vel.y) / navScale);
 
-        if (grid[nextY][nextX] > 0) return;
+        if (grid[nextY][nextX] !== 3) return; // 3 is the OutOfBounds tile number
 
         const currX = Math.floor(pos.x / navScale);
         const currY = Math.floor(pos.y / navScale);
@@ -540,14 +540,18 @@ class PlayerRenderer extends EntityRenderer {
         if (this.playerSpritePack) {
             Object.keys(this.playerSpritePack).forEach(key => {
                 const animation = this.playerSpritePack![key as keyof DirectionalSpriteSheet];
-                this.state.scene.pixiRef.stage.removeChild(animation);
-                animation.destroy();
+                try {
+                    this.state.scene.pixiRef.stage.removeChild(animation);
+                    animation.destroy();
+                } catch (e) {}
             });
             this.playerSpritePack = null;
         }
         if (this.currentAnimation) {
-            this.state.scene.pixiRef.stage.removeChild(this.currentAnimation)
-            this.currentAnimation.destroy();
+            try {
+                this.state.scene.pixiRef.stage.removeChild(this.currentAnimation)
+                this.currentAnimation.destroy();
+            } catch (e) {}
             this.currentAnimation = null;
         }
         if (this.healthBarSprite) {

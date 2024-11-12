@@ -101,6 +101,7 @@ export type CastleInitData = {
 export type ParticleInitData = {
     particleId: ParticleID,
     pos: Vector2D,
+    wayPoints: Vector2D[],
     unitData: UnitPack,
     ownerId: EntityID,
     teamName: TeamName,
@@ -179,7 +180,7 @@ export type ClientPayloads = {
     [ClientMessageType.RequestGarrison]: GarrisonMessage;
 }
 
-export type LatencyReport = Map<ClientID, number>;
+export type LatencyReport = [ClientID, number][];
 
 export type PingCode = string;
 

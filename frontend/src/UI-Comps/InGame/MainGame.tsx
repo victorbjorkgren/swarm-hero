@@ -132,7 +132,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
     const cleanUpGame = () => {
         if (gameSceneRef.current) {
             gameSceneRef.current.stopGame();
-            gameSceneRef.current.resetControllers();
+            gameSceneRef.current.cleanUp();
             gameSceneRef.current = null;
         }
 

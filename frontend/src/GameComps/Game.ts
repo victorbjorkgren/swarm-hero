@@ -28,6 +28,7 @@ import {
     EmptyID,
     EntityDeathMessage,
     EntityID,
+    EntityYieldMessage,
     GameUpdateMessage,
     InitialDataMessage,
     ParticleUpdateData,
@@ -234,6 +235,19 @@ export class Game {
         }
     }
 
+    broadcastYield(yielding: EmptyID, yieldingTo: ClientID) {
+        // Host Event
+        if (this.server) {
+            this.server.broadcast(
+                ServerMessageType.Yield,
+                {
+                    yielding: yielding,
+                    yieldingTo: yieldingTo,
+                }
+            )
+        }
+    }
+
     handlePeerMessage(message: ClientMessage<any>, sender: Client) {
         if (this.server) {
             this.server.handleClientMessage(sender.id, message);
@@ -353,6 +367,9 @@ export class Game {
             case ServerMessageType.EntityDeath:
                 this.handleEntityDeath(message.payload as EntityDeathMessage);
                 break;
+            case ServerMessageType.Yield:
+                this.handleEntityYield(message.payload as EntityYieldMessage);
+                break;
             case ServerMessageType.Winner:
                 this.handleWinner(message.payload as string);
                 break;
@@ -376,6 +393,18 @@ export class Game {
     handleEntityDeath(message: EntityDeathMessage) {
         const departed = this.getEntityById(message.departed, message.departedType);
         departed?.onDeath();
+    }
+
+    handleEntityYield(message: EntityYieldMessage) {
+        const swarmMembers = this.particleSystem.unitManager.getOwnerUnits(message.yielding).values()
+        const yieldingToInterface = this.getEntityById(message.yieldingTo, EntityTypes.Any);
+        if (!yieldingToInterface) throw new Error(`${message.yieldingTo} has not interface`);
+        const newTeam = yieldingToInterface.state.team!
+        for (const memberGroup of swarmMembers) {
+            for (const member of memberGroup) {
+                this.particleSystem.unitManager.switchOwner(member, message.yieldingTo, newTeam);
+            }
+        }
     }
 
     handleSpellBought(message: SpellBoughtMessage) {

@@ -4,7 +4,7 @@ import {NavMesh} from "./NavMesh";
 import {UnitManager} from "../UnitManager";
 import {PlayerInterface} from "../Entities/Player";
 import {Game} from "../Game";
-import {CastleID, ClientID} from "@shared/commTypes";
+import {CastleID, ClientID, EntityID} from "@shared/commTypes";
 import {ParticleInterface} from "../Entities/Particle";
 import {CastleInterface} from "../Entities/Castle";
 
@@ -16,10 +16,17 @@ enum State {
     RaiseArmy
 }
 
+export const estimateFoeStrength = (foe: EntityID, attacker: EntityID, unitMgr: UnitManager<ParticleInterface> | undefined): number => {
+    const foeDrones = unitMgr?.flatOwnerCount(foe) || 0
+    const attackerDrones = unitMgr?.flatOwnerCount(attacker) || 0
+    if (attackerDrones === 0) return 1000;
+    return foeDrones / attackerDrones;
+}
+
 export class AIBehavior {
-    private visibleDistance: number;
-    private safeSeparationDistancePlayer: number;
-    private safeSeparationDistanceCastle: number;
+    private readonly visibleDistance: number;
+    private readonly safeSeparationDistancePlayer: number;
+    private readonly safeSeparationDistanceCastle: number;
     public readonly framesBetweenConditionCalls: number = 40;
     public readonly framesBetweenBehaviorCalls: number = 10;
     public readonly framesBetweenNavmeshCalls: number = 60;
@@ -150,14 +157,14 @@ export class AIBehavior {
         for (const castleId of castles) {
             const castle = this.scene.castles.get(castleId);
             if (!castle) continue;
-            const d = this.estimateFoeStrength(castle.state, this.player.state);
+            const d = estimateFoeStrength(castle.state.id, this.player.state.id, this.getUnitManager());
             dir.add(Vector2D.subtract(castle.state.pos, this.player.state.pos).scale(-d));
             difficulty += d;
         }
         for (const foeId of foes) {
             const foe = this.scene.players.get(foeId);
             if (!foe) continue;
-            const d = this.estimateFoeStrength(foe.state, this.player.state);
+            const d = estimateFoeStrength(foe.state.id, this.player.state.id, this.getUnitManager());
             dir.add(Vector2D.subtract(foe.state.pos, this.player.state.pos).scale(-d));
             difficulty += d;
         }
@@ -251,13 +258,6 @@ export class AIBehavior {
         this.doBuy = true;
     }
 
-    estimateFoeStrength(foe: EntityState, attacker: EntityState): number {
-        const foeDrones = this.getUnitManager()?.flatOwnerCount(foe.id) || 0
-        const attackerDrones = this.getUnitManager()?.flatOwnerCount(attacker.id) || 0
-        if (attackerDrones === 0) return 1000;
-        return foeDrones / attackerDrones;
-    }
-
     nearbyFoes(dist: number): ClientID[] {
         const nearbyPlayers = [];
         const sqDist = Vector2D.subtract(this.player.state.pos, this.otherPlayer.state.pos).sqMagnitude();
@@ -289,13 +289,13 @@ export class AIBehavior {
     }
 
     reinforcedStrength(defendent: EntityState, protection: ClientID[], protectionType: EntityTypes, attacker: EntityState): number {
-        let difficulty = this.estimateFoeStrength(defendent, attacker);
+        let difficulty = estimateFoeStrength(defendent.id, attacker.id, this.getUnitManager());
         const protectorMap = this.getProtectorMap(protectionType);
         for (const protectorId of protection) {
             const protector = protectorMap.get(protectorId);
             if (!protector) continue;
             if (defendent.pos.sqDistanceTo(protector.state.pos) < defendent.pos.sqDistanceTo(attacker.pos)) {
-                difficulty += this.estimateFoeStrength(protector.state, attacker);
+                difficulty += estimateFoeStrength(protector.state.id, attacker.id, this.getUnitManager());
             }
         }
         return difficulty;

@@ -1,6 +1,7 @@
 import {ParticleInterface} from "./Entities/Particle";
 import {Units} from "../types/unitTypes";
 import {EntityID, ParticleID} from "@shared/commTypes";
+import {Team} from "../types/types";
 
 
 export type UnitMap<TParticle extends ParticleInterface> = Map<Units, Set<TParticle>>;
@@ -113,9 +114,11 @@ export class UnitManager<TParticle extends ParticleInterface> {
         })
     }
 
-    switchOwner(particle: TParticle, newOwner: EntityID) {
+    switchOwner(particle: TParticle, newOwner: EntityID, newTeam: Team): void {
         this.remove(particle);
         particle.state.owner = newOwner;
+        particle.state.team = newTeam;
+        particle.state.color = newTeam.color;
         this.add(particle);
     }
 }

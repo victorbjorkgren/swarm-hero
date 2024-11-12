@@ -38,7 +38,8 @@ export enum ServerMessageType {
     CastleTakeOver = "CastleTakeOver",
     DroneBought = "DroneBought",
     SpellBought = "SpellBought",
-    EntityDeath = "EntityDeath"
+    EntityDeath = "EntityDeath",
+    Yield = "Yield",
 }
 
 export type ServerPayloads = {
@@ -53,11 +54,17 @@ export type ServerPayloads = {
     [ServerMessageType.DroneBought]: DroneBoughtMessage;
     [ServerMessageType.SpellBought]: SpellBoughtMessage;
     [ServerMessageType.EntityDeath]: EntityDeathMessage;
+    [ServerMessageType.Yield]: EntityYieldMessage;
 }
 
 export type EntityDeathMessage = {
     departed: EntityID,
     departedType:EntityTypes
+}
+
+export type EntityYieldMessage = {
+    yielding: EmptyID,
+    yieldingTo: ClientID
 }
 
 export type SpellBoughtMessage = {

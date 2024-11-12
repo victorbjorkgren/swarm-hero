@@ -52,7 +52,7 @@ export class ParticleInterface extends EntityInterface {
             if (this.state.owner !== particleUpdate.owner) {
                 const newOwnerEntity = this.state.scene.getEntityById(particleUpdate.owner, EntityTypes.Any);
                 if (!newOwnerEntity) return;
-                this.state.unitManager.switchOwner(this, newOwnerEntity.state.id);
+                this.state.unitManager.switchOwner(this, newOwnerEntity.state.id, newOwnerEntity.state.team!);
             }
         }
     }
@@ -260,7 +260,7 @@ class ParticleLogic extends EntityLogic {
         for (let i = this.state.engaging.length - 1; i >= 0; i--) {
             const foeId = this.state.engaging[i];
             const foe = this.state.scene.getEntityById(foeId, EntityTypes.Any);
-            if (!foe || !foe.state.isAlive() || this.sqFiringDistance(foe.state) > this.state.sqEngageRadius) {
+            if (!foe || !foe.state.isAlive() || foe.state.team === this.state.team || this.sqFiringDistance(foe.state) > this.state.sqEngageRadius) {
                 this.state.engaging.splice(i, 1);
                 foe && this.removeTargetingReference(foe.state);
             }
@@ -271,7 +271,7 @@ class ParticleLogic extends EntityLogic {
         for (let i = this.state.firingLaserAt.length - 1; i >= 0; i--) {
             const foeItem = this.state.firingLaserAt[i];
             const foe = this.state.scene.getEntityById(foeItem.target, EntityTypes.Any);
-            if (!foe || !foe.state.isAlive() || this.sqFiringDistance(foe.state) > this.state.sqFireRadius) {
+            if (!foe || !foe.state.isAlive() || foe.state.team === this.state.team || this.sqFiringDistance(foe.state) > this.state.sqFireRadius) {
                 this.state.firingLaserAt.splice(i, 1);
             }
         }

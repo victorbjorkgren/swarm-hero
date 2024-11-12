@@ -23,6 +23,8 @@ export const gameConfig = {
     playerSelfIncome: 0,
 
     rovingSwarmVel: .5,
+    swarmYieldCheckSqDist: 200 * 200,
+    yieldLimit: 2,
 
     sqPlayerVelCutoff: 0.075 * 0.075,
 

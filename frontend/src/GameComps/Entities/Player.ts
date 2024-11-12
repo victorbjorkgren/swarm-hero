@@ -249,7 +249,7 @@ export class PlayerInterface extends EntityInterface {
 
         let movedDrones = 0;
         for (const drone of droneSet) {
-            uMgr.switchOwner(drone, castle.state.id)
+            uMgr.switchOwner(drone, castle.state.id, castle.state.team)
             if (++movedDrones >= n) break;
         }
         return true;
@@ -268,7 +268,7 @@ export class PlayerInterface extends EntityInterface {
 
         let movedDrones = 0;
         for (const drone of droneSet) {
-            uMgr.switchOwner(drone, this.state.id)
+            uMgr.switchOwner(drone, this.state.id, this.state.team!)
             if (++movedDrones >= n) break;
         }
         return true;

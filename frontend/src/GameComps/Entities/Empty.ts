@@ -1,8 +1,9 @@
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes, Team} from "../../types/types";
-import {EmptyID, ParticleID} from "@shared/commTypes";
+import {ClientID, EmptyID, ParticleID} from "@shared/commTypes";
 import {Vector2D} from "../Utility";
 import {Game} from "../Game";
 import {gameConfig} from "@shared/config";
+import {estimateFoeStrength} from "../AI/AIBehavior";
 
 export class EmptyInterface extends EntityInterface{
     public state: EmptyState;
@@ -31,6 +32,14 @@ export class EmptyInterface extends EntityInterface{
 
     update(delta: number): void {
         this.logic.update(delta);
+        if (this.state.yieldingTo !== null) {
+            this.signalYield(this.state.yieldingTo);
+            this.state.yieldingTo = null;
+        }
+    }
+
+    signalYield(yieldingTo: ClientID): void {
+        this.state.scene.broadcastYield(this.state.id, yieldingTo);
     }
 }
 
@@ -49,6 +58,8 @@ class EmptyState implements EntityState {
     attackable: boolean = false;
     currentWaypointIndex: number = 0;
     wayPointInter: number = 0;
+
+    yieldingTo: ClientID | null = null;
 
     constructor(
         public id: EmptyID,
@@ -69,10 +80,18 @@ class EmptyState implements EntityState {
 }
 
 class EmptyLogic extends EntityLogic{
-    constructor(protected state: EmptyState) {
+    constructor(
+        protected state: EmptyState,
+    ) {
         super();
     }
+
     public update(deltaScale: number): void {
+        this.checkYield();
+        this.rove(deltaScale);
+    }
+
+    private rove(deltaScale: number): void {
         if (this.state.wayPoints.length === 0) return;
 
         const currentWaypoint = this.state.wayPoints[this.state.currentWaypointIndex]
@@ -88,8 +107,17 @@ class EmptyLogic extends EntityLogic{
         this.state.pos.add(this.state.vel.copy().scale(deltaScale));
     }
 
-    grid2world() {
-
+    private checkYield() {
+        for (const player of this.state.scene.players.values()) {
+            if (this.state.pos.sqDistanceTo(player.state.pos) < gameConfig.swarmYieldCheckSqDist) {
+                const playerStrength = estimateFoeStrength(player.state.id, this.state.id, this.state.scene.particleSystem?.getParticles())
+                console.log("playerStrength", playerStrength, player.state.id);
+                if (playerStrength > gameConfig.yieldLimit) {
+                    this.state.yieldingTo = player.state.id;
+                    return;
+                }
+            }
+        }
     }
 }
 

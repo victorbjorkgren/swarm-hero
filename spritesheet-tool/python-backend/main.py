@@ -1,11 +1,10 @@
 import json
 
 from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from image_methods import command_remove_background, command_set_padding
-
+from image_methods import command_remove_background, command_set_padding, command_resize
 
 app = FastAPI()
 
@@ -54,7 +53,17 @@ async def set_padding(file: UploadFile = File(...), padding: str = Form("{}")):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
+@app.post("/resize/")
+async def resize(file: UploadFile = File(...), scale: str = Form("1")):
+    print(f'Resize endpoint trigger')
+    try:
+        image = await command_resize(file, scale)
+        return JSONResponse(content={"image": image})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 if __name__ == "__main__":
     import uvicorn
+    print('Starting dev server')
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

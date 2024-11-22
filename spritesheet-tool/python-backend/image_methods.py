@@ -1,11 +1,11 @@
-import asyncio
 import base64
 from io import BytesIO
 from typing import Dict
 
-from fastapi import Form, UploadFile
+import cv2
 import numpy as np
 from PIL import Image
+from fastapi import Form, UploadFile
 
 
 async def decode_image(file: UploadFile):
@@ -19,10 +19,6 @@ def encode_image(array):
     image = Image.fromarray(array)
     image.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode()
-
-
-# async def command_set_image(file: UploadFile) -> bool:
-#     return await ImageHolder.set_image(file)
 
 
 async def command_remove_background(
@@ -48,3 +44,18 @@ async def command_set_padding(file: UploadFile, padding: Dict[str, int]):
     im = np.pad(im, (h_pad, w_pad, (0, 0)), mode="edge")
 
     return encode_image(im)
+
+
+async def command_resize(file: UploadFile, scale: str):
+    print('command_resize trigger', scale)
+    im = await decode_image(file)
+    scale = float(scale)
+
+    print(f"Resize input shape {im.shape}")
+    new_width = int(im.shape[1] * scale)
+    new_height = int(im.shape[0] * scale)
+    print(new_height, new_width)
+    resized_image = cv2.resize(im, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+    print(f"Resize output shape {resized_image.shape}")
+
+    return encode_image(resized_image)

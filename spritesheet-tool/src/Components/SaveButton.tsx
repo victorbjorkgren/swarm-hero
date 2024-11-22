@@ -31,23 +31,33 @@ interface SpriteSheetData {
 
 interface SaveButtonProps {
     grids: GridArea[];
-    transparentImage: string | null;
+    name: string;
+    processedImage: string | null;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ grids, transparentImage}) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ grids, name, processedImage}) => {
+
+
     const handleSaveToJson = () => {
         const animation: string[] = [];
+
+        const img = document.getElementById('spritesheet') as HTMLImageElement;
+        const naturalWidth = img ? img.naturalWidth : 1;
+        const naturalHeight = img ? img.naturalHeight : 1;
 
         const data: SpriteSheetData = {
             frames: {},
             meta: {
                 scale: 1,
+                image: name + ".png",
+                format: "RGBA8888",
+                size: {w: naturalWidth, h: naturalHeight},
             },
             animations: {},
         };
 
         grids.forEach((grid, index) => {
-            const spriteName = index.toString();
+            const spriteName = name + "_" + index.toString();
             if (!spriteName) return;
 
             animation.push(spriteName)
@@ -72,14 +82,14 @@ const SaveButton: React.FC<SaveButtonProps> = ({ grids, transparentImage}) => {
         console.log(blob);
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'spritesheet_data.json';
+        link.download = name + '.json';
         link.click();
 
-        if (transparentImage !== null) {
+        if (processedImage !== null) {
             setTimeout(() => {
                 const imageLink = document.createElement('a');
-                imageLink.href = transparentImage;
-                imageLink.download = 'updated_spritesheet.png';
+                imageLink.href = processedImage;
+                imageLink.download = name + '.png';
                 imageLink.click();
             }, 100);
         }

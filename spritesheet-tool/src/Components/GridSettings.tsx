@@ -9,20 +9,21 @@ interface GridSettingsProps {
     gridPadding: number;
     setGridPadding: (value: number) => void;
     imgPadding: Padding;
-    setImgPadding: React.Dispatch<React.SetStateAction<Padding>>
+    // setImgPadding: React.Dispatch<React.SetStateAction<Padding>>;
+    setImgPadding: (value: Padding) => void;
+    scale: number;
+    setScale: (scale: number) => void;
 }
 
-const GridSettings: React.FC<GridSettingsProps> = ({columns, setColumns, rows, setRows, gridPadding, setGridPadding, imgPadding, setImgPadding}) => {
+const GridSettings: React.FC<GridSettingsProps> = ({columns, setColumns, rows, setRows, gridPadding, setGridPadding, imgPadding, setImgPadding, scale, setScale}) => {
     const handleImagePadding = (key: keyof Padding, value: number) => {
-        const prevPadding = imgPadding;
-        setImgPadding(prevPadding => ({
-                ...prevPadding,
-                [key]: value
-        }));
+        const newPadding = {...imgPadding, [key]: value};
+        setImgPadding(newPadding);
     }
 
     return (
         <div className="flex flex-col space-x-4">
+            {/* GRID */}
             <div>
                 <label>Columns:</label>
                 <input
@@ -43,6 +44,7 @@ const GridSettings: React.FC<GridSettingsProps> = ({columns, setColumns, rows, s
                     className="border p-1"
                 />
             </div>
+            {/* PADDING*/}
             <div>
                 <label>Grid Padding:</label>
                 <input
@@ -80,6 +82,17 @@ const GridSettings: React.FC<GridSettingsProps> = ({columns, setColumns, rows, s
                     type="number"
                     value={imgPadding.right}
                     onChange={(e) => handleImagePadding('right', Number(e.target.value))}
+                    className="border p-1"
+                />
+            </div>
+            {/* SCALE */}
+            <div>
+                <label>Scale:</label>
+                <input
+                    type="number"
+                    value={scale}
+                    onChange={(e) => setScale(Number(e.target.value))}
+                    min="0"
                     className="border p-1"
                 />
             </div>

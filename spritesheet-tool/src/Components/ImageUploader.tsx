@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ImageUploaderProps {
-    onUpload: (imageUrl: string) => void;
+    onUpload: (imageUrl: string, fileName: string) => void;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
@@ -10,7 +10,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                onUpload(e.target?.result as string);
+                onUpload(e.target?.result as string, file.name);
             };
             reader.readAsDataURL(file);
         }

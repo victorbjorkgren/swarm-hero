@@ -1,9 +1,4 @@
 import {
-    EntityInterface,
-    EntityLogic,
-    EntityRenderer,
-    EntityState,
-    EntityTypes,
     Team,
     TexturePack
 } from "../../types/types";
@@ -13,6 +8,7 @@ import {Graphics, Sprite} from "pixi.js";
 import {CastleID, CastleUpdateData, ClientID, ParticleID} from "@shared/commTypes";
 import {gameConfig, SpellPacks} from "@shared/config";
 import {SpellPack, Spells} from "../../types/spellTypes";
+import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 
 const playerWithinRange = (playerId: ClientID, state: CastleState): boolean => {
     const player = state.scene.players.get(playerId);
@@ -78,6 +74,7 @@ class CastleState implements EntityState {
     health: number = gameConfig.castleHealth;
     givesIncome: number = gameConfig.castleIncome;
     targetedBy: ParticleID[] = [];
+    maxVel: number = 0;
 
     attackable: boolean = true;
 
@@ -88,6 +85,9 @@ class CastleState implements EntityState {
 
     public availableSpells: SpellPack[] = [
         SpellPacks[Spells.Explosion],
+        SpellPacks[Spells.SpeedUp],
+        SpellPacks[Spells.SpeedDown],
+        SpellPacks[Spells.Teleport],
     ];
 
     constructor(

@@ -1,4 +1,4 @@
-import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes, Team} from "../../types/types";
+import {Team} from "../../types/types";
 import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
@@ -6,6 +6,7 @@ import {Game} from "../Game";
 import {Graphics} from "pixi.js";
 import {EntityID, ParticleID, ParticleUpdateData} from "@shared/commTypes";
 import {ParticleSystem} from "../ParticleSystem";
+import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 
 interface FiringLaserAt {
     target: EntityID;
@@ -377,6 +378,7 @@ class ParticleRenderer extends EntityRenderer {
 
     update() {
         if (this.state.isAlive()) {
+            this.updateAnimationSprites();
             this.renderSelf();
             this.renderAttack();
             this.renderStatsBar();

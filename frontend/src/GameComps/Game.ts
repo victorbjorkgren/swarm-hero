@@ -1,13 +1,11 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {AnimatedSpriteFrames, Application, Assets, Spritesheet, Texture, Ticker} from "pixi.js";
+import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture, Ticker} from "pixi.js";
 import React from "react";
 import {
     AABBCollider,
     Character,
     Controls,
-    EntityInterface,
-    EntityTypes,
     popUpEvent,
     Team,
     TexturePack
@@ -49,6 +47,7 @@ import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
 import {EmptyInterface} from "./Entities/Empty";
+import {EntityInterface, EntityTypes} from "../types/EntityTypes";
 
 type LatencyObject = { pingStart: number, pingCode: string, latency: number };
 
@@ -76,7 +75,11 @@ export class Game {
 
     private cameraPivot: Vector2D = Vector2D.zeros();
     public castleTexturePack: TexturePack | null = null;
-    explosionSprite: AnimatedSpriteFrames | null = null;
+    public  explosionSprite: AnimatedSpriteFrames | null = null;
+    public  greenSummonSprite: AnimatedSpriteFrames | null = null;
+    public  greenIdleSprite: AnimatedSpriteFrames | null = null;
+    public  blueSummonSprite: AnimatedSpriteFrames | null = null;
+    public  blueIdleSprite: AnimatedSpriteFrames | null = null;
     public observedSpellCasts: Set<SpellCastID> = new Set();
 
     public renderScale: number = 1
@@ -516,6 +519,40 @@ export class Game {
         }
     }
 
+    areaSpeedBuff(position: Vector2D, sqRange: number, multiplier: number, duration: number, safeTeam: Team[] = []) {
+        for (const [playerId, player] of this.players) {
+            if (safeTeam.includes(player.state.team!)) continue;
+            if (Vector2D.sqDist(position, player.state.pos) > sqRange) continue;
+            player.buffSpeed(multiplier, duration);
+        }
+        if (this.particleSystem) {
+            this.particleSystem.getParticles().deepForEach((particle) => {
+                if (safeTeam.includes(particle.state.team!)) return;
+                if (Vector2D.sqDist(position, particle.state.pos) > sqRange) return;
+                particle.buffSpeed(multiplier, duration);
+            })
+        }
+    }
+
+    areaTeleport(position: Vector2D, sqRange: number, newPosition: Vector2D, safeTeam: Team[] = []) {
+        const delta = Vector2D.subtract(newPosition, position);
+        for (const [playerId, player] of this.players) {
+            if (safeTeam.includes(player.state.team!)) continue;
+            if (Vector2D.sqDist(position, player.state.pos) > sqRange) continue;
+            player.snapMove(delta);
+        }
+        if (this.particleSystem) {
+            console.log('has particle sys');
+            this.particleSystem.getParticles().deepForEach((particle) => {
+                if (safeTeam.includes(particle.state.team!)) return;
+                if (particle.state.team.color === 16711680) console.log('check', Vector2D.sqDist(position, particle.state.pos), sqRange, delta);
+                if (Vector2D.sqDist(position, particle.state.pos) > sqRange) return;
+                console.log('delta', delta);
+                particle.snapMove(delta);
+            })
+        }
+    }
+
     updateDayTime() {
         if (this.startTime === null)
             this.startTime = Date.now();
@@ -582,25 +619,51 @@ export class Game {
         this.explosionSprite = sheet.animations.animation0;
     }
 
+    async setupGreen(greenSheet: Promise<Spritesheet>, greenSheetIdle: Promise<Spritesheet>) {
+        const sheet = await greenSheet;
+        const sheetIdle = await greenSheetIdle;
+        await sheet.parse();
+        await sheetIdle.parse();
+        this.greenSummonSprite = sheet.animations.animation0;
+        this.greenIdleSprite = sheetIdle.animations.animation0;
+    }
+
+    async setupBlue(blueSheet: Promise<Spritesheet>, blueSheetIdle: Promise<Spritesheet>) {
+        const sheet = await blueSheet;
+        const sheetIdle = await blueSheetIdle;
+        await sheet.parse();
+        await sheetIdle.parse();
+        this.blueSummonSprite = sheet.animations.animation0;
+        this.blueIdleSprite = sheetIdle.animations.animation0;
+    }
+
     async preload() {
         this.requestInitialData();
 
         const levelReady = this.level.load();
         this.navMesh = new NavMesh(this.level);
 
-        const explosion: Promise<Spritesheet> = Assets.load('/sprites/explosion_toon.json');
         const cat: Promise<Spritesheet> = Assets.load('/sprites/black_cat_run.json');
-        const castle: Promise<Texture> = Assets.load('/sprites/castle-sprite.png');
-        const castleHighlight: Promise<Texture> = Assets.load('/sprites/castle-sprite-highlight.png');
 
-        const explosionReady: Promise<void> = this.setupExplosion(explosion)
-
+        const explosionReady: Promise<void> = this.setupExplosion(
+            Assets.load('/sprites/explosion_toon.json')
+        );
+        const greenMagicReady: Promise<void> = this.setupGreen(
+            Assets.load('/sprites/magic/tree-of-glory.json'),
+            Assets.load('/sprites/magic/tree-of-glory-idle.json')
+        );
+        const blueMagicReady: Promise<void> = this.setupBlue(
+            Assets.load('/sprites/magic/blue_doom.json'),
+            Assets.load('/sprites/magic/blue_doom_idle.json')
+        );
         this.castleTexturePack = {
-            'normal': await castle,
-            'highlight': await castleHighlight,
+            'normal': await Assets.load('/sprites/castle-sprite.png'),
+            'highlight': await Assets.load('/sprites/castle-sprite-highlight.png'),
         }
         await cat;
         await explosionReady;
+        await greenMagicReady;
+        await blueMagicReady;
         await levelReady;
     };
 
@@ -677,7 +740,6 @@ export class Game {
 
         // Updates
         this.particleSystem?.update(delta);
-
         this.players.forEach(player => {
             player.update(delta);
         })

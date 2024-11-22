@@ -19,8 +19,14 @@ export const UnitButton: React.FC<UnitButtonProps> = ( {n, size, unit, clickHand
         case SpellPacks[Spells.Explosion]:
             ware = <SpellICon spell={SpellPacks[Spells.Explosion]} />;
             break;
-        case SpellPacks[Spells.LaserBurst]:
-            ware = <SpellICon spell={SpellPacks[Spells.LaserBurst]} />;
+        case SpellPacks[Spells.SpeedUp]:
+            ware = <SpellICon spell={SpellPacks[Spells.SpeedUp]} />;
+            break;
+        case SpellPacks[Spells.SpeedDown]:
+            ware = <SpellICon spell={SpellPacks[Spells.SpeedDown]} />;
+            break;
+        case SpellPacks[Spells.Teleport]:
+            ware = <SpellICon spell={SpellPacks[Spells.Teleport]} />;
             break;
         case Units.LaserDrone:
             ware = <UnitIcon unit={UnitPacks[Units.LaserDrone]} n={n} />
@@ -38,7 +44,6 @@ export const UnitButton: React.FC<UnitButtonProps> = ( {n, size, unit, clickHand
                 bg-opacity-50 hover:bg-opacity-70 border border-white rounded-xl shadow 
                 gap-1 p-2 px-4 transition duration-100
                 `}
-
                 onClick={()=>clickHandler()}
             >
                 {ware}

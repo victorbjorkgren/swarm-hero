@@ -1,4 +1,4 @@
-import {EntityState, PolygonalCollider, Team} from "../types/types";
+import {PolygonalCollider, Team} from "../types/types";
 import {Game} from "./Game";
 import {ParticleInterface} from "./Entities/Particle";
 import {UnitManager} from "./UnitManager";
@@ -7,6 +7,7 @@ import {UnitPack} from "../types/unitTypes";
 import {EntityID, ParticleID} from "@shared/commTypes";
 import {PlayerInterface} from "./Entities/Player";
 import {CastleInterface} from "./Entities/Castle";
+import {EntityState} from "../types/EntityTypes";
 
 export class ParticleSystem {
     unitManager: UnitManager<ParticleInterface> = new UnitManager();

@@ -3,8 +3,7 @@ import {
     Character,
     CollisionResult,
     Controller,
-    DirectionalSpriteSheet, EntityInterface, EntityLogic, EntityRenderer, EntityState,
-    EntityTypes,
+    DirectionalSpriteSheet,
     Factions,
     Team
 } from "../../types/types";
@@ -17,23 +16,17 @@ import {
     powerConversion,
     speedConversion
 } from "../../UI-Comps/CharacterCreation/StatConversion";
-import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text} from "pixi.js";
-import {SpellPack} from "../../types/spellTypes";
+import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text, Ticker} from "pixi.js";
+import {SpellEffects, SpellPack} from "../../types/spellTypes";
 import {gameConfig, player1Keys, UnitPacks} from "@shared/config";
-import {
-    SpellCastMessage,
-    ClientMessageType,
-    BuyDroneMessage,
-    GarrisonMessage, CastleID, ClientID, ServerMessageType, ParticleID, PlayerUpdateData
-} from "@shared/commTypes";
+import {CastleID, ClientID, ClientMessageType, ParticleID, PlayerUpdateData, SpellCastMessage} from "@shared/commTypes";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {Units} from "../../types/unitTypes";
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
-import {ParticleInterface} from "./Particle";
 import {SpectatorController} from "../Controllers/SpectatorController";
-import * as assert from "node:assert";
+import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 
 export class PlayerInterface extends EntityInterface {
     public state: PlayerState;
@@ -333,10 +326,42 @@ export class PlayerInterface extends EntityInterface {
         if (!this.state.availableSpells.some(spellPack => JSON.stringify(spellPack) === JSON.stringify(spell))) return false;
         if (spell.castCost > this.state.mana) return false;
         if (Vector2D.sqDist(castPos, this.state.pos) > spell.castRange * spell.castRange) return false;
+
         this.state.mana -= spell.castCost;
         const sqEffectRange = spell.effectRange * spell.effectRange;
-        this.state.scene.areaDamage(castPos, sqEffectRange, spell.effectAmount * this.state.powerMultiplier);
-        this.renderer.renderExplosion(castPos, spell.effectRange);
+        const actualEffect = spell.effectAmount * this.state.powerMultiplier;
+
+        switch (spell.effectType) {
+            case SpellEffects.Damage:
+                this.renderer.renderExplosion(castPos, spell.effectRange);
+                setTimeout(()=>
+                    this.state.scene.areaDamage(
+                        castPos,
+                        sqEffectRange,
+                        actualEffect
+                    ), spell.warmUp * 1000);
+                break;
+            case SpellEffects.Speed:
+                setTimeout(()=>
+                    this.state.scene.areaSpeedBuff(
+                        castPos,
+                        sqEffectRange,
+                        actualEffect,
+                        spell.effectDuration
+                ), spell.warmUp * 1000);
+                break;
+            case SpellEffects.Teleport:
+                this.renderer.renderTeleport(spell.warmUp, spell.effectRange);
+                setTimeout(()=>
+                    this.state.scene.areaTeleport(
+                    this.state.pos.copy(),
+                    sqEffectRange,
+                    castPos,
+                ), spell.warmUp * 1000);
+                break;
+            default:
+                console.warn('Unknown spell effectType');
+        }
 
         this.castingDoneCallback(true);
         this.castingDoneCallback = ()=>{};
@@ -386,7 +411,7 @@ class PlayerState implements EntityState {
     public character: Character | null = null;
     public isLocal: boolean = false;
 
-    public radius: number = 20; // for collider - unused
+    public radius: number = 20;
     public mass: number = 50**3; // for collision - unused
 
     constructor(
@@ -527,10 +552,12 @@ class PlayerRenderer extends EntityRenderer {
     private rangeSprite: Graphics | null = null;
     spellCursorSprite: Container | null = null;
     private nameSprite: Text | null = null;
+    private teleportSprite: Graphics | null = null;
 
     constructor(protected state: PlayerState) {super();}
 
     update() {
+        this.updateAnimationSprites();
         this.renderSelf();
         this.renderAttack();
         this.renderHUD();
@@ -746,7 +773,7 @@ class PlayerRenderer extends EntityRenderer {
         }
         if (!this.state.isCasting || this.state.activeSpell === null) {
             this.rangeSprite.visible = false;
-            return
+            return;
         }
         this.rangeSprite.visible = true;
 
@@ -769,6 +796,46 @@ class PlayerRenderer extends EntityRenderer {
         this.rangeSprite.y = this.state.pos.y * this.state.scene.renderScale;
         this.rangeSprite.scale.set(this.state.scene.renderScale);
         this.rangeSprite.rotation += .004;
+    }
+
+    public renderTeleport(warmUpTime: number, radius: number): void {
+        if (this.teleportSprite === null) {
+            this.teleportSprite = new Graphics();
+            this.teleportSprite.zIndex = Game.zIndex.hud;
+            this.state.scene.pixiRef.stage.addChild(this.teleportSprite);
+        }
+        let w = 0;
+        let a = .1;
+        const warmUp = (ticker: Ticker)=>{
+            w += radius * ticker.deltaMS / (1000 * warmUpTime);
+            this.teleportSprite!.clear();
+            if (w >= radius) {
+                ticker.remove(warmUp);
+                ticker.add(perform);
+            }
+            const sx = this.state.pos.x * this.state.scene.renderScale;
+            const sy = this.state.pos.y * this.state.scene.renderScale;
+            this.teleportSprite!
+                .moveTo(sx, sy)
+                .lineTo(sx, 0)
+                .stroke({color: 0xffffff, alpha: a, width: w * this.state.scene.renderScale});
+        }
+        const perform = (ticker: Ticker) => {
+            this.teleportSprite!.clear();
+            const sx = this.state.pos.x * this.state.scene.renderScale;
+            const sy = this.state.pos.y * this.state.scene.renderScale;
+            a += .2
+            this.teleportSprite!
+                .moveTo(sx, sy)
+                .lineTo(sx, 0)
+                .stroke({color: 0xffffff, alpha: Math.min(a, 1), width: w * this.state.scene.renderScale});
+            if (a > 1) {
+                ticker.remove(perform);
+                this.teleportSprite!.clear()
+            }
+        }
+
+        this.state.scene.pixiRef.ticker.add(warmUp);
     }
 
     public renderExplosion(position: Vector2D, radius: number) {

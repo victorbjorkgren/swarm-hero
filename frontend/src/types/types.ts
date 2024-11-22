@@ -1,67 +1,13 @@
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleInterface} from "../GameComps/Entities/Castle";
-import {CastleID, ClientID, EntityID, ParticleID} from "@shared/commTypes";
+import {CastleID, ClientID} from "@shared/commTypes";
 import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
 
 export interface Polygon {
     verts: Vector2D[];
     attackable: boolean;
     isInside: boolean;
-}
-
-export enum EntityTypes {
-    Player,
-    Castle,
-    Particle,
-    Null,
-    Any,
-}
-
-export abstract class EntityInterface {
-    public abstract state: EntityState;
-    protected abstract renderer: EntityRenderer;
-    protected abstract logic: EntityLogic;
-
-    public abstract update(delta: number): void;
-    public abstract receiveDamage(damage: number): void;
-    public abstract onDeath(): void;
-}
-
-export abstract class EntityState {
-    abstract id: EntityID;
-    abstract pos: Vector2D;
-    abstract vel: Vector2D;
-    abstract radius: number;
-    abstract mass: number;
-    abstract health: number;
-    abstract givesIncome: number;
-    abstract team: Team | null;
-
-    abstract entityType: EntityTypes;
-
-    abstract targetedBy: ParticleID[];
-    abstract attackable: boolean;
-
-    abstract isAlive(): boolean;
-    abstract getFiringPos(from: Vector2D): Vector2D;
-}
-
-export abstract class EntityLogic {
-    protected abstract state: EntityState;
-
-    public abstract update(deltaScale: number): void;
-}
-
-export abstract class EntityRenderer {
-    protected abstract state: EntityState;
-
-    protected abstract renderSelf(): void;
-    protected abstract renderAttack(): void;
-    protected abstract renderStatsBar(): void;
-
-    public abstract update(): void;
-    public abstract cleanUp(): void;
 }
 
 export interface PolygonalCollider {

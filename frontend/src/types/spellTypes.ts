@@ -7,7 +7,9 @@ export enum SpellEffects {
 
 export enum Spells {
     Explosion = 'Explosion',
-    LaserBurst = 'LaserBurst',
+    SpeedUp = 'SpeedUp',
+    SpeedDown = 'SpeedDown',
+    Teleport = 'Teleport',
 }
 
 export interface SpellPack {
@@ -18,6 +20,8 @@ export interface SpellPack {
     effectRange: number;
     effectType: SpellEffects;
     effectAmount: number;
+    effectDuration: number;
+    warmUp: number;
     coolDown: number;
 }
 

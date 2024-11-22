@@ -1,11 +1,14 @@
 import React from "react";
-import {GiCornerExplosion, GiLaserBurst} from "react-icons/gi";
+import {GiCornerExplosion, GiSnail} from "react-icons/gi";
 import {SpellCastIcon} from "./SpellCastIcon";
 import {Spells, SpellPack} from "../../types/spellTypes";
+import {FaRunning} from "react-icons/fa";
 
 export const SpellIcons = {
     [Spells.Explosion]: <GiCornerExplosion />,
-    [Spells.LaserBurst]: <GiLaserBurst />,
+    [Spells.SpeedUp]: <FaRunning />,
+    [Spells.SpeedDown]: <GiSnail />,
+    [Spells.Teleport]: <img src="/sprites/DimensionDoorIcon.png" alt="Dimension Door" style={{ width: '1em', height: '1em' }} />
 };
 
 interface SpellPickerProps {

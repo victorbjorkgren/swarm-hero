@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getMedian, Vector2D} from "./Utility";
-import {Character, EntityTypes, Factions} from "../types/types";
+import {Character, Factions} from "../types/types";
 import {gameConfig, UnitPacks} from "@shared/config";
 import {
     BuyDroneMessage,
@@ -28,6 +28,7 @@ import {Units} from "../types/unitTypes";
 import {SpellPack} from "../types/spellTypes";
 import {CastleInterface} from "./Entities/Castle";
 import {PlayerInterface} from "./Entities/Player";
+import {EntityTypes} from "../types/EntityTypes";
 
 
 export default class GameHost {

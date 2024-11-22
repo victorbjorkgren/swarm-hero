@@ -1,7 +1,8 @@
-import {Character, Controls, EntityTypes, Team} from "../frontend/src/types/types";
+import {Character, Controls, Team} from "../frontend/src/types/types";
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
 import {UnitPack, Units} from "../frontend/src/types/unitTypes";
+import {EntityTypes} from "../frontend/src/types/EntityTypes";
 
 export type EntityID = string;
 export type ClientID = EntityID;

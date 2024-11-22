@@ -1,5 +1,4 @@
 import {Vector2D} from "../Utility";
-import {EntityState, EntityTypes} from "../../types/types";
 import {NavMesh} from "./NavMesh";
 import {UnitManager} from "../UnitManager";
 import {PlayerInterface} from "../Entities/Player";
@@ -7,6 +6,7 @@ import {Game} from "../Game";
 import {CastleID, ClientID, EntityID} from "@shared/commTypes";
 import {ParticleInterface} from "../Entities/Particle";
 import {CastleInterface} from "../Entities/Castle";
+import {EntityState, EntityTypes} from "../../types/EntityTypes";
 
 enum State {
     Flee,

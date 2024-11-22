@@ -1,4 +1,4 @@
-import {SpellEffects, Spells} from "../frontend/src/types/spellTypes";
+import {SpellEffects, SpellPack, Spells} from "../frontend/src/types/spellTypes";
 import {Units} from "../frontend/src/types/unitTypes";
 import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {ControllerMapping, Factions} from "../frontend/src/types/types";
@@ -63,27 +63,55 @@ export const player1Keys: ControllerMapping = {
     cancel: "Escape"
 };
 
-export const SpellPacks = {
+export const SpellPacks: { [key in Spells]: SpellPack } = {
     [Spells.Explosion]: {
         element: Spells.Explosion,
-        castCost: 10,
+        castCost: 50,
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
         effectType: SpellEffects.Damage,
         effectAmount: 90,
+        effectDuration: 0,
+        warmUp: .5,
         coolDown: 5,
     },
-    [Spells.LaserBurst]: {
-        element: Spells.LaserBurst,
+    [Spells.SpeedUp]: {
+        element: Spells.SpeedUp,
         castCost: 10,
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
-        effectType: SpellEffects.Damage,
-        effectAmount: 50,
+        effectType: SpellEffects.Speed,
+        effectAmount: 0.5,
+        effectDuration: 10,
+        warmUp: .1,
+        coolDown: 15,
+    },
+    [Spells.SpeedDown]: {
+        element: Spells.SpeedDown,
+        castCost: 10,
+        buyCost: 1000,
+        castRange: 400,
+        effectRange: 100,
+        effectType: SpellEffects.Speed,
+        effectAmount: -0.5,
+        effectDuration: 10,
+        warmUp: .1,
+        coolDown: 15,
+    },
+    [Spells.Teleport]: {
+        element: Spells.Teleport,
+        castCost: 50,
+        buyCost: 1000,
+        castRange: 400,
+        effectRange: 100,
+        effectType: SpellEffects.Teleport,
+        effectAmount: 0,
+        effectDuration: 0,
+        warmUp: 2,
         coolDown: 5,
-    }
+    },
 }
 export const UnitPacks = {
     [Units.LaserDrone]: {

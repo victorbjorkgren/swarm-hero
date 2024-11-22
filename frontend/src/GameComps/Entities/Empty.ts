@@ -1,9 +1,10 @@
-import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes, Team} from "../../types/types";
+import {Team} from "../../types/types";
 import {ClientID, EmptyID, ParticleID} from "@shared/commTypes";
 import {Vector2D} from "../Utility";
 import {Game} from "../Game";
 import {gameConfig} from "@shared/config";
 import {estimateFoeStrength} from "../AI/AIBehavior";
+import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 
 export class EmptyInterface extends EntityInterface{
     public state: EmptyState;

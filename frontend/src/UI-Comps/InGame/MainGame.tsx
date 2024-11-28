@@ -12,8 +12,7 @@ import {PlayerInterface} from "../../GameComps/Entities/Player";
 import {Game} from "../../GameComps/Game";
 
 import {ClientID} from "@shared/commTypes";
-import {connectMesh} from "../../Hooks/Communication";
-import {GameConnection, PeerMap} from "../CharacterCreation/MainCharacterCreation";
+import {GameConnection, PeerMap} from "../Lobby/CharacterCreation/MainCharacterCreation";
 import {Level, Levels} from "../../GameComps/Levels/Level";
 
 

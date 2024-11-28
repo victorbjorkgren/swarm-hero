@@ -22,7 +22,7 @@ import {
     ServerPayloads,
     SpellCastMessage
 } from "@shared/commTypes";
-import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {PeerMap} from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation";
 import {Game} from "./Game";
 import {Units} from "../types/unitTypes";
 import {SpellPack} from "../types/spellTypes";

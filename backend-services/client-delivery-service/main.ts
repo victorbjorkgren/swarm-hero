@@ -2,7 +2,8 @@ import express from 'express';
 import http from 'http';
 import {fileURLToPath} from 'url';
 import path from 'path';
-import {getNetworkIP} from "../Utilities";
+import {getNetworkIP} from "../common/Utilities";
+import {IncomingMessage} from "node:http";
 
 // Manually define __dirname in ES module scope
 const __filename = fileURLToPath(import.meta.url);
@@ -14,10 +15,17 @@ const main = http.createServer(app);
 
 const port = process.env.PORT || 8080;
 
+const authenticate = (req: IncomingMessage) => {
+
+}
 
 app.use(express.static('public'));
 
-app.get('*', (req, res) => {
+app.get('/game-room/', (req, res) => {
+
+})
+
+app.get('/', (req, res) => {
     console.log('Sending client code')
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

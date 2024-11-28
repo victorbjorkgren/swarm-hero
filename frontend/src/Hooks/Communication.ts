@@ -1,5 +1,8 @@
 import { ClientID } from "@shared/commTypes";
-import { GameConnection, PeerMap } from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import { GameConnection, PeerMap } from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation";
+import {useAuth} from "./AuthContext";
+import {useLogin} from "./useAuth";
+import {useEffect, useState} from "react";
 
 export type SignalMesssage = {
     from: ClientID;
@@ -9,14 +12,19 @@ export type SignalMesssage = {
 
 export type InitialPeerMap = Map<string, RTCPeerConnection>;
 
+
 export const connectMesh = (
     nPlayerGame: number,
     nConnected: (n: number) => void,
+    gameRoomToken: string,
     doneCallback: (connectionData: GameConnection) => void
 ) => {
+    console.log('Initiating mesh connection');
     const initializingPeers: InitialPeerMap = new Map();
     const connectedPeers: PeerMap = new Map();
-    const signalServer = new WebSocket("ws://localhost:8081");
+
+    const signalServer = new WebSocket(`ws://localhost:8081/connect?token=${encodeURIComponent(gameRoomToken)}`);
+
     let myId: string = "";
     let hostId: string = "";
     // let connectedPeersCollection: Set<ClientID> = new Set();
@@ -25,8 +33,12 @@ export const connectMesh = (
         console.log("Connected to signaling server");
     };
 
+    signalServer.onclose = () => {
+        console.log("Connection to signal server closed");
+    }
+
     signalServer.onmessage = (message) => {
-        const data = JSON.parse(message.data);
+        const data = JSON.parse(message.data.toString());
         switch (data.type) {
             case "host-setup":
                 myId = data.payload.playerId as string;

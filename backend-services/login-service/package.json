@@ -1,0 +1,26 @@
+{
+  "name": "login-service",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/main.js",
+    "launch": "yarn build && yarn start"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.24.0",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.7.2"
+  }
+}

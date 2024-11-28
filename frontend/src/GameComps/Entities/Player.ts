@@ -15,7 +15,7 @@ import {
     manaConversion,
     powerConversion,
     speedConversion
-} from "../../UI-Comps/CharacterCreation/StatConversion";
+} from "../../UI-Comps/Lobby/CharacterCreation/StatConversion";
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text, Ticker} from "pixi.js";
 import {SpellEffects, SpellPack} from "../../types/spellTypes";
 import {gameConfig, player1Keys, UnitPacks} from "@shared/config";

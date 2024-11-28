@@ -7,6 +7,6 @@ build({
     platform: 'node',
     target: 'esnext',
     format: 'esm',
-    external: ['stream', 'ws'],
+    external: ['stream', 'ws', 'jsonwebtoken', 'express', 'crypto'],
     resolveExtensions: ['.ts', '.js'],
 }).catch(() => process.exit(1));

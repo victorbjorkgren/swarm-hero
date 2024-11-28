@@ -4,7 +4,9 @@ import {GiMagicSwirl} from "react-icons/gi";
 import {PiGhostThin} from "react-icons/pi";
 import {FaCat} from "react-icons/fa";
 import {BackButton} from "./BackButton";
-import {Factions} from "../../types/types";
+import {Factions} from "../../../types/types";
+import {TextInput} from "../../TextInput";
+import {MenuButton} from "../../MenuButton";
 
 interface Props {
     doneCallback: (name: string, faction: Factions)=>void;
@@ -36,16 +38,7 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack, def
         <>
             <BackButton handleBack={handleBack}/>
             <div className={`flex flex-col items-center justify-center w-screen h-screen gap-10 bg-transparent text-white`}>
-                <div className={`flex flex-col gap-2 justify-evenly items-center`}>
-                    <span className={`text-xl`}>Screen Name:</span>
-                    <input
-                        type="text"
-                        className={"w-60 rounded-xl text-3xl p-2 bg-transparent border-white border-2 text-center"}
-                        maxLength={10}
-                        value={playerName}
-                        onChange={(e) => setPlayerName(e.target.value)}
-                    />
-                </div>
+                <TextInput label={"Screen Name"} value={playerName} setValue={setPlayerName} maxLength={10}/>
                 <div className={`flex flex-row items-center gap-x-10 select-none bg-transparent`}>
                     <button
                         className={
@@ -96,10 +89,7 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack, def
                         <span className={`select-none text-xs text-center`}>SPIRIT</span>
                     </button>
                 </div>
-                <button
-                    className={`bg-white text-white text-2xl bg-opacity-10 w-44 h-12 ${ready ? "hover:bg-opacity-40 active:bg-opacity-90" : "opacity-30"} border border-white rounded-xl`}
-                    onClick={handleDone}
-                >Next</button>
+                <MenuButton label={"Next"} onClick={handleDone} />
             </div>
         </>
     );

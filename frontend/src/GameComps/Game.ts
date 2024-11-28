@@ -42,7 +42,7 @@ import {
 import {PlayerInterface} from "./Entities/Player";
 import {CastleInterface} from "./Entities/Castle";
 import {ParticleSystem} from "./ParticleSystem";
-import {PeerMap} from "../UI-Comps/CharacterCreation/MainCharacterCreation";
+import {PeerMap} from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation";
 import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";

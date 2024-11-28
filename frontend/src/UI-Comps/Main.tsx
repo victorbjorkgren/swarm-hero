@@ -1,34 +1,23 @@
 import {useRef, useState} from "react";
-import {GameConnection, MainCharacterCreation, PeerMap} from "./CharacterCreation/MainCharacterCreation";
+import {GameConnection, MainCharacterCreation, PeerMap} from "./Lobby/CharacterCreation/MainCharacterCreation";
 import MainGame from "./InGame/MainGame";
 import {Character, Factions} from "../types/types";
+import {LobbyMain} from "./Lobby/Login/LobbyMain";
 
 enum Scenes {
-    CharacterCreation,
+    Lobby,
     MainGame
 }
 
-const devCharacter: Character = {
-    playerName: "MasterDev!",
-    faction: Factions.Wild,
-    stats: {
-        health: 3,
-        speed: 3,
-        magicPower: 3,
-        magicStamina: 3
-    }
-}
-
 export const Main = () => {
-    const [currentScene, setCurrentScene] = useState<Scenes>(Scenes.CharacterCreation)
+    const [currentScene, setCurrentScene] = useState<Scenes>(Scenes.Lobby)
     const [gameOn, setGameOn] = useState<boolean>(false)
 
-    const characterRef = useRef<Character | null>(devCharacter);
+    const characterRef = useRef<Character | null>(null);
     const connectionData = useRef<GameConnection | null>(null);
 
-
-    const characterCreationDone = (newCharacter: Character, incomingConnection: GameConnection) => {
-        characterRef.current = newCharacter;
+    const enterGame = (characterSheet: Character, incomingConnection: GameConnection) => {
+        characterRef.current = characterSheet;
         connectionData.current = incomingConnection;
         setGameOn(true);
         setCurrentScene(Scenes.MainGame);
@@ -36,15 +25,17 @@ export const Main = () => {
 
     const gameDone = () => {
         setGameOn(false);
-        setCurrentScene(Scenes.CharacterCreation);
+        setCurrentScene(Scenes.Lobby);
     }
 
     return (
         <>
-            {currentScene === Scenes.CharacterCreation
-                && <MainCharacterCreation doneCallback={characterCreationDone} defaultCharacter={characterRef.current} gameOn={gameOn} />}
-            {currentScene === Scenes.MainGame
-                && <MainGame character={characterRef.current} connection={connectionData.current} doneCallback={gameDone}/>}
+            {currentScene === Scenes.Lobby &&
+                <LobbyMain enterGameCallback={enterGame} gameOn={gameOn} />
+            }
+            {currentScene === Scenes.MainGame &&
+                <MainGame character={characterRef.current} connection={connectionData.current} doneCallback={gameDone}/>
+            }
         </>
     );
 };

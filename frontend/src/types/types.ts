@@ -2,7 +2,7 @@ import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleInterface} from "../GameComps/Entities/Castle";
 import {CastleID, ClientID} from "@shared/commTypes";
-import {CharacterStats} from "../UI-Comps/CharacterCreation/StatSelection";
+import {CharacterStats} from "../UI-Comps/Lobby/CharacterCreation/StatSelection";
 
 export interface Polygon {
     verts: Vector2D[];

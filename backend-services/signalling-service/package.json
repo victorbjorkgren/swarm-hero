@@ -11,12 +11,18 @@
   "dependencies": {
     "@types/node": "^22.7.7",
     "@types/ws": "^8.5.12",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
     "tsc": "^2.0.4",
     "typescript": "^5.6.3",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@types/simple-peer": "^9.11.8",

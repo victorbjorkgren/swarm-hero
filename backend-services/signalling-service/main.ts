@@ -1,17 +1,100 @@
 import WebSocket, {WebSocketServer} from 'ws';
 import {v4 as uuidv4} from 'uuid';
 import {ClientID} from "@shared/commTypes";
-import {getNetworkIP} from "../Utilities.js";
 import {gameConfig} from "@shared/config";
+import jwt from 'jsonwebtoken';
+import http, {IncomingMessage, ServerResponse} from "node:http";
+import {Socket} from "node:net";
+import express, {Request, Response} from "express";
+import {randomUUID} from "crypto";
+import cors from "cors";
 
-// const ip = getNetworkIP();
-const ip = 'localhost';
 const port = 8081;
 const nPlayers = gameConfig.nPlayerGame;
 
-export const gameRoomSignalServer = (networkIP: string, port: number, nPlayerGame: number) => {
+const app = express();
+app.use(express.json());
+app.use(cors())
+
+const shortLivedTokens = new Set<string>();
+const SHORT_TOKEN_TTL = 15 * 1000;
+
+app.get('/request-game-room-token/', (req: Request, res: Response) => {
+    if (authenticateJWT(req)) {
+        const gameRoomToken: string = randomUUID();
+        shortLivedTokens.add(gameRoomToken);
+        setTimeout(() => {
+            shortLivedTokens.delete(gameRoomToken);
+            }, SHORT_TOKEN_TTL
+        );
+        res.json({ gameRoomToken });
+    } else {
+        res.status(401).json({ error: 'Invalid or expired JWT token.' });
+    }
+});
+
+app.listen(8080, () => {
+    console.log('GameRoom token service running on :8080');
+});
+
+const authenticateJWT = (req: IncomingMessage): boolean => {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
+
+    if (!token) {
+        console.warn('Tokenless authentication attempted');
+        return false;
+    }
+
+    try {
+        if (publicKey === null) {
+            return false;
+        }
+        const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+        console.log(`Client authenticated`);
+        return true;
+    } catch (err) {
+        console.warn('JWT verification failed:', err instanceof Error ? err.message : String(err));
+        return false;
+    }
+}
+
+const authenticateGameRoomToken = (token: string): boolean => {
+    if (shortLivedTokens.has(token)) {
+        shortLivedTokens.delete(token);
+        return true;
+    }
+    return false;
+}
+
+export const gameRoomSignalServer = (port: number, nPlayerGame: number) => {
     return new Promise<void>((resolve, reject) => {
-        const wss = new WebSocketServer({host: networkIP, port: port});
+        const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
+            if (req.url === '/ping') {
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end(`Game room alive with ${players.size} players`);
+            }
+        });
+
+        httpServer.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
+            const url = new URL(req.url || '', `http://${req.headers.host}`);
+            const token = url.searchParams.get('token');
+
+            const hasAuth = authenticateGameRoomToken(token || "");
+            const connectCall = req.url?.startsWith('/connect')
+            if (connectCall && hasAuth) {
+                wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+                    wss.emit('connection', ws, req);
+                });
+            } else {
+                socket.destroy();
+            }
+        });
+        httpServer.listen(port, () => {
+            console.log(`Server listening on port ${port}`);
+        })
+
+        const wss = new WebSocketServer({ noServer: true });
         let players: Map<ClientID, WebSocket> = new Map();
         let hostSocket: WebSocket | null = null;
         let hostId: string | null = null;
@@ -19,6 +102,7 @@ export const gameRoomSignalServer = (networkIP: string, port: number, nPlayerGam
         const readyPeers: Set<ClientID> = new Set();
 
         wss.on('connection', (ws) => {
+
             const playerId = uuidv4();
             players.set(playerId, ws)
             console.log(`Connected to ${playerId}`);
@@ -86,43 +170,82 @@ export const gameRoomSignalServer = (networkIP: string, port: number, nPlayerGam
             });
             players.clear();
 
+            httpServer.close((err) => {
+                if (err) {
+                    console.error('Error closing server:', err);
+                } else {
+                    console.log('Game room Http Server closed successfully.');
+                }
+            });
+
             wss.close((err) => {
                 if (err) {
                     console.error('Error closing WebSocket server:', err);
                 } else {
-                    console.log('WebSocket server closed.');
+                    console.log('Game room WebSocket Server closed.');
                 }
             });
         };
 
-
         process.on('SIGINT', cleanUp);
         process.on('SIGTERM', cleanUp);
-
-        console.log(`- Network: http://${networkIP}:${port}`);
     })
 }
 
-
 let running = true;
+let cancelTimeout: Function | null = null;
+let publicKey: string | null = null;
 
 const shutdown = () => {
     running = false;
+    if (cancelTimeout) cancelTimeout();
     console.log('Shutting down game room loop...');
 };
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
+// Game room runner
 console.log(`Game Room running on:`);
 (async () => {
     while (running) {
         try {
-            await gameRoomSignalServer(ip, port, nPlayers);
-            console.log(`Game room on ${ip}:${port} with ${nPlayers} players setup complete!`);
+            await gameRoomSignalServer(port, nPlayers);
+            console.log(`Game room on :${port} with ${nPlayers} players setup complete!`);
         } catch (error) {
             console.error('Error in game room setup:', error);
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
+    }
+})();
+
+// Public key retriever func
+(async () => {
+    while (running) {
+        try {
+            const response = await fetch('http://localhost:4000/keys/');
+
+            if (!response.ok) {
+                console.error('Could not retrieve key from login server');
+            } else {
+                console.info('New key retrieved from login server.');
+            }
+
+            const key = await response.json();
+            publicKey = key.publicKey;
+        } catch (error) {
+            console.error('Could not retrieve key from login server');
+        }
+
+        await new Promise((resolve, reject) => {
+            const stepBackTime = publicKey === null ? 1000 : 60 * 60 * 1000;
+            const timeoutId = setTimeout(resolve, stepBackTime);
+            cancelTimeout = () => {
+                clearTimeout(timeoutId); // Clear the timeout
+                reject(new Error('Timeout cancelled')); // Reject the promise
+            };
+        }).catch((err) => {
+            if (err.message !== 'Key fetcher cancelled') throw err;
+        });
     }
 })();

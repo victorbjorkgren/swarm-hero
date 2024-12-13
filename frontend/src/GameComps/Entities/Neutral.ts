@@ -6,21 +6,28 @@ import {gameConfig} from "@shared/config";
 import {estimateFoeStrength} from "../AI/AIBehavior";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 
-export class EmptyInterface extends EntityInterface{
-    public state: EmptyState;
-    protected logic: EmptyLogic;
-    protected renderer: EmptyRenderer;
+enum NeutralTypes {
+    EMPTY,
+    ROVING,
+    GOLDMINE
+}
+
+export class NeutralInterface extends EntityInterface{
+    public state: NeutralState;
+    protected logic: NeutralLogic;
+    protected renderer: NeutralRenderer;
 
     constructor(
         id: EmptyID,
         pos: Vector2D,
         wayPoints: Vector2D[],
+        neutralType: NeutralTypes,
         scene: Game
     ) {
         super();
-        this.state = new EmptyState(id, pos, wayPoints, scene);
-        this.logic = new EmptyLogic(this.state);
-        this.renderer = new EmptyRenderer(this.state);
+        this.state = new NeutralState(id, pos, wayPoints, neutralType, scene);
+        this.logic = new NeutralLogic(this.state);
+        this.renderer = new NeutralRenderer(this.state);
     }
 
     onDeath(): void {
@@ -44,7 +51,7 @@ export class EmptyInterface extends EntityInterface{
     }
 }
 
-class EmptyState implements EntityState {
+class NeutralState implements EntityState {
     entityType: EntityTypes = EntityTypes.Null;
     givesIncome: number = 0;
     health: number = 1;
@@ -52,6 +59,9 @@ class EmptyState implements EntityState {
     radius: number = 1;
     targetedBy: ParticleID[] = [];
     vel: Vector2D = Vector2D.zeros();
+
+    yieldDistance: number;
+    yieldLimit: number;
 
     maxVel: number = gameConfig.rovingSwarmVel;
 
@@ -66,9 +76,11 @@ class EmptyState implements EntityState {
         public id: EmptyID,
         public pos: Vector2D,
         public wayPoints: Vector2D[],
+        public neutralType: NeutralTypes,
         public scene: Game
     ) {
-
+        this.yieldDistance = (neutralType === NeutralTypes.GOLDMINE) ? gameConfig.mineYieldCheckSqDist : gameConfig.swarmYieldCheckSqDist;
+        this.yieldLimit = (neutralType === NeutralTypes.GOLDMINE) ? gameConfig.mineYieldLimit : gameConfig.swarmYieldLimit;
     }
 
     getFiringPos(from: Vector2D): Vector2D {
@@ -80,9 +92,9 @@ class EmptyState implements EntityState {
     }
 }
 
-class EmptyLogic extends EntityLogic{
+class NeutralLogic extends EntityLogic{
     constructor(
-        protected state: EmptyState,
+        protected state: NeutralState,
     ) {
         super();
     }
@@ -110,10 +122,10 @@ class EmptyLogic extends EntityLogic{
 
     private checkYield() {
         for (const player of this.state.scene.players.values()) {
-            if (this.state.pos.sqDistanceTo(player.state.pos) < gameConfig.swarmYieldCheckSqDist) {
+            if (this.state.pos.sqDistanceTo(player.state.pos) < this.state.yieldDistance) {
                 const playerStrength = estimateFoeStrength(player.state.id, this.state.id, this.state.scene.particleSystem?.getParticles())
                 console.log("playerStrength", playerStrength, player.state.id);
-                if (playerStrength > gameConfig.yieldLimit) {
+                if (playerStrength > this.state.yieldLimit) {
                     this.state.yieldingTo = player.state.id;
                     return;
                 }
@@ -122,7 +134,7 @@ class EmptyLogic extends EntityLogic{
     }
 }
 
-class EmptyRenderer extends EntityRenderer {
+class NeutralRenderer extends EntityRenderer {
     constructor(protected state: EntityState) {
         super();
     }

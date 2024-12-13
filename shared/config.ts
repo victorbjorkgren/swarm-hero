@@ -24,7 +24,9 @@ export const gameConfig = {
 
     rovingSwarmVel: .5,
     swarmYieldCheckSqDist: 200 * 200,
-    yieldLimit: 2,
+    mineYieldCheckSqDist: 50 * 50,
+    swarmYieldLimit: 2,
+    mineYieldLimit: 2,
 
     sqPlayerVelCutoff: 0.075 * 0.075,
 

@@ -46,7 +46,7 @@ import {PeerMap} from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation
 import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
-import {EmptyInterface} from "./Entities/Empty";
+import {NeutralInterface} from "./Entities/Neutral";
 import {EntityInterface, EntityTypes} from "../types/EntityTypes";
 
 type LatencyObject = { pingStart: number, pingCode: string, latency: number };
@@ -68,7 +68,7 @@ export class Game {
     public remainingPlayers: Set<PlayerInterface> = new Set();
     public teams: Map<TeamName, Team> = new Map();
     public castles: Map<CastleID, CastleInterface> = new Map();
-    public emptyEntities: Map<EmptyID, EmptyInterface> = new Map();
+    public emptyEntities: Map<EmptyID, NeutralInterface> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
@@ -710,7 +710,7 @@ export class Game {
             const pos = Vector2D.cast(pInit.pos);
             const wayPoints = pInit.wayPoints.map(p => Vector2D.cast(p));
             if (pInit.ownerId && !this.emptyEntities.has(pInit.ownerId)) {
-                this.emptyEntities.set(pInit.ownerId, new EmptyInterface(pInit.ownerId, pos, wayPoints, this));
+                this.emptyEntities.set(pInit.ownerId, new NeutralInterface(pInit.ownerId, pos, wayPoints, this));
                 this.idTypes.set(pInit.ownerId, EntityTypes.Null);
             }
             const team = this.teams.get(pInit.teamName);

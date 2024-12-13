@@ -16,11 +16,11 @@ enum State {
     RaiseArmy
 }
 
-export const estimateFoeStrength = (foe: EntityID, attacker: EntityID, unitMgr: UnitManager<ParticleInterface> | undefined): number => {
+export const estimateFoeStrength = (foe: EntityID, me: EntityID, unitMgr: UnitManager<ParticleInterface> | undefined): number => {
+    const myDrones = unitMgr?.flatOwnerCount(me) || 0
+    if (myDrones === 0) return 1000;
     const foeDrones = unitMgr?.flatOwnerCount(foe) || 0
-    const attackerDrones = unitMgr?.flatOwnerCount(attacker) || 0
-    if (attackerDrones === 0) return 1000;
-    return foeDrones / attackerDrones;
+    return foeDrones / myDrones;
 }
 
 export class AIBehavior {

@@ -308,8 +308,8 @@ class ParticleLogic extends EntityLogic {
             this.engageEntityCollection(team.playerIds, this.state.scene.players);
             this.engageEntityCollection(team.castleIds, this.state.scene.castles);
         });
-        const emptyIds = Array.from(this.state.scene.emptyEntities.keys());
-        this.engageEntityCollection(emptyIds, this.state.scene.emptyEntities);
+        const emptyIds = Array.from(this.state.scene.neutralEntities.keys());
+        this.engageEntityCollection(emptyIds, this.state.scene.neutralEntities);
     }
 
     fightFights(): void {

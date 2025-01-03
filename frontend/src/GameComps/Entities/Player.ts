@@ -19,7 +19,15 @@ import {
 import {AnimatedSprite, Assets, Container, Graphics, Spritesheet, Text, Ticker} from "pixi.js";
 import {SpellEffects, SpellPack} from "../../types/spellTypes";
 import {gameConfig, player1Keys, UnitPacks} from "@shared/config";
-import {CastleID, ClientID, ClientMessageType, ParticleID, PlayerUpdateData, SpellCastMessage} from "@shared/commTypes";
+import {
+    CastleID,
+    ClientID,
+    ClientMessageType,
+    NeutralID,
+    ParticleID,
+    PlayerUpdateData,
+    SpellCastMessage
+} from "@shared/commTypes";
 import {renderArcaneWheel} from "../Graphics/ExplosionMarker";
 import {Units} from "../../types/unitTypes";
 import {v4 as uuidv4} from 'uuid';
@@ -115,6 +123,10 @@ export class PlayerInterface extends EntityInterface {
         this.state.myCastles.forEach(castleId => {
             const castle = this.state.scene.getEntityById(castleId, EntityTypes.Castle)
             this.state.gold += castle?.state.givesIncome || 0;
+        })
+        this.state.myMines.forEach(mineId => {
+            const mine = this.state.scene.getEntityById(mineId, EntityTypes.Neutral)
+            this.state.gold += mine?.state.givesIncome || 0;
         })
         this.state.scene.particleSystem?.getParticles().ownerForEach(this.state.id, (drone) => {
             this.state.gold += drone.state.givesIncome;
@@ -387,6 +399,7 @@ class PlayerState implements EntityState {
 
     public team: Team | null = null;
     myCastles: CastleID[] = [];
+    myMines: NeutralID[] = [];
     public entityType: EntityTypes = EntityTypes.Player;
 
     public maxVel: number = 1.0;

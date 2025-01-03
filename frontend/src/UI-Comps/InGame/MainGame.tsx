@@ -90,6 +90,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
         window.addEventListener('resize', debouncedResizePixiApp);
 
         const level = new Level(Levels.Ruins2v2, pixiRef.current);
+        await level.fetchLevelData();
 
         pixiRef.current.stage.eventMode = 'static';
         pixiRef.current.stage.hitArea = pixiRef.current.stage.hitArea = new Rectangle(

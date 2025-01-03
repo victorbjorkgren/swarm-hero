@@ -1,14 +1,14 @@
 import {Team} from "../../types/types";
-import {ClientID, EmptyID, ParticleID} from "@shared/commTypes";
+import {ClientID, NeutralID, ParticleID} from "@shared/commTypes";
 import {Vector2D} from "../Utility";
 import {Game} from "../Game";
 import {gameConfig} from "@shared/config";
 import {estimateFoeStrength} from "../AI/AIBehavior";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
+import {Container, Sprite, Texture} from "pixi.js";
 
-enum NeutralTypes {
-    EMPTY,
-    ROVING,
+export enum NeutralTypes {
+    SWARM,
     GOLDMINE
 }
 
@@ -18,7 +18,7 @@ export class NeutralInterface extends EntityInterface{
     protected renderer: NeutralRenderer;
 
     constructor(
-        id: EmptyID,
+        id: NeutralID,
         pos: Vector2D,
         wayPoints: Vector2D[],
         neutralType: NeutralTypes,
@@ -40,19 +40,27 @@ export class NeutralInterface extends EntityInterface{
 
     update(delta: number): void {
         this.logic.update(delta);
+        this.tryYield();
+        this.renderer.update();
+    }
+
+    tryYield() {
         if (this.state.yieldingTo !== null) {
             this.signalYield(this.state.yieldingTo);
             this.state.yieldingTo = null;
+            const yieldingToInterface = this.state.scene.getEntityById(this.state.yieldingTo!, EntityTypes.Player);
+            if (yieldingToInterface === undefined) new Error("Tried yielding to non player entity");
+            this.state.team = yieldingToInterface!.state.team
         }
     }
 
     signalYield(yieldingTo: ClientID): void {
-        this.state.scene.broadcastYield(this.state.id, yieldingTo);
+        this.state.scene.broadcastYield(this.state.id, this.state.neutralType, yieldingTo);
     }
 }
 
 class NeutralState implements EntityState {
-    entityType: EntityTypes = EntityTypes.Null;
+    entityType: EntityTypes = EntityTypes.Neutral;
     givesIncome: number = 0;
     health: number = 1;
     mass: number = Infinity;
@@ -73,7 +81,7 @@ class NeutralState implements EntityState {
     yieldingTo: ClientID | null = null;
 
     constructor(
-        public id: EmptyID,
+        public id: NeutralID,
         public pos: Vector2D,
         public wayPoints: Vector2D[],
         public neutralType: NeutralTypes,
@@ -124,7 +132,7 @@ class NeutralLogic extends EntityLogic{
         for (const player of this.state.scene.players.values()) {
             if (this.state.pos.sqDistanceTo(player.state.pos) < this.state.yieldDistance) {
                 const playerStrength = estimateFoeStrength(player.state.id, this.state.id, this.state.scene.particleSystem?.getParticles())
-                console.log("playerStrength", playerStrength, player.state.id);
+                // console.log("playerStrength", playerStrength, player.state.id);
                 if (playerStrength > this.state.yieldLimit) {
                     this.state.yieldingTo = player.state.id;
                     return;
@@ -135,24 +143,74 @@ class NeutralLogic extends EntityLogic{
 }
 
 class NeutralRenderer extends EntityRenderer {
-    constructor(protected state: EntityState) {
+    private neutralSprite: Container | null = null;
+    private neutralTexture: Texture[] | null = null;
+    private flags: {red: Sprite, blue: Sprite} | null = null;
+
+    constructor(protected state: NeutralState) {
         super();
+        if (this.state.neutralType === NeutralTypes.GOLDMINE) {
+            if (!state.scene.mineTexturePack) throw new Error("Could not find a mineTexturePack");
+            if (!state.scene.flagSprites) throw new Error("Could not find a Flag Sprites");
+            this.neutralTexture = state.scene.mineTexturePack;
+            this.flags = {
+                red: new Sprite(state.scene.flagSprites.red),
+                blue: new Sprite(state.scene.flagSprites.blue)
+            };
+            this.initSprite();
+        }
     }
 
+    update() {
+        this.renderSelf();
+        this.renderAttack();
+        this.renderStatsBar();
+    }
+    
     protected renderSelf(): void {
-        throw new Error("Method not implemented.");
+        if (!this.neutralSprite) return;
+        this.neutralSprite!.x = this.state.pos.x * this.state.scene.renderScale;
+        this.neutralSprite!.y = this.state.pos.y * this.state.scene.renderScale;
+        this.neutralSprite!.scale.set(.1 * this.state.scene.renderScale);
+        switch (this.state.team?.color)
     }
+
     protected renderAttack(): void {
-        throw new Error("Method not implemented.");
+
     }
+
     protected renderStatsBar(): void {
-        throw new Error("Method not implemented.");
+
     }
-    public update(): void {
-        throw new Error("Method not implemented.");
+
+    private initSprite() {
+        if (this.neutralTexture === null) return;
+        if (this.flags === null) return;
+
+        this.flags.red.visible = false;
+        this.flags.blue.visible = false;
+        this.flags.red.anchor.set(.8, .9);
+        this.flags.blue.anchor.set(.8, .9);
+        this.flags.red.zIndex = Game.zIndex.ground;
+        this.flags.blue.zIndex = Game.zIndex.ground;
+
+        const rnd: number = Math.floor(Math.random() * this.neutralTexture.length)
+        const baseSprite: Sprite = new Sprite(this.neutralTexture[rnd]);
+        baseSprite.anchor.set(0.5);
+        baseSprite.zIndex = Game.zIndex.ground;
+
+        this.neutralSprite = new Container();
+        this.neutralSprite.addChild(baseSprite);
+        this.neutralSprite.addChild(this.flags.blue);
+        this.neutralSprite.addChild(this.flags.red);
+        this.state.scene.pixiRef.stage.addChild(this.neutralSprite);
     }
+
     public cleanUp(): void {
-        throw new Error("Method not implemented.");
+        if (this.neutralSprite) {
+            this.state.scene.pixiRef.stage.removeChild(this.neutralSprite);
+            this.neutralSprite.destroy();
+        }
     }
 
 }

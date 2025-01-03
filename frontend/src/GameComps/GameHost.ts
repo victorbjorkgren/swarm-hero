@@ -12,7 +12,7 @@ import {
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
-    InitialDataPackage, LatencyReport, ParticleInitData,
+    InitialDataPackage, LatencyReport, NeutralID, NeutralInitData, ParticleInitData,
     ParticleUpdateData,
     PlayerInitData,
     PlayerUpdateData,
@@ -280,6 +280,7 @@ export default class GameHost {
         const playerInitData: PlayerInitData[] = []
         const castleInitData: CastleInitData[] = []
         const particleInitData: ParticleInitData[] = []
+        const neutralBuildings: NeutralInitData[] = []
 
         this.localClientScene.level.neutralSwarms.concat().forEach((swarm) => {
             const emptyOwner = uuidv4();
@@ -292,8 +293,16 @@ export default class GameHost {
                     ownerId: emptyOwner,
                     teamName: 'Neutral'
                 })
-
             }
+        })
+
+        this.localClientScene.level.neutralBuildings.forEach(building => {
+            neutralBuildings.push({
+                id: uuidv4(),
+                pos: building.position.copy(),
+                type: building.type,
+                income: building.income,
+            })
         })
 
         let teamNames = Array.from(this.localClientScene.teams.keys());
@@ -313,7 +322,12 @@ export default class GameHost {
             index++;
         })
 
-        this.initialData = {players: playerInitData, castles: castleInitData, neutralParticles: particleInitData};
+        this.initialData = {
+            players: playerInitData,
+            castles: castleInitData,
+            neutralParticles: particleInitData,
+            neutralBuildings: neutralBuildings
+        };
         this.sendInitialData();
     };
 

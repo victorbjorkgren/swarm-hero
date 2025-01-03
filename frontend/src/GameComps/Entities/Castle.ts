@@ -1,6 +1,6 @@
 import {
     Team,
-    TexturePack
+    HighlightTexturePack
 } from "../../types/types";
 import {Game} from "../Game";
 import {Vector2D} from "../Utility";
@@ -135,7 +135,7 @@ class CastleLogic extends EntityLogic{
 class CastleRenderer extends EntityRenderer {
     private castleSprite: Sprite | null = null;
     private healthSprite: Graphics | null = null;
-    private texture: TexturePack;
+    private texture: HighlightTexturePack;
 
     constructor(
         protected state: CastleState

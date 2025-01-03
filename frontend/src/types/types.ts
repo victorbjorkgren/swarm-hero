@@ -1,7 +1,7 @@
 import {Vector2D} from "../GameComps/Utility";
 import {AnimatedSprite, Texture} from "pixi.js";
 import {CastleInterface} from "../GameComps/Entities/Castle";
-import {CastleID, ClientID} from "@shared/commTypes";
+import {CastleID, ClientID, TeamName} from "@shared/commTypes";
 import {CharacterStats} from "../UI-Comps/Lobby/CharacterCreation/StatSelection";
 
 export interface Polygon {
@@ -24,12 +24,13 @@ export interface AABBCollider {
 }
 
 export interface Team {
+    name: TeamName,
     color: number,
     playerIds: ClientID[],
     castleIds: CastleID[],
 }
 
-export interface TexturePack {
+export interface HighlightTexturePack {
     normal: Texture;
     highlight: Texture;
 }

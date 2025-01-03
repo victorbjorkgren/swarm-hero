@@ -11,7 +11,7 @@
 	"iid": "2efc9000-9b00-11ef-a441-658d2ba3d094",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473703,
-	"nextUid": 101,
+	"nextUid": 103,
 	"identifierStyle": "Capitalize",
 	"toc": [
 		{
@@ -44,63 +44,17 @@
 				}, "worldX": 1488, "worldY": 176, "widPx": 32, "heiPx": 32, "fields" : {} }
 			]
 		},
+		{ "identifier": "NeutralStaticSwarm", "instances": [], "instancesData": [] },
+		{ "identifier": "NeutralRovingSwarm", "instances": [], "instancesData": [] },
 		{
-			"identifier": "NeutralStaticSwarm",
-			"instances": [],
-			"instancesData": [
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "8d5d0de0-9b00-11ef-96ce-5ba7bb691aa9"
-				}, "worldX": 1200, "worldY": 592, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "92e14150-9b00-11ef-96ce-53920c70e62c"
-				}, "worldX": 880, "worldY": 784, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "97490840-9b00-11ef-96ce-a54b15a0041f"
-				}, "worldX": 880, "worldY": 176, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "a5bafff0-9b00-11ef-96ce-89c17a2d0aae"
-				}, "worldX": 1520, "worldY": 464, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "a8b3a680-9b00-11ef-96ce-15b5a16c7f4f"
-				}, "worldX": 240, "worldY": 496, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "ae013990-9b00-11ef-96ce-d1289993d86c"
-				}, "worldX": 496, "worldY": 336, "widPx": 16, "heiPx": 16, "fields" : {} },
-				{ "iids": {
-					"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
-					"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
-					"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-					"entityIid": "b152ae80-9b00-11ef-96ce-27434750203a"
-				}, "worldX": 880, "worldY": 464, "widPx": 16, "heiPx": 16, "fields" : {} }
-			]
-		},
-		{
-			"identifier": "NeutralRovingSwarm",
+			"identifier": "GoldMine",
 			"instances": [],
 			"instancesData": [{ "iids": {
 				"worldIid": "2efcb710-9b00-11ef-a441-b5da6dfe9bec",
 				"levelIid": "2efcde20-9b00-11ef-a441-53a25bad75d6",
 				"layerIid": "f9a46d30-9b00-11ef-a597-a9ccc2bd1197",
-				"entityIid": "f244cf90-9b00-11ef-96ce-8d00e10aeb5a"
-			}, "worldX": 752, "worldY": 464, "widPx": 16, "heiPx": 16, "fields" : {} }]
+				"entityIid": "03cee4d0-9b00-11ef-9438-a182afe9e2d4"
+			}, "worldX": 816, "worldY": 496, "widPx": 32, "heiPx": 32, "fields" : {} }]
 		}
 	],
 	"worldLayout": "Free",
@@ -1696,6 +1650,41 @@
 					"tilesetUid": null
 				}
 			]
+		},
+		{
+			"identifier": "GoldMine",
+			"uid": 101,
+			"tags": [],
+			"exportToToc": true,
+			"allowOutOfBounds": false,
+			"doc": null,
+			"width": 32,
+			"height": 32,
+			"resizableX": false,
+			"resizableY": false,
+			"minWidth": null,
+			"maxWidth": null,
+			"minHeight": null,
+			"maxHeight": null,
+			"keepAspectRatio": false,
+			"tileOpacity": 1,
+			"fillOpacity": 0.08,
+			"lineOpacity": 0,
+			"hollow": false,
+			"color": "#D77643",
+			"renderMode": "Tile",
+			"showName": true,
+			"tilesetId": 102,
+			"tileRenderMode": "FitInside",
+			"tileRect": { "tilesetUid": 102, "x": 0, "y": 0, "w": 512, "h": 512 },
+			"uiTileRect": null,
+			"nineSliceBorders": [],
+			"maxCount": 0,
+			"limitScope": "PerLevel",
+			"limitBehavior": "MoveLastOne",
+			"pivotX": 0.5,
+			"pivotY": 0.5,
+			"fieldDefs": []
 		}
 	], "tilesets": [
 		{
@@ -1804,6 +1793,25 @@
 				"opaqueTiles": "0000000000000000000001001000000000000100100000000000010010000000000000000000000000000100100000000000010010000000000001001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 				"averageColors": "00000000000000000000000000000000000000000000000017762877287717760000f765f7650000f765f7650643f765f7650542000000000000b655b65500000000f766f7660000f766f7660542f665f76605430000000000006654666500000000f765f7650000f765f7650532f665f77505320000000000000000000000000000000000000000000000000000000000000000000000000000c665c66500000000f765f7650000f765f7750643f765f77505420000000000008665866500000000f665f7650000f665f7650542f665f76505420000000000000000000000000000f765f7650000f765f7650532f665f765053200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 			}
+		},
+		{
+			"__cWid": 1,
+			"__cHei": 1,
+			"identifier": "Gold_mine_2",
+			"uid": 102,
+			"relPath": "../gold_mine_2.png",
+			"embedAtlas": null,
+			"pxWid": 512,
+			"pxHei": 512,
+			"tileGridSize": 512,
+			"spacing": 0,
+			"padding": 0,
+			"tags": [],
+			"tagsSourceEnumUid": null,
+			"enumTags": [],
+			"customData": [],
+			"savedSelections": [],
+			"cachedPixelData": { "opaqueTiles": "0", "averageColors": "9875" }
 		}
 	], "enums": [], "externalEnums": [], "levelFields": [] },
 	"levels": [
@@ -2917,167 +2925,20 @@
 							"__worldY": 176
 						},
 						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [37,18],
+							"__identifier": "GoldMine",
+							"__grid": [25,15],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "8d5d0de0-9b00-11ef-96ce-5ba7bb691aa9",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [1200,592],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 1200,
-							"__worldY": 592
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [27,24],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "92e14150-9b00-11ef-96ce-53920c70e62c",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [880,784],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 880,
-							"__worldY": 784
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [27,5],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "97490840-9b00-11ef-96ce-a54b15a0041f",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [880,176],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 880,
-							"__worldY": 176
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [47,14],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "a5bafff0-9b00-11ef-96ce-89c17a2d0aae",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [1520,464],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 1520,
-							"__worldY": 464
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [7,15],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "a8b3a680-9b00-11ef-96ce-15b5a16c7f4f",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [240,496],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 240,
+							"__tile": { "tilesetUid": 102, "x": 0, "y": 0, "w": 512, "h": 512 },
+							"__smartColor": "#D77643",
+							"iid": "03cee4d0-9b00-11ef-9438-a182afe9e2d4",
+							"width": 32,
+							"height": 32,
+							"defUid": 101,
+							"px": [816,496],
+							"fieldInstances": [],
+							"__worldX": 816,
 							"__worldY": 496
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [15,10],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "ae013990-9b00-11ef-96ce-d1289993d86c",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [496,336],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }],
-							"__worldX": 496,
-							"__worldY": 336
-						},
-						{
-							"__identifier": "NeutralStaticSwarm",
-							"__grid": [27,14],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "b152ae80-9b00-11ef-96ce-27434750203a",
-							"width": 16,
-							"height": 16,
-							"defUid": 94,
-							"px": [880,464],
-							"fieldInstances": [{ "__identifier": "NParticles", "__type": "Int", "__value": 30, "__tile": null, "defUid": 95, "realEditorValues": [{ "id": "V_Int", "params": [30] }] }],
-							"__worldX": 880,
-							"__worldY": 464
-						},
-						{
-							"__identifier": "NeutralRovingSwarm",
-							"__grid": [23,14],
-							"__pivot": [0.5,0.5],
-							"__tags": [],
-							"__tile": null,
-							"__smartColor": "#BE4A2F",
-							"iid": "f244cf90-9b00-11ef-96ce-8d00e10aeb5a",
-							"width": 16,
-							"height": 16,
-							"defUid": 98,
-							"px": [752,464],
-							"fieldInstances": [
-								{ "__identifier": "NParticles", "__type": "Int", "__value": 10, "__tile": null, "defUid": 99, "realEditorValues": [{ "id": "V_Int", "params": [10] }] },
-								{ "__identifier": "WayPoints", "__type": "Array<Point>", "__value": [
-									{ "cx": 14, "cy": 6 },
-									{ "cx": 40, "cy": 6 },
-									{ "cx": 41, "cy": 22 },
-									{ "cx": 12, "cy": 22 },
-									{ "cx": 10, "cy": 15 },
-									{ "cx": 21, "cy": 14 }
-								], "__tile": null, "defUid": 100, "realEditorValues": [
-									{
-										"id": "V_String",
-										"params": ["14,6"]
-									},
-									{
-										"id": "V_String",
-										"params": ["40,6"]
-									},
-									{
-										"id": "V_String",
-										"params": ["41,22"]
-									},
-									{
-										"id": "V_String",
-										"params": ["12,22"]
-									},
-									{
-										"id": "V_String",
-										"params": ["10,15"]
-									},
-									{
-										"id": "V_String",
-										"params": ["21,14"]
-									}
-								] }
-							],
-							"__worldX": 752,
-							"__worldY": 464
 						}
 					]
 				},

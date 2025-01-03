@@ -8,7 +8,7 @@ export enum EntityTypes {
     Player,
     Castle,
     Particle,
-    Null,
+    Neutral,
     Any,
 }
 
@@ -92,7 +92,7 @@ export abstract class EntityRenderer {
 
     protected updateAnimationSprites() {
         if (!this.speedUpBuffAnimation) {
-            console.log('greenSprite', this.state.scene.greenIdleSprite);
+            // console.log('greenSprite', this.state.scene.greenIdleSprite);
             if (this.state.scene.greenIdleSprite === null) return
             this.speedUpBuffAnimation = new AnimatedSprite(this.state.scene.greenIdleSprite);
             this.speedUpBuffAnimation.zIndex = Game.zIndex.ground;

@@ -3,14 +3,15 @@ import {Vector2D} from "../frontend/src/GameComps/Utility";
 import {SpellPack} from "../frontend/src/types/spellTypes";
 import {UnitPack, Units} from "../frontend/src/types/unitTypes";
 import {EntityTypes} from "../frontend/src/types/EntityTypes";
+import {NeutralTypes} from "../frontend/src/GameComps/Entities/Neutral";
 
 export type EntityID = string;
 export type ClientID = EntityID;
 export type CastleID = EntityID;
 export type ParticleID = EntityID;
-export type EmptyID = EntityID;
+export type NeutralID = EntityID;
 
-export type TeamName = string;
+export type TeamName = 'Neutral' | 'Red' | 'Blue';
 
 export type EventID = string
 export type SpellCastID = EventID;
@@ -64,7 +65,8 @@ export type EntityDeathMessage = {
 }
 
 export type EntityYieldMessage = {
-    yielding: EmptyID,
+    yielding: NeutralID,
+    yieldingType: NeutralTypes,
     yieldingTo: ClientID
 }
 
@@ -89,7 +91,15 @@ export type InitialDataMessage = {
 export type InitialDataPackage = {
     players: PlayerInitData[],
     castles: CastleInitData[],
+    neutralBuildings: NeutralInitData[],
     neutralParticles: ParticleInitData[],
+}
+
+export type NeutralInitData = {
+    id: NeutralID,
+    type: NeutralTypes,
+    pos: Vector2D
+    income: number
 }
 
 export type PlayerInitData = {

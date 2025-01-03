@@ -1,6 +1,15 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {AnimatedSpriteFrames, Application, Assets, Sprite, Spritesheet, Texture, Ticker} from "pixi.js";
+import {
+    AnimatedSpriteFrames,
+    Application,
+    Assets,
+    Sprite,
+    Spritesheet,
+    Texture,
+    TexturePoolClass,
+    Ticker
+} from "pixi.js";
 import React from "react";
 import {
     AABBCollider,
@@ -8,7 +17,7 @@ import {
     Controls,
     popUpEvent,
     Team,
-    TexturePack
+    HighlightTexturePack
 } from "../types/types";
 import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
@@ -23,7 +32,7 @@ import {
     ClientMessageType,
     ClientPayloads,
     DroneBoughtMessage,
-    EmptyID,
+    NeutralID,
     EntityDeathMessage,
     EntityID,
     EntityYieldMessage,
@@ -46,7 +55,7 @@ import {PeerMap} from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation
 import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
-import {NeutralInterface} from "./Entities/Neutral";
+import {NeutralInterface, NeutralTypes} from "./Entities/Neutral";
 import {EntityInterface, EntityTypes} from "../types/EntityTypes";
 
 type LatencyObject = { pingStart: number, pingCode: string, latency: number };
@@ -68,13 +77,15 @@ export class Game {
     public remainingPlayers: Set<PlayerInterface> = new Set();
     public teams: Map<TeamName, Team> = new Map();
     public castles: Map<CastleID, CastleInterface> = new Map();
-    public emptyEntities: Map<EmptyID, NeutralInterface> = new Map();
+    public neutralEntities: Map<NeutralID, NeutralInterface> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
     private localcontroller: LocalPlayerController | null = null;
 
     private cameraPivot: Vector2D = Vector2D.zeros();
-    public castleTexturePack: TexturePack | null = null;
+    public castleTexturePack: HighlightTexturePack | null = null;
+    public mineTexturePack: Texture[] | null = null;
+    public flagSprites: {red: Texture, blue: Texture} | null = null;
     public  explosionSprite: AnimatedSpriteFrames | null = null;
     public  greenSummonSprite: AnimatedSpriteFrames | null = null;
     public  greenIdleSprite: AnimatedSpriteFrames | null = null;
@@ -152,16 +163,19 @@ export class Game {
         this.setLocalPlayer(character)
 
         this.teams.set('Neutral', {
+            name: 'Neutral',
             color: 0xeed9c4,
             playerIds: [],
             castleIds: [],
         })
         this.teams.set('Red', {
+            name: 'Red',
             color: 0xff0000,
             playerIds: [],
             castleIds: [],
         })
         this.teams.set('Blue', {
+            name: 'Blue',
             color: 0x0000ff,
             playerIds: [],
             castleIds: [],
@@ -238,13 +252,14 @@ export class Game {
         }
     }
 
-    broadcastYield(yielding: EmptyID, yieldingTo: ClientID) {
+    broadcastYield(yielding: NeutralID, yieldingType: NeutralTypes, yieldingTo: ClientID) {
         // Host Event
         if (this.server) {
             this.server.broadcast(
                 ServerMessageType.Yield,
                 {
                     yielding: yielding,
+                    yieldingType: yieldingType,
                     yieldingTo: yieldingTo,
                 }
             )
@@ -463,7 +478,7 @@ export class Game {
             case EntityTypes.Particle:
                 return this.particleSystem?.getParticles().getById(id);
             case EntityTypes.Any:
-                return this.castles.get(id) ?? this.players.get(id) ?? this.emptyEntities.get(id) ?? this.particleSystem?.getParticles().getById(id);
+                return this.castles.get(id) ?? this.players.get(id) ?? this.neutralEntities.get(id) ?? this.particleSystem?.getParticles().getById(id);
             default:
                 throw new Error(`Unsupported Entity type: ${type}`);
         }
@@ -656,9 +671,21 @@ export class Game {
             Assets.load('/sprites/magic/blue_doom.json'),
             Assets.load('/sprites/magic/blue_doom_idle.json')
         );
+        const mine1Ready: Promise<Texture> = Assets.load('/sprites/gold_mine.png');
+        const mine2Ready: Promise<Texture> = Assets.load('/sprites/gold_mine_2.png');
+        const redFlag: Promise<Texture> = Assets.load('/sprites/red_flag.png');
+        const blueFlag: Promise<Texture> = Assets.load('/sprites/blue_flag.png');
         this.castleTexturePack = {
             'normal': await Assets.load('/sprites/castle-sprite.png'),
             'highlight': await Assets.load('/sprites/castle-sprite-highlight.png'),
+        }
+        this.mineTexturePack = [
+            await mine1Ready,
+            await mine2Ready
+        ];
+        this.flagSprites = {
+            red: await redFlag,
+            blue: await blueFlag,
         }
         await cat;
         await explosionReady;
@@ -706,12 +733,17 @@ export class Game {
             this.idTypes.set(cInit.id, EntityTypes.Castle);
         })
 
+        initData.package.neutralBuildings.forEach(nInit => {
+            const pos = Vector2D.cast(nInit.pos);
+            this.neutralEntities.set(nInit.id, new NeutralInterface(nInit.id, pos, [], NeutralTypes.GOLDMINE, this));
+        })
+
         initData.package.neutralParticles.forEach(pInit => {
             const pos = Vector2D.cast(pInit.pos);
             const wayPoints = pInit.wayPoints.map(p => Vector2D.cast(p));
-            if (pInit.ownerId && !this.emptyEntities.has(pInit.ownerId)) {
-                this.emptyEntities.set(pInit.ownerId, new NeutralInterface(pInit.ownerId, pos, wayPoints, this));
-                this.idTypes.set(pInit.ownerId, EntityTypes.Null);
+            if (pInit.ownerId && !this.neutralEntities.has(pInit.ownerId)) {
+                this.neutralEntities.set(pInit.ownerId, new NeutralInterface(pInit.ownerId, pos, wayPoints, NeutralTypes.SWARM, this));
+                this.idTypes.set(pInit.ownerId, EntityTypes.Neutral);
             }
             const team = this.teams.get(pInit.teamName);
             if (!team) throw new Error(`Unknown team: ${pInit.teamName}`);
@@ -746,7 +778,7 @@ export class Game {
         this.castles.forEach(castle => {
             castle.update(delta);
         })
-        this.emptyEntities.forEach(empty => {
+        this.neutralEntities.forEach(empty => {
             empty.update(delta);
         })
 

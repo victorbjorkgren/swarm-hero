@@ -6,6 +6,7 @@ import {gameConfig} from "@shared/config";
 import {estimateFoeStrength} from "../AI/AIBehavior";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
 import {Container, Sprite, Texture} from "pixi.js";
+import {PlayerInterface} from "./Player";
 
 export enum NeutralTypes {
     SWARM,
@@ -21,11 +22,12 @@ export class NeutralInterface extends EntityInterface{
         id: NeutralID,
         pos: Vector2D,
         wayPoints: Vector2D[],
+        income: number,
         neutralType: NeutralTypes,
         scene: Game
     ) {
         super();
-        this.state = new NeutralState(id, pos, wayPoints, neutralType, scene);
+        this.state = new NeutralState(id, pos, wayPoints, income, neutralType, scene);
         this.logic = new NeutralLogic(this.state);
         this.renderer = new NeutralRenderer(this.state);
     }
@@ -45,23 +47,38 @@ export class NeutralInterface extends EntityInterface{
     }
 
     tryYield() {
-        if (this.state.yieldingTo !== null) {
-            this.signalYield(this.state.yieldingTo);
-            this.state.yieldingTo = null;
-            const yieldingToInterface = this.state.scene.getEntityById(this.state.yieldingTo!, EntityTypes.Player);
-            if (yieldingToInterface === undefined) new Error("Tried yielding to non player entity");
-            this.state.team = yieldingToInterface!.state.team
-        }
+        if (this.state.yieldingTo === null) return;
+        console.log(`Yielding to ${this.state.yieldingTo}`)
+        this.signalYield(this.state.yieldingTo);
+        // const yieldingToInterface = this.state.scene.getEntityById(this.state.yieldingTo, EntityTypes.Any);
+        // if (yieldingToInterface === undefined) throw new Error("Tried yielding to non player entity");
+        // this.state.team = yieldingToInterface.state.team
+        // this.state.yieldingTo = null;
     }
 
     signalYield(yieldingTo: ClientID): void {
         this.state.scene.broadcastYield(this.state.id, this.state.neutralType, yieldingTo);
     }
+
+    switchAllegiance(newOwner: ClientID): void {
+        if (this.state.owner) {
+            const ownerInterface: PlayerInterface | undefined = this.state.scene.getEntityById(this.state.owner, EntityTypes.Player);
+            if (!ownerInterface) throw new Error("Has owner but interface not found");
+            ownerInterface.loseMineControl(this.state.id)
+        }
+        const newOwnerInterface = this.state.scene.getEntityById(newOwner, EntityTypes.Player);
+        if (newOwnerInterface === undefined) throw new Error("Tried yielding to non player entity");
+
+        newOwnerInterface.gainMineControl(this.state.id);
+        this.state.owner = newOwner;
+        this.state.team = newOwnerInterface.state.team;
+
+        this.state.yieldingTo = null;
+    }
 }
 
 class NeutralState implements EntityState {
     entityType: EntityTypes = EntityTypes.Neutral;
-    givesIncome: number = 0;
     health: number = 1;
     mass: number = Infinity;
     radius: number = 1;
@@ -79,11 +96,13 @@ class NeutralState implements EntityState {
     wayPointInter: number = 0;
 
     yieldingTo: ClientID | null = null;
+    owner: ClientID | null = null;
 
     constructor(
         public id: NeutralID,
         public pos: Vector2D,
         public wayPoints: Vector2D[],
+        public givesIncome: number,
         public neutralType: NeutralTypes,
         public scene: Game
     ) {
@@ -169,10 +188,27 @@ class NeutralRenderer extends EntityRenderer {
     
     protected renderSelf(): void {
         if (!this.neutralSprite) return;
+        if (!this.flags) return;
         this.neutralSprite!.x = this.state.pos.x * this.state.scene.renderScale;
         this.neutralSprite!.y = this.state.pos.y * this.state.scene.renderScale;
         this.neutralSprite!.scale.set(.1 * this.state.scene.renderScale);
-        switch (this.state.team?.color)
+        if (!this.state.team) return;
+        switch (this.state.team.name) {
+            case 'Red':
+                this.flags.red.visible = true;
+                this.flags.blue.visible = false;
+                break;
+            case 'Blue':
+                this.flags.red.visible = false;
+                this.flags.blue.visible = true;
+                break;
+            case 'Neutral':
+                this.flags.red.visible = false;
+                this.flags.blue.visible = false;
+                break;
+            default:
+                throw new Error(`Unknown team: ${this.state.team?.name}`);
+        }
     }
 
     protected renderAttack(): void {
@@ -189,8 +225,8 @@ class NeutralRenderer extends EntityRenderer {
 
         this.flags.red.visible = false;
         this.flags.blue.visible = false;
-        this.flags.red.anchor.set(.8, .9);
-        this.flags.blue.anchor.set(.8, .9);
+        this.flags.red.anchor.set(-.6, .7);
+        this.flags.blue.anchor.set(-.6, .7);
         this.flags.red.zIndex = Game.zIndex.ground;
         this.flags.blue.zIndex = Game.zIndex.ground;
 
@@ -200,9 +236,9 @@ class NeutralRenderer extends EntityRenderer {
         baseSprite.zIndex = Game.zIndex.ground;
 
         this.neutralSprite = new Container();
-        this.neutralSprite.addChild(baseSprite);
         this.neutralSprite.addChild(this.flags.blue);
         this.neutralSprite.addChild(this.flags.red);
+        this.neutralSprite.addChild(baseSprite);
         this.state.scene.pixiRef.stage.addChild(this.neutralSprite);
     }
 

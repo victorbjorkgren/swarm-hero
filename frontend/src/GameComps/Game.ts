@@ -1,24 +1,8 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {
-    AnimatedSpriteFrames,
-    Application,
-    Assets,
-    Sprite,
-    Spritesheet,
-    Texture,
-    TexturePoolClass,
-    Ticker
-} from "pixi.js";
+import {AnimatedSpriteFrames, Application, Assets, Spritesheet, Texture, Ticker} from "pixi.js";
 import React from "react";
-import {
-    AABBCollider,
-    Character,
-    Controls,
-    popUpEvent,
-    Team,
-    HighlightTexturePack
-} from "../types/types";
+import {AABBCollider, Character, Controls, HighlightTexturePack, popUpEvent, Team} from "../types/types";
 import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
 import {gameConfig, UnitPacks} from "@shared/config";
@@ -32,12 +16,12 @@ import {
     ClientMessageType,
     ClientPayloads,
     DroneBoughtMessage,
-    NeutralID,
     EntityDeathMessage,
     EntityID,
     EntityYieldMessage,
     GameUpdateMessage,
     InitialDataMessage,
+    NeutralID,
     ParticleUpdateData,
     PingCode,
     PlayerUpdateData,
@@ -56,7 +40,7 @@ import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
 import {NeutralInterface, NeutralTypes} from "./Entities/Neutral";
-import {EntityInterface, EntityTypes} from "../types/EntityTypes";
+import {EntityInterface, EntityMap, EntityTypes} from "../types/EntityTypes";
 
 type LatencyObject = { pingStart: number, pingCode: string, latency: number };
 
@@ -415,13 +399,22 @@ export class Game {
 
     handleEntityYield(message: EntityYieldMessage) {
         const swarmMembers = this.particleSystem.unitManager.getOwnerUnits(message.yielding).values()
-        const yieldingToInterface = this.getEntityById(message.yieldingTo, EntityTypes.Any);
-        if (!yieldingToInterface) throw new Error(`${message.yieldingTo} has not interface`);
+        const yieldingToInterface = this.getEntityById(message.yieldingTo, EntityTypes.Player);
+        if (!yieldingToInterface) throw new Error(`${message.yieldingTo} has no player interface`);
         const newTeam = yieldingToInterface.state.team!
+
+        // Switch allegiance for any drones
         for (const memberGroup of swarmMembers) {
             for (const member of memberGroup) {
                 this.particleSystem.unitManager.switchOwner(member, message.yieldingTo, newTeam);
             }
+        }
+
+        // Switch allegiance for any drones
+        if (message.yieldingType === NeutralTypes.GOLDMINE) {
+            const mineInterface = this.getEntityById(message.yielding, EntityTypes.Neutral);
+            if (!mineInterface) throw new Error(`Mine ${message.yieldingTo} has no interface`);
+            mineInterface.switchAllegiance(message.yieldingTo);
         }
     }
 
@@ -469,16 +462,19 @@ export class Game {
         })
     }
 
-    getEntityById(id: EntityID, type: EntityTypes): EntityInterface | undefined {
+    getEntityById<T extends EntityTypes>(id: EntityID, type: T): EntityMap[T] | undefined {
         switch (type) {
             case EntityTypes.Castle:
-                return this.castles.get(id);
+                return this.castles.get(id) as EntityMap[T];
             case EntityTypes.Player:
-                return this.players.get(id);
+                return this.players.get(id) as EntityMap[T];
             case EntityTypes.Particle:
-                return this.particleSystem?.getParticles().getById(id);
+                return this.particleSystem?.getParticles().getById(id) as EntityMap[T];
+            case EntityTypes.Neutral:
+                return this.neutralEntities?.get(id) as EntityMap[T];
             case EntityTypes.Any:
-                return this.castles.get(id) ?? this.players.get(id) ?? this.neutralEntities.get(id) ?? this.particleSystem?.getParticles().getById(id);
+                const entityInterface = this.castles.get(id) ?? this.players.get(id) ?? this.neutralEntities.get(id) ?? this.particleSystem?.getParticles().getById(id);
+                return entityInterface as EntityMap[T];
             default:
                 throw new Error(`Unsupported Entity type: ${type}`);
         }
@@ -735,14 +731,14 @@ export class Game {
 
         initData.package.neutralBuildings.forEach(nInit => {
             const pos = Vector2D.cast(nInit.pos);
-            this.neutralEntities.set(nInit.id, new NeutralInterface(nInit.id, pos, [], NeutralTypes.GOLDMINE, this));
+            this.neutralEntities.set(nInit.id, new NeutralInterface(nInit.id, pos, [], nInit.income, NeutralTypes.GOLDMINE, this));
         })
 
         initData.package.neutralParticles.forEach(pInit => {
             const pos = Vector2D.cast(pInit.pos);
             const wayPoints = pInit.wayPoints.map(p => Vector2D.cast(p));
             if (pInit.ownerId && !this.neutralEntities.has(pInit.ownerId)) {
-                this.neutralEntities.set(pInit.ownerId, new NeutralInterface(pInit.ownerId, pos, wayPoints, NeutralTypes.SWARM, this));
+                this.neutralEntities.set(pInit.ownerId, new NeutralInterface(pInit.ownerId, pos, wayPoints, 0, NeutralTypes.SWARM, this));
                 this.idTypes.set(pInit.ownerId, EntityTypes.Neutral);
             }
             const team = this.teams.get(pInit.teamName);

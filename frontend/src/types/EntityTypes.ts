@@ -3,6 +3,10 @@ import {Game} from "../GameComps/Game";
 import {EntityID, ParticleID} from "@shared/commTypes";
 import {Vector2D} from "../GameComps/Utility";
 import {Team} from "./types";
+import {PlayerInterface} from "../GameComps/Entities/Player";
+import {CastleInterface} from "../GameComps/Entities/Castle";
+import {ParticleInterface} from "../GameComps/Entities/Particle";
+import {NeutralInterface} from "../GameComps/Entities/Neutral";
 
 export enum EntityTypes {
     Player,
@@ -10,6 +14,14 @@ export enum EntityTypes {
     Particle,
     Neutral,
     Any,
+}
+
+export type EntityMap = {
+    [EntityTypes.Player]: PlayerInterface;
+    [EntityTypes.Castle]: CastleInterface;
+    [EntityTypes.Particle]: ParticleInterface;
+    [EntityTypes.Neutral]: NeutralInterface;
+    [EntityTypes.Any]: EntityInterface;
 }
 
 export abstract class EntityInterface {

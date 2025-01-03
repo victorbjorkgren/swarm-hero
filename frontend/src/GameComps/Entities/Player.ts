@@ -35,6 +35,7 @@ import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
 import {SpectatorController} from "../Controllers/SpectatorController";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
+import {NeutralInterface} from "./Neutral";
 
 export class PlayerInterface extends EntityInterface {
     public state: PlayerState;
@@ -126,6 +127,7 @@ export class PlayerInterface extends EntityInterface {
         })
         this.state.myMines.forEach(mineId => {
             const mine = this.state.scene.getEntityById(mineId, EntityTypes.Neutral)
+            console.log(`Player ${this.state.id} got income ${mine?.state.givesIncome} from a mine!`)
             this.state.gold += mine?.state.givesIncome || 0;
         })
         this.state.scene.particleSystem?.getParticles().ownerForEach(this.state.id, (drone) => {
@@ -193,6 +195,17 @@ export class PlayerInterface extends EntityInterface {
     gainCastleControl(castle: CastleInterface) {
         this.state.myCastles.push(castle.state.id);
         castle.state.owner = this.state.id;
+    }
+
+    gainMineControl(mine: NeutralID) {
+        this.state.myMines.push(mine)
+    }
+
+    loseMineControl(mine: NeutralID) {
+        const idx = this.state.myMines.indexOf(mine);
+        if (idx >= 0) {
+            this.state.myMines.splice(idx, 1);
+        }
     }
 
     attemptBuyDrone(unit: Units, n: number): boolean {

@@ -1,11 +1,12 @@
 import {useGameBackground} from "../../../Hooks/useGameBackground";
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import LoginForm from "./LoginForm";
 import {TitleScreen} from "../TitleScreen";
 import {GameConnection, MainCharacterCreation} from "../CharacterCreation/MainCharacterCreation";
 import {MatchMaking} from "../MatchMaking";
 import {Character} from "../../../types/types";
 import {LoginVerification} from "./LoginVerification";
+import {useLogin} from "../../../Hooks/useAuth";
 
 enum Screens {
     RequestCode,
@@ -21,12 +22,12 @@ type Props = {
 }
 
 export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
-    const [currentStep, setCurrentStep] = useState<Screens>(Screens.RequestCode);
+    const [currentStep, setCurrentStep] = useState<Screens | null>(null);
     const email = useRef<string>("");
-
     const sceneContainerRef = useGameBackground();
-
     const character = useRef<Character | null>(null);
+
+    const { authenticated } = useLogin();
 
     const handleNewGame = () => {
         setCurrentStep(Screens.CharacterCreation);
@@ -46,8 +47,17 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
         enterGameCallback(character.current, connectionData);
     }
 
+    useEffect(() => {
+        if (authenticated) {
+            setCurrentStep(Screens.Title);
+        } else {
+            setCurrentStep(Screens.RequestCode);
+        }
+    }, [authenticated]);
 
-
+    if (currentStep === null) {
+        return <div className="w-screen h-screen bg-transparent flex items-center justify-center text-white">Loading...</div>;
+    }
 
     return (
         <div className={`w-screen h-screen bg-green-950`}>

@@ -1,6 +1,9 @@
+import {jwtDecode} from 'jwt-decode';
 import { useAuth } from './AuthContext';
+import {useEffect, useState} from "react";
 
 export const useLogin = () => {
+    const [authenticated, setAuthenticated] = useState(false);
     const { token, setToken } = useAuth();
 
     const requestCode = async (email: string) => {
@@ -54,5 +57,25 @@ export const useLogin = () => {
         return gameRoomToken;
     }
 
-    return { requestCode, verifyCode, requestGameRoomToken };
+    const isTokenValid = (token: string | null): boolean => {
+        if (!token) return false;
+        try {
+            const { exp } = jwtDecode(token);
+            if (!exp) return false;
+            return exp * 1000 > Date.now();
+        } catch (error) {
+            return false;
+        }
+    };
+
+    // Hook for local checking if the token is valid
+    useEffect(() => {
+        if (token && isTokenValid(token)) {
+            setAuthenticated(true); // Skip login if valid
+        } else {
+            setAuthenticated(false); // Prompt login
+        }
+    }, [token]);
+
+    return { requestCode, verifyCode, requestGameRoomToken, authenticated };
 };

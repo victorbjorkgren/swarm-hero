@@ -40,7 +40,7 @@ import GameHost from "./GameHost";
 import {Level} from "./Levels/Level";
 import {NavMesh} from "./AI/NavMesh";
 import {NeutralInterface, NeutralTypes} from "./Entities/Neutral";
-import {EntityInterface, EntityMap, EntityTypes} from "../types/EntityTypes";
+import {EntityMap, EntityTypes} from "../types/EntityTypes";
 
 type LatencyObject = { pingStart: number, pingCode: string, latency: number };
 
@@ -64,7 +64,6 @@ export class Game {
     public neutralEntities: Map<NeutralID, NeutralInterface> = new Map();
     public idTypes: Map<EntityID, EntityTypes> = new Map();
     public colliders: AABBCollider[] = [];
-    private localcontroller: LocalPlayerController | null = null;
 
     private cameraPivot: Vector2D = Vector2D.zeros();
     public castleTexturePack: HighlightTexturePack | null = null;

@@ -12,7 +12,7 @@ import {
     ClientMessage,
     ClientMessageType,
     GameUpdateMessage,
-    InitialDataPackage, LatencyReport, NeutralID, NeutralInitData, ParticleInitData,
+    InitialDataPackage, LatencyReport, NeutralInitData, ParticleInitData,
     ParticleUpdateData,
     PlayerInitData,
     PlayerUpdateData,
@@ -41,7 +41,6 @@ export default class GameHost {
     private readyForCreation: Map<ClientID, Character> = new Map();
 
     private updateInterval: number | NodeJS.Timeout | null = null;
-    private nextUpdateMessage: GameUpdateMessage | null = null;
 
     constructor(
         private clients: PeerMap,
@@ -101,7 +100,6 @@ export default class GameHost {
     }
 
     handleLatencyReport(reportingId: ClientID, report: LatencyReport) {
-        const reportMap = new Map(report);
         report.forEach(([evaluatedId, latency]) => {
             let subMap = this.latencies.get(evaluatedId)
             if (!subMap) {
@@ -271,11 +269,11 @@ export default class GameHost {
         this.players.clear();
         this.localClientScene.castles.clear();
 
-        const aiCharacter = {
-            playerName: "Kitty",
-            faction: Factions.Wild,
-            stats: {health: 3, speed: 3, magicPower: 3, magicStamina: 3}
-        }
+        // const aiCharacter = {
+        //     playerName: "Kitty",
+        //     faction: Factions.Wild,
+        //     stats: {health: 3, speed: 3, magicPower: 3, magicStamina: 3}
+        // }
 
         const playerInitData: PlayerInitData[] = []
         const castleInitData: CastleInitData[] = []

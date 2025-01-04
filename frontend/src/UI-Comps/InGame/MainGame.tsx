@@ -7,12 +7,11 @@ import {Vector2D} from "../../GameComps/Utility";
 import {WinnerDisplay} from "./WinnerDisplay";
 import {PlayerBar} from "./PlayerBar";
 import {Units} from "../../types/unitTypes";
-import {gameConfig} from "@shared/config";
 import {PlayerInterface} from "../../GameComps/Entities/Player";
 import {Game} from "../../GameComps/Game";
 
 import {ClientID} from "@shared/commTypes";
-import {GameConnection, PeerMap} from "../Lobby/CharacterCreation/MainCharacterCreation";
+import {GameConnection} from "../Lobby/CharacterCreation/MainCharacterCreation";
 import {Level, Levels} from "../../GameComps/Levels/Level";
 
 

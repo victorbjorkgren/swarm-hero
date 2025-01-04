@@ -35,7 +35,6 @@ import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
 import {SpectatorController} from "../Controllers/SpectatorController";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
-import {NeutralInterface} from "./Neutral";
 
 export class PlayerInterface extends EntityInterface {
     public state: PlayerState;

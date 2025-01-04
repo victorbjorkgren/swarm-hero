@@ -1,12 +1,9 @@
 import Papa from 'papaparse';
 
-import ruins2v2 from './ruins2v2/data.json';
 import {Application, Assets, Sprite} from "pixi.js";
 import {Vector2D} from "../Utility";
 import {NeutralTypes} from "../Entities/Neutral";
 import {gameConfig} from "@shared/config";
-
-type levelData = typeof ruins2v2;
 
 export enum Levels {
     Ruins2v2,
@@ -48,11 +45,6 @@ export const loadCSVAsIntArray = async (filePath: string): Promise<number[][]> =
             skipEmptyLines: true,
         });
     });
-}
-
-const loadLevel = async (filePath: string): Promise<LevelData> => {
-    const response = await fetch(filePath);
-    return JSON.parse(await response.text());
 }
 
 type StaticCustomField = {

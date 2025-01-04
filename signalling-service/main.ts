@@ -242,7 +242,7 @@ console.log(`Game Room running on:`);
 (async () => {
     while (running) {
         try {
-            const response = await fetch('http://localhost:4000/keys/');
+            const response = await fetch('https://swarm-login-service.onrender.com/keys/');
 
             if (!response.ok) {
                 console.error('Could not retrieve key from login server');

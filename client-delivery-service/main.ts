@@ -13,7 +13,7 @@ const app = express();
 const main = http.createServer(app);
 // const wss = new WebSocketServer({ server });
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || "8080";
 
 const authenticate = (req: IncomingMessage) => {
 
@@ -26,7 +26,7 @@ app.get('/game-room/', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    console.log('Sending client code')
+    // console.log('Sending client code')
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

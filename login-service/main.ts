@@ -30,7 +30,7 @@ generateKeyPair();
 
 setInterval(generateKeyPair, 24 * 60 * 60 * 1000);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || "4000";
 const EMAIL_FROM = process.env.EMAIL_FROM || 'dev@example.com';
 const EMAIL_USER = process.env.EMAIL_USER || 'dev@example.com';
 const EMAIL_PASS = process.env.EMAIL_PASS || 'dev-email-password';
@@ -144,4 +144,4 @@ app.get('/keys/', (req: Request, res: Response) => {
     res.json({ publicKey });
 });
 
-app.listen(4000, () => console.log('Login service running on http://localhost:4000'));
+app.listen(PORT, () => console.log('Login service running on https://swarm-login-service.onrender.com'));

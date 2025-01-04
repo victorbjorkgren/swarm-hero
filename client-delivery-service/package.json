@@ -5,11 +5,11 @@
   "scripts": {
     "frontend:build": "(cd ../frontend && yarn build)",
     "server:build": "tsc",
-    "build": "yarn frontend:build && yarn server:build",
+    "build": "yarn frontend:build && yarn server:build && yarn transfer",
     "transfer": "mkdir -p public/ && cp -r ../frontend/build/* public/",
     "start": "node dist/socket-server/server.js",
     "launch": "tsc && yarn start",
-    "full-launch": "yarn build && yarn transfer && yarn start"
+    "full-launch": "yarn build && yarn start"
   },
   "type": "module",
   "dependencies": {

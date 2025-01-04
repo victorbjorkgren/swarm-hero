@@ -20,7 +20,7 @@ export const connectMesh = (
     const initializingPeers: InitialPeerMap = new Map();
     const connectedPeers: PeerMap = new Map();
 
-    const signalServer = new WebSocket(`ws://localhost:8081/connect?token=${encodeURIComponent(gameRoomToken)}`);
+    const signalServer = new WebSocket(`wss://swarm-match-making.onrender.com/connect?token=${encodeURIComponent(gameRoomToken)}`);
 
     let myId: string = "";
     let hostId: string = "";

@@ -7,7 +7,7 @@ export const useLogin = () => {
     const { token, setToken } = useAuth();
 
     const requestCode = async (email: string) => {
-        const response = await fetch('http://localhost:4000/request-code/', {
+        const response = await fetch('https://swarm-login-service.onrender.com/request-code/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
@@ -21,7 +21,7 @@ export const useLogin = () => {
     };
 
     const verifyCode = async (email: string, code: string) => {
-        const response = await fetch('http://localhost:4000/verify-code/', {
+        const response = await fetch('https://swarm-login-service.onrender.com/verify-code/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, code: code }),
@@ -39,7 +39,7 @@ export const useLogin = () => {
 
     const requestGameRoomToken = async (): Promise<string | null> => {
         if (!token) return null;
-        const response: Response = await fetch('http://localhost:8080/request-game-room-token/', {
+        const response: Response = await fetch('https://swarm-match-making.onrender.com/request-game-room-token/', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

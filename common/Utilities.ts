@@ -24,6 +24,7 @@ export interface AuthenticatedRequest extends Request {
     user?: JwtPayload;
 }
 
+
 export const authenticateToken = (publicKeyUrl: string) => {
     return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         const authHeader = req.headers.authorization;

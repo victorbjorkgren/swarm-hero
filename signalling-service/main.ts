@@ -4,17 +4,16 @@ import {ClientID} from "@shared/commTypes";
 import {gameConfig} from "@shared/config";
 import jwt from 'jsonwebtoken';
 import http, {IncomingMessage, ServerResponse} from "node:http";
-import {Socket} from "node:net";
 import express, {Request, Response} from "express";
 import {randomUUID} from "crypto";
 import cors from "cors";
 
-const port = 8081;
+const port = process.env.PORT || '8081';
 const nPlayers = gameConfig.nPlayerGame;
 
 const app = express();
 app.use(express.json());
-app.use(cors())
+app.use(cors());
 
 const shortLivedTokens = new Set<string>();
 const SHORT_TOKEN_TTL = 15 * 1000;
@@ -33,8 +32,28 @@ app.get('/request-game-room-token/', (req: Request, res: Response) => {
     }
 });
 
-app.listen(8080, () => {
-    console.log('GameRoom token service running on :8080');
+app.get('/ping/', (req: Request, res: Response) => {
+    res.status(200).send(`Match-maker alive!`);
+});
+
+const httpServer = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
+
+httpServer.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+
+    if (authenticateGameRoomToken(token || "") && req.url?.startsWith('/connect')) {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req);
+        });
+    } else {
+        socket.destroy();
+    }
+});
+
+httpServer.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
 });
 
 const authenticateJWT = (req: IncomingMessage): boolean => {
@@ -67,32 +86,32 @@ const authenticateGameRoomToken = (token: string): boolean => {
     return false;
 }
 
-export const gameRoomSignalServer = (port: number, nPlayerGame: number) => {
+export const gameRoomSignalServer = (nPlayerGame: number) => {
     return new Promise<void>((resolve, reject) => {
-        const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-            if (req.url === '/ping') {
-                res.writeHead(200, { 'Content-Type': 'text/plain' });
-                res.end(`Game room alive with ${players.size} players`);
-            }
-        });
+        // const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
+        //     if (req.url === '/ping') {
+        //         res.writeHead(200, { 'Content-Type': 'text/plain' });
+        //         res.end(`Game room alive with ${players.size} players`);
+        //     }
+        // });
 
-        httpServer.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
-            const url = new URL(req.url || '', `http://${req.headers.host}`);
-            const token = url.searchParams.get('token');
-
-            const hasAuth = authenticateGameRoomToken(token || "");
-            const connectCall = req.url?.startsWith('/connect')
-            if (connectCall && hasAuth) {
-                wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-                    wss.emit('connection', ws, req);
-                });
-            } else {
-                socket.destroy();
-            }
-        });
-        httpServer.listen(port, () => {
-            console.log(`Server listening on port ${port}`);
-        })
+        // httpServer.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
+        //     const url = new URL(req.url || '', `http://${req.headers.host}`);
+        //     const token = url.searchParams.get('token');
+        //
+        //     const hasAuth = authenticateGameRoomToken(token || "");
+        //     const connectCall = req.url?.startsWith('/connect')
+        //     if (connectCall && hasAuth) {
+        //         wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+        //             wss.emit('connection', ws, req);
+        //         });
+        //     } else {
+        //         socket.destroy();
+        //     }
+        // });
+        // httpServer.listen(port, () => {
+        //     console.log(`Server listening on port ${port}`);
+        // })
 
         const wss = new WebSocketServer({ noServer: true });
         let players: Map<ClientID, WebSocket> = new Map();
@@ -210,7 +229,7 @@ console.log(`Game Room running on:`);
 (async () => {
     while (running) {
         try {
-            await gameRoomSignalServer(port, nPlayers);
+            await gameRoomSignalServer(nPlayers);
             console.log(`Game room on :${port} with ${nPlayers} players setup complete!`);
         } catch (error) {
             console.error('Error in game room setup:', error);

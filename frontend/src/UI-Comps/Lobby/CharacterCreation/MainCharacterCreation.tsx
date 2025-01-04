@@ -1,14 +1,8 @@
 import {FactionSelection} from "./FactionSelection";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useState} from "react";
 import {CharacterStats, StatSelection} from "./StatSelection";
-import {Application} from "pixi.js";
-import {setupRandomBackground} from "../../../GameComps/Graphics/TileBackground";
-import {TitleScreen} from "../TitleScreen";
 import {Character, Factions} from "../../../types/types";
-import {MatchMaking} from "../MatchMaking";
 import {Client, ClientID} from "@shared/commTypes";
-import {Game} from "../../../GameComps/Game";
-import {useGameBackground} from "../../../Hooks/useGameBackground";
 
 enum Steps {
     Faction,

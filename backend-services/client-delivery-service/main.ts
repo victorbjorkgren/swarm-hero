@@ -35,7 +35,7 @@ main.listen(port, () => {
     console.log('Client delivery server running on:');
     console.log(`- Local: http://localhost:${port}`);
     if (networkIP) {
-        console.log(`- Network: http://${networkIP}:${port}`);
+        console.log(`- Network: https://${networkIP}:${port}`);
     } else {
         console.log('- Network IP not found.');
     }

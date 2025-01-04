@@ -1,7 +1,7 @@
 import {useRef, useState} from "react";
-import {GameConnection, MainCharacterCreation, PeerMap} from "./Lobby/CharacterCreation/MainCharacterCreation";
+import {GameConnection} from "./Lobby/CharacterCreation/MainCharacterCreation";
 import MainGame from "./InGame/MainGame";
-import {Character, Factions} from "../types/types";
+import {Character} from "../types/types";
 import {LobbyMain} from "./Lobby/Login/LobbyMain";
 
 enum Scenes {

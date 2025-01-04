@@ -164,8 +164,8 @@ class NeutralLogic extends EntityLogic{
 
 class NeutralRenderer extends EntityRenderer {
     private neutralSprite: Container | null = null;
-    private neutralTexture: Texture[] | null = null;
-    private flags: {red: Sprite, blue: Sprite} | null = null;
+    private readonly neutralTexture: Texture[] | null = null;
+    private readonly flags: {red: Sprite, blue: Sprite} | null = null;
 
     constructor(protected state: NeutralState) {
         super();

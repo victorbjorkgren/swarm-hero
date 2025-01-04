@@ -1,7 +1,6 @@
-import React, {FormEvent, useState} from "react";
+import React, {useState} from "react";
 import VerificationInput from "./VerificationInput";
 import {MenuButton} from "../../MenuButton";
-import {useAuth} from "../../../Hooks/AuthContext";
 import {useLogin} from "../../../Hooks/useAuth";
 
 type Props = {

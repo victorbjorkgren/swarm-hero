@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getMedian, Vector2D} from "./Utility";
-import {Character, Factions} from "../types/types";
+import {Character} from "../types/types";
 import {gameConfig, UnitPacks} from "@shared/config";
 import {
     BuyDroneMessage,
@@ -11,7 +11,6 @@ import {
     ClientID,
     ClientMessage,
     ClientMessageType,
-    GameUpdateMessage,
     InitialDataPackage, LatencyReport, NeutralInitData, ParticleInitData,
     ParticleUpdateData,
     PlayerInitData,

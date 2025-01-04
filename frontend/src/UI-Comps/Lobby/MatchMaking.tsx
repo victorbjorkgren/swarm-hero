@@ -1,7 +1,7 @@
 import {BackButton} from "./CharacterCreation/BackButton";
 import React, {useEffect, useRef, useState} from "react";
 import {connectMesh} from "../../Hooks/Communication";
-import {GameConnection, PeerMap} from "./CharacterCreation/MainCharacterCreation";
+import {GameConnection} from "./CharacterCreation/MainCharacterCreation";
 import {ThreeDots} from "react-loading-icons";
 import {gameConfig} from "@shared/config";
 import {useLogin} from "../../Hooks/useAuth";

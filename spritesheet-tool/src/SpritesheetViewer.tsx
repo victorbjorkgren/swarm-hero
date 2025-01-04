@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useState} from 'react';
 import ImageUploader from './Components/ImageUploader';
 import GridSettings from './Components/GridSettings';
 import ImageArea, { calculateGrid } from './Components/ImageArea';

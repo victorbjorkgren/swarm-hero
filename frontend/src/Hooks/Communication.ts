@@ -1,8 +1,5 @@
 import { ClientID } from "@shared/commTypes";
 import { GameConnection, PeerMap } from "../UI-Comps/Lobby/CharacterCreation/MainCharacterCreation";
-import {useAuth} from "./AuthContext";
-import {useLogin} from "./useAuth";
-import {useEffect, useState} from "react";
 
 export type SignalMesssage = {
     from: ClientID;

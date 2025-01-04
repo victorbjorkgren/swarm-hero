@@ -1,5 +1,4 @@
 import {Vector2D} from "../Utility";
-import {NavMesh} from "./NavMesh";
 import {UnitManager} from "../UnitManager";
 import {PlayerInterface} from "../Entities/Player";
 import {Game} from "../Game";

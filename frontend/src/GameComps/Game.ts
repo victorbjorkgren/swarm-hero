@@ -6,7 +6,6 @@ import {AABBCollider, Character, Controls, HighlightTexturePack, popUpEvent, Tea
 import {Vector2D} from "./Utility";
 import DebugDrawer from "../DebugTools/DebugDrawer";
 import {gameConfig, UnitPacks} from "@shared/config";
-import {LocalPlayerController} from "./Controllers/LocalPlayerController";
 import {
     CastleID,
     CastleUpdateData,
@@ -96,7 +95,7 @@ export class Game {
 
     public sendToHost: <T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) => void = () => {
     };
-    private pingInterval: number | NodeJS.Timeout | null = null;
+    private readonly pingInterval: number | NodeJS.Timeout | null = null;
 
     constructor(
         public pixiRef: Application,

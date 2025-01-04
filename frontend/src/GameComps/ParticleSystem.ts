@@ -5,8 +5,6 @@ import {UnitManager} from "./UnitManager";
 import {closestPointOnPolygon, isInsidePolygon, Vector2D} from "./Utility";
 import {UnitPack} from "../types/unitTypes";
 import {EntityID, ParticleID} from "@shared/commTypes";
-import {PlayerInterface} from "./Entities/Player";
-import {CastleInterface} from "./Entities/Castle";
 import {EntityState} from "../types/EntityTypes";
 
 export class ParticleSystem {

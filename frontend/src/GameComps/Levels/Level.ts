@@ -29,7 +29,8 @@ export type NeutralSwarm = {
 export type NeutralBuilding = {
     position: Vector2D,
     type: NeutralTypes,
-    income: number
+    income: number,
+    guards: number
 }
 
 export const loadCSVAsIntArray = async (filePath: string): Promise<number[][]> => {
@@ -60,6 +61,10 @@ type StaticCustomField = {
     NParticles: number
 }
 
+type MineCustomField = {
+    NParticles: number
+}
+
 type RovingCustomField = {
     x: number,
     y: number,
@@ -76,7 +81,7 @@ export type LevelData = {
         Castle: {x: number, y: number}[],
         NeutralStaticSwarm: {x: number, y: number, customFields: StaticCustomField}[],
         NeutralRovingSwarm: {x: number, y: number, width: number, height: number, customFields: RovingCustomField}[],
-        GoldMine: {x: number, y: number}[],
+        GoldMine: {x: number, y: number, customFields: MineCustomField}[],
     }
 }
 
@@ -148,7 +153,8 @@ export class Level {
             return {
                 type: NeutralTypes.GOLDMINE,
                 position: Vector2D.cast(mine),
-                income: gameConfig.mineIncome
+                income: gameConfig.mineIncome,
+                guards: mine.customFields.NParticles
             }
         })
 

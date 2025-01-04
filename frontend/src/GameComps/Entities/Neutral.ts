@@ -149,6 +149,7 @@ class NeutralLogic extends EntityLogic{
 
     private checkYield() {
         for (const player of this.state.scene.players.values()) {
+            if (player.state.id === this.state.owner) continue;
             if (this.state.pos.sqDistanceTo(player.state.pos) < this.state.yieldDistance) {
                 const playerStrength = estimateFoeStrength(player.state.id, this.state.id, this.state.scene.particleSystem?.getParticles())
                 // console.log("playerStrength", playerStrength, player.state.id);
@@ -225,8 +226,8 @@ class NeutralRenderer extends EntityRenderer {
 
         this.flags.red.visible = false;
         this.flags.blue.visible = false;
-        this.flags.red.anchor.set(-.6, .7);
-        this.flags.blue.anchor.set(-.6, .7);
+        this.flags.red.anchor.set(-.6, 1.0);
+        this.flags.blue.anchor.set(-.6, 1.0);
         this.flags.red.zIndex = Game.zIndex.ground;
         this.flags.blue.zIndex = Game.zIndex.ground;
 

@@ -284,7 +284,7 @@ export default class GameHost {
 
         this.localClientScene.level.neutralSwarms.concat().forEach((swarm) => {
             const emptyOwner = uuidv4();
-            for (let i = 0; i<swarm.n; i++) {
+            for (let i = 0; i < swarm.n; i++) {
                 particleInitData.push({
                     particleId: uuidv4(),
                     pos: swarm.position.copy(),
@@ -297,12 +297,23 @@ export default class GameHost {
         })
 
         this.localClientScene.level.neutralBuildings.forEach(building => {
+            const mineId = uuidv4();
             neutralBuildings.push({
-                id: uuidv4(),
+                id: mineId,
                 pos: building.position.copy(),
                 type: building.type,
                 income: building.income,
             })
+            for (let i = 0; i < building.guards; i++) {
+                particleInitData.push({
+                    particleId: uuidv4(),
+                    pos: building.position.copy(),
+                    unitData: UnitPacks[Units.LaserDrone],
+                    wayPoints: [],
+                    ownerId: mineId,
+                    teamName: 'Neutral'
+                })
+            }
         })
 
         let teamNames = Array.from(this.localClientScene.teams.keys());

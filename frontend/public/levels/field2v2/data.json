@@ -1,0 +1,422 @@
+{
+	"identifier": "Level_0",
+	"uniqueIdentifer": "2efcde20-9b00-11ef-a441-53a25bad75d6",
+	"x": 0,
+	"y": 0,
+	"width": 3216,
+	"height": 1696,
+	"bgColor": "#696A79",
+	"neighbourLevels": [],
+	"customFields" : {},
+	"layers": [
+		"Ground.png",
+		"Walls.png",
+		"Plants.png"
+	],
+	"entities": {
+		"Castle": [
+			{
+				"id": "Castle",
+				"iid": "29d5d310-c210-11ef-827d-dfb2ac25a2a3",
+				"layer": "GameObjects",
+				"x": 272,
+				"y": 1584,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Red"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "2e1837b0-c210-11ef-827d-99b6ac901655",
+				"layer": "GameObjects",
+				"x": 2928,
+				"y": 112,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Blue"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "2f587fe0-c210-11ef-827d-2520427c666b",
+				"layer": "GameObjects",
+				"x": 3088,
+				"y": 272,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Blue"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "d98ef410-c210-11ef-827d-29cc628f709d",
+				"layer": "GameObjects",
+				"x": 112,
+				"y": 1456,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Red"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "69617ef0-c210-11ef-827d-bf3dfb24333d",
+				"layer": "GameObjects",
+				"x": 176,
+				"y": 1488,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Red"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "6a2cbe30-c210-11ef-827d-9f00a0c44813",
+				"layer": "GameObjects",
+				"x": 144,
+				"y": 1616,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Red"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "6eeb57b0-c210-11ef-827d-c79021cc0778",
+				"layer": "GameObjects",
+				"x": 3024,
+				"y": 112,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Blue"
+				}
+			},
+			{
+				"id": "Castle",
+				"iid": "72d05a10-c210-11ef-827d-036f2986b10b",
+				"layer": "GameObjects",
+				"x": 3024,
+				"y": 368,
+				"width": 32,
+				"height": 32,
+				"color": 15330617,
+				"customFields": {
+					"Teams": "Blue"
+				}
+			}
+		],
+		"GoldMine": [
+			{
+				"id": "GoldMine",
+				"iid": "4fc80700-c210-11ef-827d-2f34d686f892",
+				"layer": "GameObjects",
+				"x": 1488,
+				"y": 848,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 20
+				}
+			},
+			{
+				"id": "GoldMine",
+				"iid": "55e238e0-c210-11ef-827d-794a02a4ba7b",
+				"layer": "GameObjects",
+				"x": 1552,
+				"y": 912,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 20
+				}
+			},
+			{
+				"id": "GoldMine",
+				"iid": "5ba52300-c210-11ef-827d-b5d114b251cd",
+				"layer": "GameObjects",
+				"x": 1520,
+				"y": 80,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 20
+				}
+			},
+			{
+				"id": "GoldMine",
+				"iid": "5f80fda0-c210-11ef-827d-dd8dcb0ace59",
+				"layer": "GameObjects",
+				"x": 1520,
+				"y": 1584,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 20
+				}
+			},
+			{
+				"id": "GoldMine",
+				"iid": "2cd36630-c210-11ef-827d-bf2f9129e041",
+				"layer": "GameObjects",
+				"x": 336,
+				"y": 112,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 100
+				}
+			},
+			{
+				"id": "GoldMine",
+				"iid": "303f8f10-c210-11ef-827d-57d621490de6",
+				"layer": "GameObjects",
+				"x": 3120,
+				"y": 1616,
+				"width": 32,
+				"height": 32,
+				"color": 14120515,
+				"customFields": {
+					"NParticles": 100
+				}
+			}
+		],
+		"NeutralStaticSwarm": [
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "689cfdd0-c210-11ef-827d-ef7043747997",
+				"layer": "GameObjects",
+				"x": 912,
+				"y": 1104,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 40
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "6c6131c0-c210-11ef-827d-2faf1adb79bc",
+				"layer": "GameObjects",
+				"x": 2192,
+				"y": 560,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 40
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "70657bf0-c210-11ef-827d-9f429a957677",
+				"layer": "GameObjects",
+				"x": 208,
+				"y": 144,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 10
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "73a0f7e0-c210-11ef-827d-471cb12813be",
+				"layer": "GameObjects",
+				"x": 3024,
+				"y": 1584,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 10
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "75dbf3c0-c210-11ef-827d-cdbc8cfa6c84",
+				"layer": "GameObjects",
+				"x": 2704,
+				"y": 1264,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 10
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "7c0bd080-c210-11ef-827d-eb50c17f4d18",
+				"layer": "GameObjects",
+				"x": 464,
+				"y": 208,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 10
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "c638cef0-c210-11ef-827d-55c66ce7310c",
+				"layer": "GameObjects",
+				"x": 2480,
+				"y": 1424,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "c83c4010-c210-11ef-827d-b9292fe3ae95",
+				"layer": "GameObjects",
+				"x": 656,
+				"y": 688,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "c9de0930-c210-11ef-827d-1bfd7b74796f",
+				"layer": "GameObjects",
+				"x": 1808,
+				"y": 272,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "cae36b40-c210-11ef-827d-9bafab5eac19",
+				"layer": "GameObjects",
+				"x": 3056,
+				"y": 1264,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "cc3f2ab0-c210-11ef-827d-45554b2f1f23",
+				"layer": "GameObjects",
+				"x": 2256,
+				"y": 368,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "cd94a890-c210-11ef-827d-09250d41d6f1",
+				"layer": "GameObjects",
+				"x": 592,
+				"y": 1104,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "cf548100-c210-11ef-827d-dd0a186449e5",
+				"layer": "GameObjects",
+				"x": 176,
+				"y": 720,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "d1282f90-c210-11ef-827d-1fe77e800094",
+				"layer": "GameObjects",
+				"x": 2288,
+				"y": 80,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			},
+			{
+				"id": "NeutralStaticSwarm",
+				"iid": "d9ca6be0-c210-11ef-827d-f7d64fbe19a4",
+				"layer": "GameObjects",
+				"x": 3088,
+				"y": 880,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 5
+				}
+			}
+		],
+		"NeutralRovingSwarm": [
+			{
+				"id": "NeutralRovingSwarm",
+				"iid": "b1acf380-c210-11ef-827d-ab7a24969de7",
+				"layer": "GameObjects",
+				"x": 2448,
+				"y": 1616,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields": {
+					"NParticles": 100,
+					"WayPoints": [
+						{
+							"cx": 21,
+							"cy": 8
+						}
+					]
+				}
+			}
+		]
+	}
+}

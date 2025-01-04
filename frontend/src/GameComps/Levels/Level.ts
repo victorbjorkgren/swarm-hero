@@ -4,17 +4,16 @@ import {Application, Assets, Sprite} from "pixi.js";
 import {Vector2D} from "../Utility";
 import {NeutralTypes} from "../Entities/Neutral";
 import {gameConfig} from "@shared/config";
+import {TeamName} from "@shared/commTypes";
 
 export enum Levels {
-    Ruins2v2,
+    Test2v2,
+    Field4v4,
 }
 
-// export const LevelData = {
-//     [Levels.Ruins2v2]: ruins2v2
-// }
-
 export const levelDir = {
-    [Levels.Ruins2v2]: "/levels/ruins2v2",
+    [Levels.Field4v4]: "/levels/field2v2",
+    [Levels.Test2v2]: "/levels/test2v2",
 }
 
 export type NeutralSwarm = {
@@ -53,15 +52,19 @@ type StaticCustomField = {
     NParticles: number
 }
 
-type MineCustomField = {
-    NParticles: number
-}
-
 type RovingCustomField = {
     x: number,
     y: number,
     NParticles: number,
     WayPoints: {cx: number, cy: number}[],
+}
+
+type MineCustomField = {
+    NParticles: number
+}
+
+type CastleCustomField = {
+    Teams: TeamName
 }
 
 export type LevelData = {
@@ -70,7 +73,7 @@ export type LevelData = {
     height: number,
     width: number,
     entities: {
-        Castle: {x: number, y: number}[],
+        Castle: {x: number, y: number, customFields: CastleCustomField   }[],
         NeutralStaticSwarm: {x: number, y: number, customFields: StaticCustomField}[],
         NeutralRovingSwarm: {x: number, y: number, width: number, height: number, customFields: RovingCustomField}[],
         GoldMine: {x: number, y: number, customFields: MineCustomField}[],
@@ -84,7 +87,7 @@ export class Level {
     public mapWidth: number = 1;
     public mapHeight: number = 1;
 
-    public playerStart: Vector2D[] = [];
+    public playerStart: {pos: Vector2D, team: TeamName}[] = [];
     public neutralSwarms: NeutralSwarm[] = [];
     public neutralBuildings: NeutralBuilding[] = [];
 
@@ -123,8 +126,13 @@ export class Level {
         this.mapHeight = this.data.height;
 
         this.playerStart = this.data.entities.Castle.map(
-            (castleData) =>
-                Vector2D.cast(castleData)
+            (castleData) => {
+                console.log('castleData', castleData);
+                return {
+                    pos: Vector2D.cast(castleData),
+                    team: castleData.customFields.Teams
+                }
+            }
         );
         const neutralStaticSwarms: NeutralSwarm[] = this.data.entities.NeutralStaticSwarm.map((swarm) => {
             return {
@@ -160,13 +168,11 @@ export class Level {
         let groundNavPromise;
         let groundTexPromise;
         let nonColTexPromise;
-        if (this.level === Levels.Ruins2v2) {
-            groundNavPromise = loadCSVAsIntArray(levelDir[this.level] + "/Ground.csv");
-            groundTexPromise = Assets.load(levelDir[this.level] + "/Ground.png");
-            nonColTexPromise = Assets.load(levelDir[this.level] + "/Tiles.png");
-        } else {
-            throw new Error("Unknown level");
-        }
+
+        groundNavPromise = loadCSVAsIntArray(levelDir[this.level] + "/Ground.csv");
+        groundTexPromise = Assets.load(levelDir[this.level] + "/Ground.png");
+        nonColTexPromise = Assets.load(levelDir[this.level] + "/Plants.png");
+
         this.groundNavMesh = await groundNavPromise;
         this.navScale = this.mapHeight / this.groundNavMesh.length
 

@@ -88,7 +88,7 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
         const debouncedResizePixiApp = debounce(resizeApp, 100);
         window.addEventListener('resize', debouncedResizePixiApp);
 
-        const level = new Level(Levels.Ruins2v2, pixiRef.current);
+        const level = new Level(Levels.Field4v4, pixiRef.current);
         await level.fetchLevelData();
 
         pixiRef.current.stage.eventMode = 'static';

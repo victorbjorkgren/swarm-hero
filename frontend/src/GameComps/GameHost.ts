@@ -313,21 +313,21 @@ export default class GameHost {
             }
         })
 
-        let teamNames = Array.from(this.localClientScene.teams.keys());
-        teamNames = teamNames.filter(teamName => teamName !== "Neutral");
-
+        const teamCount = {'Red': 0, 'Blue': 0, 'Neutral': 0};
+        const maxPlayersPerTeam = Math.floor(gameConfig.nPlayerGame / gameConfig.nTeamGame);
         let index = 0;
         this.readyForCreation.forEach((character, clientId) => {
             if (!character) throw new Error(`Client ${clientId} has no character at creation`);
-            const teamName = teamNames[index % teamNames.length];
+            const spawnData = this.localClientScene.level.playerStart[index++];
+            const teamName = spawnData.team;
+            if (teamCount[teamName] > maxPlayersPerTeam) return;
+            teamCount[teamName]++;
             const castleId = uuidv4();
-            const castleSpawn = this.localClientScene.level.playerStart[index];
+            const castleSpawn = spawnData.pos;
             const playerSpawn = Vector2D.add(castleSpawn, gameConfig.playerStartOffset);
 
             playerInitData.push({id: clientId, pos: playerSpawn, character: character, teamName: teamName})
             castleInitData.push({id: castleId, pos: castleSpawn, owner: clientId, teamName: teamName})
-
-            index++;
         })
 
         this.initialData = {

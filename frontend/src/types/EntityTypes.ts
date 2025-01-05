@@ -44,7 +44,7 @@ export abstract class EntityInterface {
         this.state.maxVel += buff;
         this.renderer.playSpeedBuffAnimation(multiplier > 0);
         setTimeout(() => {
-            this.state.maxVel += buff;
+            this.state.maxVel -= buff;
             this.renderer.stopSpeedBuffAnimation()
         }, duration * 1000);
     }

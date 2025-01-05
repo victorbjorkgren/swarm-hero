@@ -485,7 +485,7 @@ export class Game {
         this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
             const timeout = setTimeout(
                 () => reject('Timeout waiting for initial data'),
-                10 * 1000
+                70 * 1000
             );
             this.resolveInitialData = (data: InitialDataMessage) => {
                 clearTimeout(timeout);

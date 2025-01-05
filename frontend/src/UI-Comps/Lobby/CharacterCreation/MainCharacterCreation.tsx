@@ -40,12 +40,10 @@ const devCharacter: Character = {
     }
 };
 
-let defaultCharacter: Character = DEVELOPMENT ? devCharacter : {};
-
 export const MainCharacterCreation: React.FC<Props> = ({doneCallback, backToMain}) => {
     const [currentStep, setCurrentStep] = useState<Steps>(Steps.Faction);
-    const [name, setName] = useState<string>(defaultCharacter.playerName || "");
-    const [faction, setFaction] = useState<Factions | null>(defaultCharacter.faction || null);
+    const [name, setName] = useState<string>(DEVELOPMENT ? devCharacter.playerName : "");
+    const [faction, setFaction] = useState<Factions | null>(DEVELOPMENT ? devCharacter.faction : null);
 
     const factionDone = (name: string, faction: Factions) => {
         setName(name);
@@ -80,7 +78,7 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, backToMain
                     <StatSelection
                         doneCallback={statsDone}
                         handleBack={handleBack}
-                        defaultStats={defaultCharacter.stats || null}
+                        defaultStats={DEVELOPMENT ? devCharacter.stats : null}
                     /> }
             </>
     );

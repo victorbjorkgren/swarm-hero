@@ -7,11 +7,11 @@
     "server:build": "tsc",
     "build": "yarn frontend:build && yarn server:build && yarn transfer",
     "transfer": "mkdir -p public/ && cp -r ../frontend/build/* public/",
-    "start": "node dist/socket-server/server.js",
+    "start": "node dist/client-delivery-service/main.js",
     "launch": "tsc && yarn start",
     "full-launch": "yarn build && yarn start"
   },
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.7",

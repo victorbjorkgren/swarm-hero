@@ -6,8 +6,8 @@ import {getNetworkIP} from "../common/Utilities";
 import {IncomingMessage} from "node:http";
 
 // Manually define __dirname in ES module scope
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 const app = express();
 const main = http.createServer(app);

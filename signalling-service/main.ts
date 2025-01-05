@@ -36,27 +36,6 @@ app.get('/ping/', (req: Request, res: Response) => {
     res.status(200).send(`Match-maker alive!`);
 });
 
-const httpServer = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
-
-httpServer.on('upgrade', (req, socket, head) => {
-    const url = new URL(req.url || '', `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
-
-    if (authenticateGameRoomToken(token || "") && req.url?.startsWith('/connect')) {
-        wss.handleUpgrade(req, socket, head, (ws) => {
-            wss.emit('connection', ws, req);
-        });
-    } else {
-        console.log('Problematic upgrade rejected', req.url);
-        socket.destroy();
-    }
-});
-
-httpServer.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
-
 const authenticateJWT = (req: IncomingMessage): boolean => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
@@ -89,30 +68,26 @@ const authenticateGameRoomToken = (token: string): boolean => {
 
 export const gameRoomSignalServer = (nPlayerGame: number) => {
     return new Promise<void>((resolve, reject) => {
-        // const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-        //     if (req.url === '/ping') {
-        //         res.writeHead(200, { 'Content-Type': 'text/plain' });
-        //         res.end(`Game room alive with ${players.size} players`);
-        //     }
-        // });
+        const httpServer = http.createServer(app);
+        const wss = new WebSocketServer({ noServer: true });
 
-        // httpServer.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
-        //     const url = new URL(req.url || '', `http://${req.headers.host}`);
-        //     const token = url.searchParams.get('token');
-        //
-        //     const hasAuth = authenticateGameRoomToken(token || "");
-        //     const connectCall = req.url?.startsWith('/connect')
-        //     if (connectCall && hasAuth) {
-        //         wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-        //             wss.emit('connection', ws, req);
-        //         });
-        //     } else {
-        //         socket.destroy();
-        //     }
-        // });
-        // httpServer.listen(port, () => {
-        //     console.log(`Server listening on port ${port}`);
-        // })
+        httpServer.on('upgrade', (req, socket, head) => {
+            const url = new URL(req.url || '', `http://${req.headers.host}`);
+            const token = url.searchParams.get('token');
+
+            if (authenticateGameRoomToken(token || "") && req.url?.startsWith('/connect')) {
+                wss.handleUpgrade(req, socket, head, (ws) => {
+                    wss.emit('connection', ws, req);
+                });
+            } else {
+                console.log('Problematic upgrade rejected', req.url);
+                socket.destroy();
+            }
+        });
+
+        httpServer.listen(port, () => {
+            console.log(`Server listening on port ${port}`);
+        });
 
         // const wss = new WebSocketServer({ noServer: true });
         let players: Map<ClientID, WebSocket> = new Map();

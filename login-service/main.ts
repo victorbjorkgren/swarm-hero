@@ -56,8 +56,7 @@ const transporter = nodemailer.createTransport({
 
 // Mock user database
 const users: Record<string, { email: string; code: string | null }> = {
-    'victor.bjorkgren@hotmail.com': { email: 'victor.bjorkgren@hotmail.com', code: null },
-    'admin@example.com': { email: 'admin@example.com', code: null },
+    // 'admin@example.com': { email: 'admin@example.com', code: null },
 };
 
 function generateSixDigitCode(): string {
@@ -85,10 +84,7 @@ app.post('/request-code/', async (req: Request, res: Response) => {
     }
 
     if (!users[email]) {
-        res
-            .status(401)
-            .json({ message: 'Invalid email.' });
-        return;
+        users[email] = { email, code: null };
     }
 
     const code = generateSixDigitCode();
@@ -142,6 +138,11 @@ app.post('/verify-code/', (req: Request, res: Response) => {
 
 app.get('/keys/', (req: Request, res: Response) => {
     res.json({ publicKey });
+});
+
+app.get('/user-count/', (req: Request, res: Response) => {
+    const emailCount = Object.keys(users).length;
+    res.json({ count: emailCount });
 });
 
 app.listen(PORT, () => console.log('Login service running on https://swarm-login-service.onrender.com'));

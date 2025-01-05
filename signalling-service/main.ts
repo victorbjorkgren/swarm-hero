@@ -48,6 +48,7 @@ httpServer.on('upgrade', (req, socket, head) => {
             wss.emit('connection', ws, req);
         });
     } else {
+        console.log('Problematic upgrade rejected', req.url);
         socket.destroy();
     }
 });

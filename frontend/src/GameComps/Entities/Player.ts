@@ -531,16 +531,22 @@ class PlayerLogic extends EntityLogic {
 
         const nextX = Math.floor((pos.x + vel.x) / navScale);
         const nextY = Math.floor((pos.y + vel.y) / navScale);
+
+        if (nextX < 0 && vel.x < 0) vel.x = 0;
+        if (nextX >= grid[0].length && vel.x > 0) vel.x = 0;
+        if (nextY < 0 && vel.y < 0) vel.y = 0;
+        if (nextY >= grid.length && vel.y > 0) vel.y = 0;
+
         if (
             nextY < 0 ||
             nextY >= grid.length ||
             nextX < 0 ||
-            nextX >= grid[nextY].length
+            nextX >= grid[0].length
         ) {
-
-        } else {
-            if (grid[nextY][nextX] !== 3) return; // 3 is the OutOfBounds tile number
+            return;
         }
+
+        if (grid[nextY][nextX] !== 3) return; // 3 is the OutOfBounds tile number
 
         const currX = Math.floor(pos.x / navScale);
         const currY = Math.floor(pos.y / navScale);

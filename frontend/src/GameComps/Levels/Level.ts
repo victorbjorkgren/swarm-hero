@@ -127,7 +127,6 @@ export class Level {
 
         this.playerStart = this.data.entities.Castle.map(
             (castleData) => {
-                console.log('castleData', castleData);
                 return {
                     pos: Vector2D.cast(castleData),
                     team: castleData.customFields.Teams

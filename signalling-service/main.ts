@@ -113,7 +113,7 @@ export const gameRoomSignalServer = (nPlayerGame: number) => {
         //     console.log(`Server listening on port ${port}`);
         // })
 
-        const wss = new WebSocketServer({ noServer: true });
+        // const wss = new WebSocketServer({ noServer: true });
         let players: Map<ClientID, WebSocket> = new Map();
         let hostSocket: WebSocket | null = null;
         let hostId: string | null = null;
@@ -121,7 +121,6 @@ export const gameRoomSignalServer = (nPlayerGame: number) => {
         const readyPeers: Set<ClientID> = new Set();
 
         wss.on('connection', (ws) => {
-
             const playerId = uuidv4();
             players.set(playerId, ws)
             console.log(`Connected to ${playerId}`);

@@ -7,6 +7,8 @@ export const gameConfig = {
     nPlayerGame: 2,
     nTeamGame: 2,
 
+    playerNameMaxLength: 25,
+
     playerStartOffset: new Vector2D(50, 0),
 
     cameraElasticAlpha: .05,
@@ -14,12 +16,13 @@ export const gameConfig = {
 
     baseRenderScale: 1500,
 
-    castleHealth: 400,
+    castleHealth: 5000,
     castleIncome: 1000,
     castleActivationDist: 70,
 
     playerStartGold: 1000,
-    playerMaxAcc: .1,
+    playerMaxVel: 2.,
+    playerMaxAcc: .2,
     playerSelfIncome: 0,
 
     rovingSwarmVel: .5,
@@ -34,23 +37,23 @@ export const gameConfig = {
 
     dayLength: 30,
 
-    healthLevels: [250, 500, 600, 1000, 1500, 2000],
-    speedLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
-    powerLevels: [.5, .8, 1.0, 1.5, 2.0, 2.5],
-    manaLevels: [10, 30, 60, 100, 150, 200],
+    healthLevels: [500, 1000, 1500, 2000, 2500, 3000],
+    speedLevels: [.9, .95, 1.0, 1.05, 1.1, 1.2],
+    powerLevels: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
+    manaLevels: [50, 100, 150, 200, 350, 500],
 
     factionInit: {
         [Factions.Mech]: {
-            gold: 1000,
+            gold: 1500,
         },
         [Factions.Wild]: {
-            gold: 1000,
+            gold: 1500,
         },
         [Factions.Mage]: {
-            gold: 1000,
+            gold: 1500,
         },
         [Factions.Spirit]: {
-            gold: 1000,
+            gold: 1500,
         }
     },
 
@@ -75,14 +78,14 @@ export const SpellPacks: { [key in Spells]: SpellPack } = {
         castRange: 400,
         effectRange: 100,
         effectType: SpellEffects.Damage,
-        effectAmount: 90,
+        effectAmount: 100,
         effectDuration: 0,
         warmUp: .5,
         coolDown: 5,
     },
     [Spells.SpeedUp]: {
         element: Spells.SpeedUp,
-        castCost: 10,
+        castCost: 15,
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
@@ -94,7 +97,7 @@ export const SpellPacks: { [key in Spells]: SpellPack } = {
     },
     [Spells.SpeedDown]: {
         element: Spells.SpeedDown,
-        castCost: 10,
+        castCost: 15,
         buyCost: 1000,
         castRange: 400,
         effectRange: 100,
@@ -106,14 +109,14 @@ export const SpellPacks: { [key in Spells]: SpellPack } = {
     },
     [Spells.Teleport]: {
         element: Spells.Teleport,
-        castCost: 50,
+        castCost: 20,
         buyCost: 1000,
-        castRange: 400,
+        castRange: 800,
         effectRange: 100,
         effectType: SpellEffects.Teleport,
         effectAmount: 0,
         effectDuration: 0,
-        warmUp: 2,
+        warmUp: 1,
         coolDown: 5,
     },
 }

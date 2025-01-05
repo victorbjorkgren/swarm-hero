@@ -3,6 +3,7 @@ import React, {useState} from "react";
 import {CharacterStats, StatSelection} from "./StatSelection";
 import {Character, Factions} from "../../../types/types";
 import {Client, ClientID} from "@shared/commTypes";
+import * as process from "node:process";
 
 enum Steps {
     Faction,
@@ -26,6 +27,8 @@ interface Props {
 
 let character: Character | null = null;
 
+const DEVELOPMENT = false;
+
 const devCharacter: Character = {
     playerName: "MasterDev!",
     faction: Factions.Wild,
@@ -35,12 +38,14 @@ const devCharacter: Character = {
         magicPower: 3,
         magicStamina: 3
     }
-}
+};
+
+let defaultCharacter: Character = DEVELOPMENT ? devCharacter : {};
 
 export const MainCharacterCreation: React.FC<Props> = ({doneCallback, backToMain}) => {
     const [currentStep, setCurrentStep] = useState<Steps>(Steps.Faction);
-    const [name, setName] = useState<string>(devCharacter.playerName || "");
-    const [faction, setFaction] = useState<Factions | null>(devCharacter.faction || null);
+    const [name, setName] = useState<string>(defaultCharacter.playerName || "");
+    const [faction, setFaction] = useState<Factions | null>(defaultCharacter.faction || null);
 
     const factionDone = (name: string, faction: Factions) => {
         setName(name);
@@ -75,7 +80,7 @@ export const MainCharacterCreation: React.FC<Props> = ({doneCallback, backToMain
                     <StatSelection
                         doneCallback={statsDone}
                         handleBack={handleBack}
-                        defaultStats={devCharacter.stats || null}
+                        defaultStats={defaultCharacter.stats || null}
                     /> }
             </>
     );

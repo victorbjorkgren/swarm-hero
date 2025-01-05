@@ -146,7 +146,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                     <div className="flex flex-col text-6xl items-start justify-start space-y-2">
                         <span className="text-2xl">Spells</span>
                         {player.popUpCastle && player.popUpCastle.state.availableSpells.map((spell: SpellPack, index: number) => (
-                            <UnitButton size={spellBoxSize} key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]}/>
+                            !player.state.availableSpells.includes(spell) && <UnitButton size={spellBoxSize} key={index} n={0} unit={spell} clickHandler={() => handleBuySpell(spell, index)} flashError={buySpellFlashError[index]}/>
                         ))}
                     </div>
                 </div>

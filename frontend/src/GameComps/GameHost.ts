@@ -183,7 +183,7 @@ export default class GameHost {
 
     checkPlayerCanBuySpell(clientId: ClientID, castleId: CastleID, spell: SpellPack) {
         const buyer = this.localClientScene.players.get(clientId);
-        if (!buyer || !buyer.state.isAlive()) return null;
+        if (!buyer || !buyer.state.isAlive() || (buyer.state.availableSpells.includes(spell))) return null;
         const castle = this.localClientScene.castles.get(castleId)
         if (!castle || !castle.state.isAlive()) return null;
         if (!castle.playerWithinRange(buyer.state.id)) return null

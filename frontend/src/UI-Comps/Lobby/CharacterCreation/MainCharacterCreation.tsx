@@ -28,7 +28,7 @@ interface Props {
 
 let character: Character | null = null;
 
-const DEVELOPMENT = true;
+const DEVELOPMENT = false;
 
 const devCharacter: Character = {
     playerName: "MasterDev!",

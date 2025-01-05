@@ -92,9 +92,9 @@ const MainGame: React.FC<Props> = ({character, connection, doneCallback}) => {
         await level.fetchLevelData();
 
         pixiRef.current.stage.eventMode = 'static';
-        pixiRef.current.stage.hitArea = pixiRef.current.stage.hitArea = new Rectangle(
-            0, 0, level.mapWidth, level.mapHeight
-        );
+        // pixiRef.current.stage.hitArea = pixiRef.current.stage.hitArea = new Rectangle(
+        //     -10000, -10000, level.mapWidth+10000, level.mapHeight+10000
+        // );
 
         gameSceneRef.current = new Game(
             pixiRef.current,

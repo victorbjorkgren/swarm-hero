@@ -7,6 +7,7 @@ import {BackButton} from "./BackButton";
 import {Factions} from "../../../types/types";
 import {TextInput} from "../../TextInput";
 import {MenuButton} from "../../MenuButton";
+import {gameConfig} from "@shared/config";
 
 interface Props {
     doneCallback: (name: string, faction: Factions)=>void;
@@ -38,7 +39,7 @@ export const FactionSelection: React.FC<Props> = ({doneCallback, handleBack, def
         <>
             <BackButton handleBack={handleBack}/>
             <div className={`flex flex-col items-center justify-center w-screen h-screen gap-10 bg-transparent text-white`}>
-                <TextInput label={"Screen Name"} value={playerName} setValue={setPlayerName} maxLength={10}/>
+                <TextInput label={"Screen Name"} value={playerName} setValue={setPlayerName} maxLength={gameConfig.playerNameMaxLength}/>
                 <div className={`flex flex-row items-center gap-x-10 select-none bg-transparent`}>
                     <button
                         className={

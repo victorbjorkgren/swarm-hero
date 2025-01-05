@@ -6,11 +6,15 @@ cd ../frontend || exit 1
 yarn install
 yarn build
 
+
 # Return to the client delivery service folder
-cd ../client-delivery-service || exit 1
 
 # Build the server
 echo "Building server..."
+cd ../common || exit 1
+yarn install
+
+cd ../client-delivery-service || exit 1
 yarn install
 yarn server:build
 

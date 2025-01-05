@@ -87,7 +87,7 @@ class ParticleState implements EntityState {
     engaging: EntityID[] = [];
     firingLaserAt: FiringLaserAt[] = [];
     desiredPos: Vector2D | null = null;
-    desiredSpeed: number = .75;
+    desiredSpeed: number = .95;
     desiredOwnerDist: { min: number, max: number } = {min: 0, max: 60};
     maxAcc: number = .05;
     givesIncome: number = 0;
@@ -107,7 +107,7 @@ class ParticleState implements EntityState {
         public pos: Vector2D,
         public mass: number,
         public team: Team,
-        public maxVel: number = .5,
+        public maxVel: number,
         public scene: Game,
         public unitInfo: UnitPack,
         public owner: EntityID,

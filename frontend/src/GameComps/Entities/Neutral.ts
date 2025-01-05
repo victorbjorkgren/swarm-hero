@@ -48,7 +48,7 @@ export class NeutralInterface extends EntityInterface{
 
     tryYield() {
         if (this.state.yieldingTo === null) return;
-        console.log(`Yielding to ${this.state.yieldingTo}`)
+        // console.log(`Yielding to ${this.state.yieldingTo}`)
         this.signalYield(this.state.yieldingTo);
         // const yieldingToInterface = this.state.scene.getEntityById(this.state.yieldingTo, EntityTypes.Any);
         // if (yieldingToInterface === undefined) throw new Error("Tried yielding to non player entity");

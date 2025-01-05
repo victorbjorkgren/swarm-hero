@@ -126,7 +126,6 @@ export class PlayerInterface extends EntityInterface {
         })
         this.state.myMines.forEach(mineId => {
             const mine = this.state.scene.getEntityById(mineId, EntityTypes.Neutral)
-            console.log(`Player ${this.state.id} got income ${mine?.state.givesIncome} from a mine!`)
             this.state.gold += mine?.state.givesIncome || 0;
         })
         this.state.scene.particleSystem?.getParticles().ownerForEach(this.state.id, (drone) => {
@@ -414,7 +413,7 @@ class PlayerState implements EntityState {
     myMines: NeutralID[] = [];
     public entityType: EntityTypes = EntityTypes.Player;
 
-    public maxVel: number = 1.0;
+    public maxVel: number = gameConfig.playerMaxVel;
     public maxAcc: number = gameConfig.playerMaxAcc;
     public gold: number = gameConfig.playerStartGold;
     public givesIncome: number = gameConfig.playerSelfIncome;

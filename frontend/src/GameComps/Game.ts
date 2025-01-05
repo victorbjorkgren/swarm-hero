@@ -127,8 +127,6 @@ export class Game {
                 }
             };
             client.datachannel.onclose = () => this.disconnectPlayer(client.id);
-
-
         })
 
         this.clients.forEach(client => {
@@ -142,7 +140,7 @@ export class Game {
 
         this.pingInterval = setInterval(() => this.measureLatenciesAndReportToHost(), 5000);
 
-        this.setLocalPlayer(character)
+        this.setLocalPlayer(character);
 
         this.teams.set('Neutral', {
             name: 'Neutral',
@@ -201,12 +199,14 @@ export class Game {
 
     _hostLoopBack<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
         const message: ClientMessage<T> = {type: type, payload: payload};
-        this.server?.handleClientMessage(this.localId, message)
+        if (!this.server) throw new Error("Tried loop back without host instance");
+        this.server.handleClientMessage(this.localId, message)
     }
 
     _hostRemote<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
         const message: ClientMessage<T> = {type: type, payload: payload};
-        this.hostchannel!.send(JSON.stringify(message));
+        if (!this.hostchannel) throw new Error(`No host channel found!`);
+        this.hostchannel.send(JSON.stringify(message));
     }
 
     broadcast<T extends ClientMessageType>(type: T, payload: ClientPayloads[T]) {
@@ -479,6 +479,7 @@ export class Game {
     }
 
     requestInitialData(): void {
+        console.log('Requesting Initial data from host');
         if (!this.localPlayer) throw new Error("No local player!");
         if (!this.localPlayer.state.character) throw new Error("No local character!");
 
@@ -507,23 +508,33 @@ export class Game {
         this.pixiRef.ticker && this.pixiRef.ticker.start();
     }
 
+    explosionFallOff(dist: number, maxDist: number) {
+        return (2 * maxDist - dist) / (2 * maxDist)
+    }
+
     areaDamage(position: Vector2D, sqRange: number, damage: number, safeTeam: Team[] = []) {
         // TODO: To logic buffer
         for (const [playerId, player] of this.players) {
             if (safeTeam.includes(player.state.team!)) continue;
-            if (Vector2D.sqDist(position, player.state.pos) > sqRange) continue;
-            player.receiveDamage(damage);
+            const sqDist = (Vector2D.sqDist(position, player.state.pos));
+            if (sqDist > sqRange) continue;
+            const falloffModifier = this.explosionFallOff(sqDist, sqRange)
+            player.receiveDamage(damage * falloffModifier);
         }
         for (const [castleId, castle] of this.castles) {
             if (safeTeam.includes(castle.state.team!)) continue;
-            if (Vector2D.sqDist(position, castle.state.pos) > sqRange) continue;
-            castle.receiveDamage(damage);
+            const sqDist = (Vector2D.sqDist(position, castle.state.pos));
+            if (sqDist > sqRange) continue;
+            const falloffModifier = this.explosionFallOff(sqDist, sqRange)
+            castle.receiveDamage(damage * falloffModifier);
         }
         if (this.particleSystem) {
             this.particleSystem.getParticles().deepForEach((particle) => {
                 if (safeTeam.includes(particle.state.team!)) return;
-                if (Vector2D.sqDist(position, particle.state.pos) > sqRange) return;
-                particle.receiveDamage(damage);
+                const sqDist = Vector2D.sqDist(position, particle.state.pos);
+                if (sqDist > sqRange) return;
+                const falloffModifier = this.explosionFallOff(sqDist, sqRange)
+                particle.receiveDamage(damage * falloffModifier);
             })
         }
     }
@@ -647,31 +658,30 @@ export class Game {
     }
 
     async preload() {
-        this.requestInitialData();
-
+        console.log("Preload");
         const levelReady = this.level.load();
         this.navMesh = new NavMesh(this.level);
 
-        const cat: Promise<Spritesheet> = Assets.load('/sprites/black_cat_run.json');
+        const cat: Promise<Spritesheet> = Assets.cache.get('/sprites/black_cat_run.json');
 
         const explosionReady: Promise<void> = this.setupExplosion(
-            Assets.load('/sprites/explosion_toon.json')
+            Assets.cache.get('/sprites/explosion_toon.json')
         );
         const greenMagicReady: Promise<void> = this.setupGreen(
-            Assets.load('/sprites/magic/tree-of-glory.json'),
-            Assets.load('/sprites/magic/tree-of-glory-idle.json')
+            Assets.cache.get('/sprites/magic/tree-of-glory.json'),
+            Assets.cache.get('/sprites/magic/tree-of-glory-idle.json')
         );
         const blueMagicReady: Promise<void> = this.setupBlue(
-            Assets.load('/sprites/magic/blue_doom.json'),
-            Assets.load('/sprites/magic/blue_doom_idle.json')
+            Assets.cache.get('/sprites/magic/blue_doom.json'),
+            Assets.cache.get('/sprites/magic/blue_doom_idle.json')
         );
-        const mine1Ready: Promise<Texture> = Assets.load('/sprites/gold_mine.png');
-        const mine2Ready: Promise<Texture> = Assets.load('/sprites/gold_mine_2.png');
-        const redFlag: Promise<Texture> = Assets.load('/sprites/red_flag.png');
-        const blueFlag: Promise<Texture> = Assets.load('/sprites/blue_flag.png');
+        const mine1Ready: Promise<Texture> = Assets.cache.get('/sprites/gold_mine.png');
+        const mine2Ready: Promise<Texture> = Assets.cache.get('/sprites/gold_mine_2.png');
+        const redFlag: Promise<Texture> = Assets.cache.get('/sprites/red_flag.png');
+        const blueFlag: Promise<Texture> = Assets.cache.get('/sprites/blue_flag.png');
         this.castleTexturePack = {
-            'normal': await Assets.load('/sprites/castle-sprite.png'),
-            'highlight': await Assets.load('/sprites/castle-sprite-highlight.png'),
+            'normal': await Assets.cache.get('/sprites/castle-sprite.png'),
+            'highlight': await Assets.cache.get('/sprites/castle-sprite-highlight.png'),
         }
         this.mineTexturePack = [
             await mine1Ready,
@@ -686,6 +696,7 @@ export class Game {
         await greenMagicReady;
         await blueMagicReady;
         await levelReady;
+        console.log('Preload done')
     };
 
     start() {
@@ -699,9 +710,9 @@ export class Game {
     }
 
     async create() {
-        DebugDrawer.setPixi(this.pixiRef);
-        DebugDrawer.setScene(this);
-
+        // DebugDrawer.setPixi(this.pixiRef);
+        // DebugDrawer.setScene(this);
+        this.requestInitialData();
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
 
         const initData: InitialDataMessage = await this.initialDataPromise;

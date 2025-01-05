@@ -7,6 +7,7 @@ import {MatchMaking} from "../MatchMaking";
 import {Character} from "../../../types/types";
 import {LoginVerification} from "./LoginVerification";
 import {useLogin} from "../../../Hooks/useAuth";
+import {Assets, Spritesheet, Texture} from "pixi.js";
 
 enum Screens {
     RequestCode,
@@ -54,6 +55,7 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
             setCurrentStep(Screens.RequestCode);
         }
     }, [authenticated]);
+
 
     if (currentStep === null) {
         return <div className="w-screen h-screen bg-transparent flex items-center justify-center text-white">Loading...</div>;

@@ -165,7 +165,6 @@ export default class GameHost {
     }
 
     tryStart() {
-        console.log(`Attempting to start the game with ${this.readyForCreation.size} players`);
         if (this.readyForCreation.size === gameConfig.nPlayerGame) {
             this.start()
         }
@@ -227,11 +226,11 @@ export default class GameHost {
 
     checkWinner() {
         const teams = this.localClientScene.teams;
-        console.log(`Remaining teams map:`, teams);
+        // console.log(`Remaining teams map:`, teams);
 
         const remainingTeams = Array.from(teams.entries()).filter(team => team[1].playerIds.length > 0 && team[0] !== "Neutral");
 
-        console.log(`Remaining teams:`, remainingTeams);
+        // console.log(`Remaining teams:`, remainingTeams);
         if (remainingTeams.length > 1) return;
         const winner = remainingTeams.length === 1 ? remainingTeams[0][0] : "Tie";
         this.broadcast(ServerMessageType.Winner, winner);

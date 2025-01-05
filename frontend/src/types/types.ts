@@ -94,7 +94,7 @@ export enum Factions {
 }
 
 export interface Character {
-    playerName?: string;
-    faction?: Factions;
-    stats?: CharacterStats
+    playerName: string;
+    faction: Factions;
+    stats: CharacterStats
 }

@@ -10,6 +10,7 @@ import {useLogin} from "../../../Hooks/useAuth";
 import {Assets, Spritesheet, Texture} from "pixi.js";
 import {TutorialScreen} from "../TutorialScreen";
 import {AboutScreen} from "../AboutScreen";
+import {BuildTime} from "../BuildTime";
 
 enum Screens {
     RequestCode,
@@ -75,6 +76,7 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
 
     return (
         <div className={`w-screen h-screen bg-green-950`}>
+            <BuildTime />
             <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`} />
             <div className={`absolute flex flex-col w-full h-full text-white`}>
                 {currentStep === Screens.RequestCode && (

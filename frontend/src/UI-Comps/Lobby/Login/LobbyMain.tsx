@@ -8,11 +8,15 @@ import {Character} from "../../../types/types";
 import {LoginVerification} from "./LoginVerification";
 import {useLogin} from "../../../Hooks/useAuth";
 import {Assets, Spritesheet, Texture} from "pixi.js";
+import {TutorialScreen} from "../TutorialScreen";
+import {AboutScreen} from "../AboutScreen";
 
 enum Screens {
     RequestCode,
     VerifyCode,
     Title,
+    Tutorial,
+    About,
     CharacterCreation,
     MatchMaking
 }
@@ -32,6 +36,14 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
 
     const handleNewGame = () => {
         setCurrentStep(Screens.CharacterCreation);
+    }
+
+    const handleTutorial = () => {
+        setCurrentStep(Screens.Tutorial);
+    }
+
+    const handleAbout = () => {
+        setCurrentStep(Screens.About);
     }
 
     const toTitle = () => {
@@ -79,11 +91,18 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
                     />
                 )}
                 {currentStep === Screens.Title && (
-                    <TitleScreen newGameCallback={handleNewGame} />
+                    <TitleScreen newGameCallback={handleNewGame} tutorialCallback={handleTutorial} aboutCallback={handleAbout} />
+                )}
+                {currentStep === Screens.Tutorial && (
+                    <TutorialScreen backToMain={toTitle} />
+                )}
+                {currentStep === Screens.About && (
+                    <AboutScreen backToMain={toTitle} />
                 )}
                 {currentStep === Screens.CharacterCreation && (
                     <MainCharacterCreation doneCallback={characterDone} gameOn={gameOn} backToMain={toTitle} />
                 )}
+
                 {currentStep === Screens.MatchMaking &&
                     <MatchMaking
                         doneCallback={matchMakingDone}

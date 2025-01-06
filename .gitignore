@@ -36,3 +36,4 @@ yarn-error.log*
 /backend-services/login-service/.env
 /login-service/.env
 /client-delivery-service/public/**/*
+/frontend/src/buildInfo.json

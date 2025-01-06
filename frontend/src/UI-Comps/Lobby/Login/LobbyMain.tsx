@@ -117,11 +117,11 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
                         gameOn={gameOn}
                     />}
             </div>
-            <button className={'absolute top-2 right-2 font-mono text-white opacity-70'} onClick={handleLogOut}>
-                LogOut
-                {/*<MenuButton label={"LogOut"} small={true} onClick={handleLogOut} />*/}
-                {/* TODO CANT CLICK IT??*/}
-            </button>
+            {authenticated && (
+                <button className={'absolute top-2 right-2 font-mono text-white opacity-70'} onClick={handleLogOut}>
+                    LogOut
+                </button>
+            )}
         </div>
     );
 };

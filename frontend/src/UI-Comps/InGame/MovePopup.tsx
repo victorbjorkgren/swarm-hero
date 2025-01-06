@@ -29,7 +29,7 @@ export const MovePopup: React.FC<Props> = ({isVisible, unit, max, doneCallback})
 
     return (
         <div className={
-            `absolute flex flex-row gap-2 rounded-xl justify-between bg-white bg-opacity-30 text-white p-3 gap-3
+            `absolute flex flex-row top-1/2 left-1/2 rounded-xl justify-between bg-white bg-opacity-30 text-white p-3 gap-3
             select-none border border-white backdrop-blur-sm translate-y-20 transition-transform duration-300 ease-out 
             ${isVisible ? "scale-100 opacity-100 pointer-events-auto" : "scale-0 opacity-0 pointer-events-none"}`}>
             <span>{`Moving ${moveTotal} units`}</span>

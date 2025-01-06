@@ -31,6 +31,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         const handleClickOutside = (event: MouseEvent) => {
             if (divRef.current && !divRef.current.contains(event.target as Node)) {
                 setIsVisible(false);
+                setMoveGarrisonPopUpVisible(false);
                 player && player.closeCityPopUp();
             }
         };
@@ -38,6 +39,7 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
         if (player === null || player === undefined) return;
         if (anchorPoint === undefined || player.popUpCastle === null ) {
             setIsVisible(false);
+            setMoveGarrisonPopUpVisible(false);
             document.removeEventListener('mousedown', handleClickOutside)
             return
         }
@@ -185,12 +187,12 @@ export const CityPopup: React.FC<CityPopupProps> = ({anchorPoint, player, recrui
                     </div>
                 </div>
             </div>
-            <div style={style}>
-                <MovePopup
-                    isVisible={moveGarrisonPopUpVisible} unit={moveUnit}
-                    max={maxMoveUnits}
-                    doneCallback={(unit, n)=>handleMoveGarrison(unit, n)} />
-            </div>
+            {/*<div style={style}>*/}
+            <MovePopup
+                isVisible={moveGarrisonPopUpVisible} unit={moveUnit}
+                max={maxMoveUnits}
+                doneCallback={(unit, n)=>handleMoveGarrison(unit, n)} />
+            {/*</div>*/}
         </div>
     );
 };

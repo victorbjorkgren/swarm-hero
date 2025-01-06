@@ -7,7 +7,6 @@ import {MatchMaking} from "../MatchMaking";
 import {Character} from "../../../types/types";
 import {LoginVerification} from "./LoginVerification";
 import {useLogin} from "../../../Hooks/useAuth";
-import {Assets, Spritesheet, Texture} from "pixi.js";
 import {TutorialScreen} from "../TutorialScreen";
 import {AboutScreen} from "../AboutScreen";
 import {BuildTime} from "../BuildTime";
@@ -33,7 +32,7 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
     const sceneContainerRef = useGameBackground();
     const character = useRef<Character | null>(null);
 
-    const { authenticated } = useLogin();
+    const { authenticated, clearToken } = useLogin();
 
     const handleNewGame = () => {
         setCurrentStep(Screens.CharacterCreation);
@@ -45,6 +44,11 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
 
     const handleAbout = () => {
         setCurrentStep(Screens.About);
+    }
+
+    const handleLogOut = () => {
+        clearToken();
+        setCurrentStep(Screens.RequestCode);
     }
 
     const toTitle = () => {
@@ -76,8 +80,8 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
 
     return (
         <div className={`w-screen h-screen bg-green-950`}>
-            <BuildTime />
-            <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`} />
+            <BuildTime/>
+            <div ref={sceneContainerRef} className={`absolute saturate-0 opacity-50`}/>
             <div className={`absolute flex flex-col w-full h-full text-white`}>
                 {currentStep === Screens.RequestCode && (
                     <LoginForm successCallback={(userEmail: string) => {
@@ -93,16 +97,17 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
                     />
                 )}
                 {currentStep === Screens.Title && (
-                    <TitleScreen newGameCallback={handleNewGame} tutorialCallback={handleTutorial} aboutCallback={handleAbout} />
+                    <TitleScreen newGameCallback={handleNewGame} tutorialCallback={handleTutorial}
+                                 aboutCallback={handleAbout}/>
                 )}
                 {currentStep === Screens.Tutorial && (
-                    <TutorialScreen backToMain={toTitle} />
+                    <TutorialScreen backToMain={toTitle}/>
                 )}
                 {currentStep === Screens.About && (
-                    <AboutScreen backToMain={toTitle} />
+                    <AboutScreen backToMain={toTitle}/>
                 )}
                 {currentStep === Screens.CharacterCreation && (
-                    <MainCharacterCreation doneCallback={characterDone} gameOn={gameOn} backToMain={toTitle} />
+                    <MainCharacterCreation doneCallback={characterDone} gameOn={gameOn} backToMain={toTitle}/>
                 )}
 
                 {currentStep === Screens.MatchMaking &&
@@ -112,6 +117,11 @@ export const LobbyMain = ({enterGameCallback, gameOn}: Props) => {
                         gameOn={gameOn}
                     />}
             </div>
+            <button className={'absolute top-2 right-2 font-mono text-white opacity-70'} onClick={handleLogOut}>
+                LogOut
+                {/*<MenuButton label={"LogOut"} small={true} onClick={handleLogOut} />*/}
+                {/* TODO CANT CLICK IT??*/}
+            </button>
         </div>
     );
 };

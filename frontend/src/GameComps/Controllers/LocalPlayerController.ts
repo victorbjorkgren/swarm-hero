@@ -4,6 +4,7 @@ import {Keyboard} from "./Keyboard";
 import {PlayerInterface} from "../Entities/Player";
 import {ClientMessageType} from "@shared/commTypes";
 import {Game} from "../Game";
+import {DefensiveFormations, ParticleInterface} from "../Entities/Particle";
 
 export class LocalPlayerController implements Controller {
     private readonly specialHandler: () => void;
@@ -117,7 +118,17 @@ export class LocalPlayerController implements Controller {
     }
 
     special(): void {
-        // this.player.receiveDamage(100);
+        console.log('special');
+        const units = this.scene.particleSystem.unitManager.getOwnerUnits(this.player.state.id);
+        units.forEach((unit  ) => {
+            unit.forEach((particle: ParticleInterface) => {
+                if (particle.state.defensiveFormation === DefensiveFormations.Line) {
+                    particle.state.defensiveFormation = DefensiveFormations.Circle
+                } else {
+                    particle.state.defensiveFormation = DefensiveFormations.Line;
+                }
+            })
+        })
     }
 
 }

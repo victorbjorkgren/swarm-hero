@@ -35,6 +35,7 @@ import {NetworkController} from "../Controllers/NetworkController";
 import {LocalPlayerController} from "../Controllers/LocalPlayerController";
 import {SpectatorController} from "../Controllers/SpectatorController";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
+import { ParticleInterface } from "./Particle";
 
 export class PlayerInterface extends EntityInterface {
     public state: PlayerState;
@@ -432,6 +433,12 @@ class PlayerState implements EntityState {
     activeSpell: SpellPack | null = null;
     public aimPos: Vector2D = Vector2D.zeros();
 
+    public lastDirection: Vector2D = new Vector2D(0, 1);
+    public defensiveLineOffset: number = gameConfig.defensiveLineOffset;
+    public defensiveLine: {p: Vector2D, n: Vector2D} | null = null;
+    public droneCenter: Vector2D = Vector2D.zeros();
+    public droneRallyVector: Vector2D = Vector2D.zeros();
+
     public character: Character | null = null;
     public isLocal: boolean = false;
 
@@ -500,6 +507,8 @@ class PlayerLogic extends EntityLogic {
 
     update(delta: number) {
         this.updateMovement(delta);
+        this.calculateDefensiveLine();
+        this.calculateDroneRallyVector();
     }
 
     checkAABBCollisions(): CollisionResult {
@@ -579,6 +588,39 @@ class PlayerLogic extends EntityLogic {
         && vel.scale(0);
 
         pos.add(vel.copy().scale(deltaScale));
+
+        if (!vel.isZero()) {
+            this.state.lastDirection = vel.copy()
+        }
+    }
+
+    calculateDefensiveLine() {
+        const p = this.state.pos.copy();
+        const n = this.state.lastDirection.copy().toUnit();
+        p.add(n.copy().scale(this.state.defensiveLineOffset));
+        this.state.defensiveLine = {
+            p: p,
+            n: n
+        }
+    }
+
+    calculateDroneRallyVector() {
+        if (this.state.defensiveLine) {
+            const ownUnits = this.state.scene.particleSystem.unitManager.getOwnerUnits(this.state.id);
+            let n = 0;
+            this.state.droneCenter.scale(0);
+            ownUnits.forEach((unitType: Set<ParticleInterface>) => {
+                unitType.forEach(unit => {
+                    this.state.droneCenter.add(unit.state.pos);
+                    n++;
+                });
+            });
+            this.state.droneCenter.scale(1/Math.max(n, 1));
+            
+            // Calculate difference between drone center and defensive line point
+            const droneOffset = Vector2D.subtract(this.state.defensiveLine.p, this.state.droneCenter);
+            this.state.droneRallyVector = droneOffset.copy();
+        }
     }
 }
 

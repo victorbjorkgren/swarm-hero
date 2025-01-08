@@ -1,5 +1,5 @@
 import {Team} from "../../types/types";
-import {massToRadius, randomUnitVector, Vector2D} from "../Utility";
+import {directionToLine, massToRadius, randomUnitVector, Vector2D} from "../Utility";
 import {UnitPack} from "../../types/unitTypes";
 import {UnitManager} from "../UnitManager";
 import {Game} from "../Game";
@@ -7,6 +7,12 @@ import {Graphics} from "pixi.js";
 import {EntityID, ParticleID, ParticleUpdateData} from "@shared/commTypes";
 import {ParticleSystem} from "../ParticleSystem";
 import {EntityInterface, EntityLogic, EntityRenderer, EntityState, EntityTypes} from "../../types/EntityTypes";
+import { COMBAT_CONFIG, MOVEMENT_CONFIG, PARTICLE_STATS, BOID_CONFIG } from "@shared/config";
+
+export enum DefensiveFormations {
+    Line,
+    Circle
+}
 
 interface FiringLaserAt {
     target: EntityID;
@@ -23,14 +29,13 @@ export class ParticleInterface extends EntityInterface {
         pos: Vector2D,
         mass: number,
         team: Team,
-        maxVel: number = 1,
         particleSystem: ParticleSystem,
         unitInfo: UnitPack,
         owner: EntityID,
         id: ParticleID)
     {
         super();
-        this.state = new ParticleState(pos, mass, team, maxVel, particleSystem.scene, unitInfo, owner, particleSystem.unitManager, id)
+        this.state = new ParticleState(pos, mass, team, particleSystem.scene, unitInfo, owner, particleSystem.unitManager, id)
         this.logic = new ParticleLogic(this.state);
         this.renderer = new ParticleRenderer(this.state);
     }
@@ -81,15 +86,20 @@ class ParticleState implements EntityState {
     radius: number;
     isBoiding: boolean = true;
     isEngaging: boolean = false;
-    sqFireRadius: number = 50 ** 2;
-    sqEngageRadius: number = 100 ** 2;
-    maxTargets: number = 1;
+    sqFireRadius: number = COMBAT_CONFIG.FIRE_RANGE ** 2;
+    sqEngageRadius: number = COMBAT_CONFIG.ENGAGE_RANGE ** 2;
+    maxTargets: number = COMBAT_CONFIG.MAX_TARGETS;
+    public maxVel: number = MOVEMENT_CONFIG.MAX_VELOCITY;
     engaging: EntityID[] = [];
     firingLaserAt: FiringLaserAt[] = [];
     desiredPos: Vector2D | null = null;
-    desiredSpeed: number = .95;
-    desiredOwnerDist: { min: number, max: number } = {min: 0, max: 60};
-    maxAcc: number = .05;
+    desiredSpeed: number = MOVEMENT_CONFIG.DESIRED_SPEED;
+    desiredOwnerDist: { min: number, max: number } = {
+        min: MOVEMENT_CONFIG.OWNER_DISTANCE.MIN, 
+        max: MOVEMENT_CONFIG.OWNER_DISTANCE.MAX
+    };
+    defensiveFormation: DefensiveFormations = DefensiveFormations.Circle;
+    maxAcc: number = MOVEMENT_CONFIG.MAX_ACCELERATION;
     givesIncome: number = 0;
 
     targetedBy: ParticleID[] = [];
@@ -97,17 +107,16 @@ class ParticleState implements EntityState {
 
     public entityType: EntityTypes = EntityTypes.Particle;
 
-    maxHealth: number = 100;
+    maxHealth: number = PARTICLE_STATS.MAX_HEALTH;
     public health: number = this.maxHealth;
     public color: number;
 
-    static price: number = 100;
+    static price: number = PARTICLE_STATS.PRICE;
 
     constructor(
         public pos: Vector2D,
         public mass: number,
         public team: Team,
-        public maxVel: number,
         public scene: Game,
         public unitInfo: UnitPack,
         public owner: EntityID,
@@ -119,11 +128,23 @@ class ParticleState implements EntityState {
         this.radius = massToRadius(mass);
     }
 
+    getOwnerInterface() {
+        if (this.owner === null) return null
+        const ownerInterface = this.scene.getEntityById(this.owner, EntityTypes.Player);
+        return ownerInterface;
+    }
+
     getOwnerPosition() {
         if (this.owner === null) return null
         const ownerInterface = this.scene.getEntityById(this.owner, EntityTypes.Any);
         if (!ownerInterface) return null;
         return ownerInterface.state.pos;
+    }
+
+    getDefensiveLine() {
+        const ownerInterface = this.getOwnerInterface();
+        if (!ownerInterface) return null;
+        return ownerInterface.state.defensiveLine;
     }
 
     getFiringPos(): Vector2D {
@@ -137,11 +158,16 @@ class ParticleState implements EntityState {
 }
 
 class ParticleLogic extends EntityLogic {
-    private sqCohedeDist: number = 250 ** 2;
-    private sqSeparateDistance: number = 75 ** 2;
-    private cohesionFactor: number = .1;
-    private separationFactor: number = 2;
-    private alignFactor: number = 40;
+    // Boid parameters
+    private readonly sqCohedeDist: number = BOID_CONFIG.COHESION.RANGE ** 2;
+    private readonly sqSeparateDistance: number = BOID_CONFIG.SEPARATION.RANGE ** 2;
+    private readonly cohesionFactor: number = BOID_CONFIG.COHESION.FACTOR;
+    private readonly separationFactor: number = BOID_CONFIG.SEPARATION.FACTOR;
+    private readonly alignFactor: number = BOID_CONFIG.ALIGNMENT.FACTOR;
+
+    // Rally parameters
+    private readonly rallyFactor: number = MOVEMENT_CONFIG.LINE_FORMATION.FACTOR;
+    private readonly velDesireFactor: number = MOVEMENT_CONFIG.VELOCITY_ADJUSTMENT;
 
     constructor(protected state: ParticleState) {super();}
 
@@ -209,17 +235,30 @@ class ParticleLogic extends EntityLogic {
         const vel = state.vel;
         const scale = 1 + state.desiredSpeed - vel.magnitude();
 
-        const delta = vel.copy().scale(40*scale);
+        const delta = vel.copy().scale(this.velDesireFactor*scale);
 
         state.acc.add(delta)
     }
 
     private calcDesiredPos() {
-        if (this.state.engaging.length === 0) return this.setDesiredPosToOwner();
+        if (this.state.engaging.length === 0) return this.desireDefensiveFormation();
         const foe = this.getFoeEntity(this.state.engaging[0]);
-        if (!foe) return this.setDesiredPosToOwner();
+        if (!foe) return this.desireDefensiveFormation();
 
         this.state.desiredPos = foe.state.getFiringPos(this.state.pos);
+    }
+
+    private desireDefensiveFormation() {
+        switch (this.state.defensiveFormation) {
+            case DefensiveFormations.Circle:
+                this.setDesiredPosToOwner();
+                break;
+            case DefensiveFormations.Line:
+                this.setDesiredPosToLine();
+                break;
+            default:
+                throw new Error(`Unknown defensiveFormation: ${this.state.defensiveFormation}`);
+        }
     }
 
     private setDesiredPosToOwner() {
@@ -228,12 +267,27 @@ class ParticleLogic extends EntityLogic {
             const ownerDelta = Vector2D.subtract(ownerPosition, this.state.pos);
             const ownerDist = ownerDelta.magnitude();
             if (ownerDist < this.state.desiredOwnerDist.min) {
-                this.state.desiredPos = Vector2D.add(this.state.pos, ownerDelta.scale(-1));
+                this.state.desiredPos = Vector2D.subtract(this.state.pos, ownerDelta);
             } else if (ownerDist > this.state.desiredOwnerDist.max) {
-                this.state.desiredPos = Vector2D.add(this.state.pos, ownerDelta.scale(1));
+                this.state.desiredPos = Vector2D.add(this.state.pos, ownerDelta);
             } else {
                 this.state.desiredPos = null;
             }
+        } else {
+            this.state.desiredPos = null;
+        }
+    }
+
+    private setDesiredPosToLine() {
+        const ownerInterface = this.state.getOwnerInterface();
+        if (!ownerInterface) return;
+        const line = ownerInterface.state.defensiveLine;
+        if (line) {
+            // Apply formation vector
+            this.state.desiredPos = Vector2D.add(this.state.pos, directionToLine(this.state.pos, line.p, line.n));
+            // Apply rally vector
+            const rallyVector = ownerInterface.state.droneRallyVector.copy()//.scale(this.rallyFactor);
+            this.state.desiredPos.add(rallyVector);
         } else {
             this.state.desiredPos = null;
         }

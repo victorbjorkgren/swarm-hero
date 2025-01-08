@@ -57,6 +57,7 @@ export const gameConfig = {
         }
     },
 
+    defensiveLineOffset: 110,
     latencyTimeout: 2000,
 } as const
 
@@ -119,10 +120,52 @@ export const SpellPacks: { [key in Spells]: SpellPack } = {
         warmUp: 1,
         coolDown: 5,
     },
-}
+};
+
 export const UnitPacks = {
     [Units.LaserDrone]: {
         element: Units.LaserDrone,
         buyCost: 100,
     }
-}
+};
+
+export const BOID_CONFIG = {
+    COHESION: {
+        RANGE: 250,
+        FACTOR: 0.1
+    },
+    SEPARATION: {
+        RANGE: 60,
+        FACTOR: .95
+    },
+    ALIGNMENT: {
+        FACTOR: .25 //50
+    }
+} as const;
+
+export const COMBAT_CONFIG = {
+    FIRE_RANGE: 50,
+    ENGAGE_RANGE: 100,
+    MAX_TARGETS: 1
+} as const;
+
+export const MOVEMENT_CONFIG = {
+    DESIRED_SPEED: 1.95,
+    MAX_VELOCITY: 1,
+    MAX_ACCELERATION: 0.25,
+    VELOCITY_ADJUSTMENT: 40,
+    // Circle Formation
+    OWNER_DISTANCE: {
+        MIN: 50,
+        MAX: 60
+    },
+    // Line Formation
+    LINE_FORMATION: {
+        FACTOR: 100
+    }
+} as const;
+
+export const PARTICLE_STATS = {
+    MAX_HEALTH: 100,
+    PRICE: 100
+} as const;

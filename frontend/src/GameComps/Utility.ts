@@ -54,12 +54,10 @@ export class Vector2D {
         return Vector2D.subtract(this, other).sqMagnitude();
     }
 
-
     isZero(): boolean {
         return this.x === 0 && this.y === 0;
 
     }
-
 
     magnitude(): number {
         return Math.sqrt(this.x * this.x + this.y * this.y);
@@ -158,6 +156,30 @@ export function isInsidePolygon(polygon: Vector2D[], circleCenter: Vector2D): bo
         if (intersect) isInside = !isInside;
     }
     return isInside;
+}
+
+/**
+ * Calculates the direction vector from a point to the closest point on a line.
+ * @param point - The point (x, y).
+ * @param linePoint - A point (x0, y0) on the line.
+ * @param unitNormal - The unit length normal vector (a, b) of the line.
+ * @returns The direction vector pointing from the point to the line.
+ */
+export const directionToLine = (
+    point: Vector2D,
+    linePoint: Vector2D,
+    unitNormal: Vector2D
+): Vector2D => {
+    const { x, y } = point;
+    const { x: x0, y: y0 } = linePoint;
+    const { x: a, y: b } = unitNormal;
+
+    const signedDistance = a * (x - x0) + b * (y - y0);
+
+    return new Vector2D(
+        -signedDistance * unitNormal.x,
+        -signedDistance * unitNormal.y
+    );
 }
 
 export const massToRadius = (mass: number): number => {

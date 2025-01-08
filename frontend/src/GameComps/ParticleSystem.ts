@@ -39,7 +39,6 @@ export class ParticleSystem {
             origin ,
             10,
             team,
-            1,
             this,
             unitInfo,
             ownerId,

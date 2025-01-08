@@ -478,16 +478,21 @@ export class Game {
         }
     }
 
-    requestInitialData(): void {
-        console.log('Requesting Initial data from host');
+    requestInitialData(retryCount = 3): void {
+        console.log(`Requesting Initial data from host (attempts remaining: ${retryCount})`);
         if (!this.localPlayer) throw new Error("No local player!");
         if (!this.localPlayer.state.character) throw new Error("No local character!");
 
         this.initialDataPromise = new Promise<InitialDataMessage>((resolve, reject) => {
-            const timeout = setTimeout(
-                () => reject('Timeout waiting for initial data'),
-                70 * 1000
-            );
+            const timeout = setTimeout(() => {
+                if (retryCount > 0) {
+                    console.log('Initial data request timed out, retrying...');
+                    this.requestInitialData(retryCount - 1);
+                } else {
+                    reject('Timeout waiting for initial data after all retry attempts');
+                }
+            }, 5000); // 5 second timeout before failing
+
             this.resolveInitialData = (data: InitialDataMessage) => {
                 clearTimeout(timeout);
                 resolve(data);
@@ -495,7 +500,6 @@ export class Game {
         });
 
         this.sendToHost(ClientMessageType.ReadyToJoin, this.localPlayer.state.character);
-
     }
 
     stopGame() {
@@ -710,8 +714,9 @@ export class Game {
     }
 
     async create() {
-        // DebugDrawer.setPixi(this.pixiRef);
-        // DebugDrawer.setScene(this);
+        DebugDrawer.setPixi(this.pixiRef);
+        DebugDrawer.setScene(this);
+        
         this.requestInitialData();
         if (this.initialDataPromise === null) throw new Error("Inital Data not requested on creation")
 
